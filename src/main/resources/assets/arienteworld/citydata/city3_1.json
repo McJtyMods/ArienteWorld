@@ -84,13 +84,13 @@
       },
       {
         "id": "ariente:module_speed",
-        "blueprint": true,
+        "blueprint": false,
         "meta": 0,
         "max": 1,
         "chance": 0.1
       },
       {
-        "id": "ariente:module_loot",
+        "id": "ariente:module_looting",
         "blueprint": true,
         "meta": 0,
         "max": 1,
@@ -105,14 +105,14 @@
       },
       {
         "id": "ariente:module_power",
-        "blueprint": true,
+        "blueprint": false,
         "meta": 0,
         "max": 1,
         "chance": 0.1
       },
       {
         "id": "ariente:module_regeneration",
-        "blueprint": true,
+        "blueprint": false,
         "meta": 0,
         "max": 1,
         "chance": 0.1
@@ -174,7 +174,7 @@
       },
       {
         "id": "ariente:module_scramble",
-        "blueprint": true,
+        "blueprint": false,
         "meta": 0,
         "max": 1,
         "chance": 0.1

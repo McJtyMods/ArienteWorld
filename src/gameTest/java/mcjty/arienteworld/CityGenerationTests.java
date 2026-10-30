@@ -2,6 +2,13 @@ package mcjty.arienteworld;
 
 import com.mojang.authlib.GameProfile;
 import mcjty.ariente.entities.drone.EntityAIScanForPlayer;
+import mcjty.ariente.blocks.utility.StorageTile;
+import mcjty.ariente.items.BlueprintItem;
+import mcjty.ariente.items.KeyCardItem;
+import mcjty.ariente.recipes.BlueprintRecipeRegistry;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import mcjty.ariente.entities.drone.SentinelDroneEntity;
 import mcjty.ariente.api.IAICoreTile;
 import mcjty.ariente.api.ICityEquipment;
@@ -47,6 +54,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import static mcjty.ariente.setup.Registration.NETCABLE;
+import static mcjty.ariente.setup.Registration.BLUEPRINT;
 
 @GameTestHolder(ArienteWorld.MODID)
 @PrefixGameTestTemplate(false)
@@ -225,6 +233,40 @@ public class CityGenerationTests {
                 helper.assertTrue(Arrays.stream(display.getPanelInfo()).filter(panel -> panel != null && panel.getLife() > 0).count() == panels,
                         "Active shield panels must reach newly joining clients");
             }
+        }
+        int lootStacks = 0;
+        int storageCount = 0;
+        List<AICoreTile> cores = new ArrayList<>();
+        for (ChunkPos chunk : chunks) {
+            for (BlockEntity tile : level.getChunk(chunk.x, chunk.z).getBlockEntities().values()) {
+                if (tile instanceof StorageTile storage) {
+                    storageCount++;
+                    helper.assertTrue(storage.isLocked(), "Generated city storage must start protected by its city security");
+                    var inventory = storage.getCapability(ForgeCapabilities.ITEM_HANDLER).orElseThrow(IllegalStateException::new);
+                    for (int slot = 0; slot < inventory.getSlots(); slot++) {
+                        var stack = inventory.getStackInSlot(slot);
+                        if (!stack.isEmpty()) {
+                            lootStacks++;
+                            if (stack.is(BLUEPRINT.get())) {
+                                helper.assertTrue(BlueprintRecipeRegistry.findRecipe(BlueprintItem.getDestination(stack)) != null,
+                                        "Generated city storage must not contain an unusable blueprint");
+                            }
+                        }
+                    }
+                } else if (tile instanceof AICoreTile aiCore) {
+                    cores.add(aiCore);
+                }
+            }
+        }
+        ArienteWorld.setup.getLogger().info("City {} has {} authored storage cubes and {} loot stacks", plan.getName(), storageCount, lootStacks);
+        if (plan.getName().equals("city0_1")) {
+            for (AICoreTile aiCore : cores) {
+                level.destroyBlock(aiCore.getBlockPos(), false);
+            }
+            helper.assertTrue(ai.isDead(level), "Destroying all generated cores must defeat the city AI");
+            boolean card = level.getEntitiesOfClass(ItemEntity.class, new AABB(core.getBlockPos()).inflate(160)).stream()
+                    .anyMatch(item -> KeyCardItem.hasSecurityTag(item.getItem(), ai.getStorageKeyId()));
+            helper.assertTrue(card, "Defeating generated city cores must drop its storage-access card");
         }
         ArienteWorld.setup.getLogger().info("Verified city {} at {}, {} ({} blocks)", plan.getName(),
                 city.getCenter().getMiddleBlockX(), city.getCenter().getMiddleBlockZ(), blocks);

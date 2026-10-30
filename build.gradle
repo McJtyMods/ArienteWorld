@@ -81,6 +81,7 @@ sourceSets {
 }
 configurations {
     gameTestImplementation.extendsFrom implementation
+    gameTestCompileOnly.extendsFrom compileOnly
     gameTestRuntimeOnly.extendsFrom runtimeOnly
 }
 

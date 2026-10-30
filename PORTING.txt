@@ -13,9 +13,10 @@ This file owns world generation, authored structures, city AI/security/loot,
 spawning, entrance/arrival generation, world commands and editing tools.
 ../Ariente/PORTING.txt owns equipment, machines, resource processing, recipe/JEI
 work, vehicle implementations, rendering, shared HoloGui and packaging details.
-Read BOTH files when continuing. In particular, ore PLACEMENT works here while
-ore DROPS/SMELTING remain missing in Ariente. Its phase-1 movement and equipment
-repairs now have focused server and survival-client checks.
+Read BOTH files when continuing. This companion owns ore placement; Ariente
+now supplies ore drops/processing, colored recipes, optional Overworld progression
+and Constructor JEI. Both equipment and progression have focused
+checks; full survival progression is not yet certified.
 
 WORKSPACE, HISTORY AND USER REQUIREMENTS
 =======================================
@@ -118,7 +119,7 @@ Population and travel
   giant trees. They must not turn authored city floors into dirt.
 - Marble deposits and all nine ore types use the original vein ranges, attempts
   and Y ranges. Ores run before city construction. Resource loot and processing
-  are separate Ariente tasks and remain incomplete.
+  are now implemented in Ariente; see its phase-2 checkpoint.
 - City biomes use the original soldier/master weights and group sizes; other
   biomes use overworld hostile creatures. Soldiers use hostile mob caps, normal
   ground/darkness checks and weapon equipment. Long-running spawn balance is
@@ -164,9 +165,9 @@ World integration still requiring validation
 - Complete fresh-world progression: encounter an entrance, locate it with a
   pearl, charge/travel/return, obtain city resources/blueprints/cards, fight
   guards, use captured technology and explore the large districts.
-  Ariente currently blocks that route with missing ore drops/smelting and original
-  mob resource loot. Its movement/equipment phase is implemented with focused
-  survival-client checks; complete survival progression is still unverified.
+  Ariente has restored ore drops/smelting, mob resource loot and crafting/JEI.
+  Those data repairs and equipment movement have focused regression checks; a
+  complete fresh survival playthrough is still unverified.
 - Validate AI across large/partially loaded footprints, unload/reload, alerts,
   waves, key drops/access, generator depletion and machine/security persistence.
 - Exercise natural spawning for sustained periods and check caps, difficulty,
@@ -222,7 +223,7 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   Both mods load in an integrated client. Latest renderer fixes also passed
   client checks in vanilla Fabulous and Embeddium/Oculus Fancy (no shader-pack
   compatibility claim). These builds do not prove all gameplay features work.
-- Latest dedicated run: all 29 required Forge GameTests passed. Source files:
+- Latest dedicated run: all 36 required Forge GameTests passed. Source files:
   src/gameTest/java/mcjty/arienteworld/
     PortSmokeTests: dimension loading, companion/Ariente/HoloGui integration.
     CityGenerationTests: palettes/grid, cables/facades, all eight plans, authored
@@ -240,6 +241,13 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
     EquipmentRegressionTests: worn-stack identity, exhaustion/Scramble, atomic
       split/shared-holder fuel, budgets/hotkeys, sabre slot/enchantment preservation
       and potion ownership on equipment changes.
+    ProgressionRegressionTests: ore drops, Fortune/Silk Touch, furnace/blasting
+      yields, canonical manual/automatic batches, output capacity and power gating,
+      catalog IDs/blueprints, lithium mob loot, optional ore placement and global
+      dungeon loot conditions/weights/config plus authored loot-reference audit.
+    CityGenerationTests also checks generated Storage Cubes and the last-core
+      storage-access card. City0_0 and city5_1 contain no authored Storage Cubes;
+      the latter's loot catalog alone is not evidence of accessible cube loot.
     MachinePersistenceTests: 31 registered Ariente block entity types.
     CombatRegressionTests: actual combat-drone line of sight/firing and laser hits.
 - Optional client classes live in src/gameTest/java/mcjty/arienteworld/client/.
@@ -262,6 +270,17 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   preservation of another step modifier and falling after fuel exhaustion. It
   builds an isolated arena near 90080/241/90080 and exits on success; never enable
   it alongside other drivers that move/equip the player or in a player save.
+- ProgressionClientChecks (ariente.progressionClientCheck=true, plus
+  ariente.expectCompanion=true in this client's run) checks the real JEI catalog,
+  catalysts/layouts, blueprint variants and eight-cable recipe screen. A separate
+  local-source client without ArienteWorld verified default Overworld generation
+  (all seven resource ores in fresh chunks) and dungeon blueprint loot. It does
+  not certify historical published standalone dependencies or full playthrough.
+- Phase-2 city asset repairs replace module_loot with module_looting and convert
+  unusable explicit blueprints for original recipe-less modules/silver ingots to
+  existing item drops. This supplies loot routes without inventing recipes. Hover
+  remains without a confirmed authored loot entry/catalog recipe. Ariente's handoff
+  owns all resource/crafting implementation details and test limits.
 - Visual inspection already confirmed floating/large cities, restored surface/
   underground districts, station levitators, vegetation, purple sky, shields,
   drones, cable housings, sorted tank billboards and the improved HoloGui.
@@ -272,7 +291,7 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   These and local /tmp harnesses may not survive a new environment.
 - Latest client renderer changes were build/client-checked after the last
   dedicated suite. Do not claim all checks were repeated after each change.
-  Ariente phase-1 equipment changes reran the dedicated suite and focused clients;
+  Ariente equipment/progression changes reran the dedicated suite and focused clients;
   refer to its handoff for the exact checks and remaining equipment limits.
 
 BUILDING, RUNNING AND REPRODUCING CHECKS

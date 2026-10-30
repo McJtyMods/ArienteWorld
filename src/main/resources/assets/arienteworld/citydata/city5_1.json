@@ -128,14 +128,14 @@
         "meta": 0,
         "max": 1,
         "chance": 0.1,
-        "blueprint": true
+        "blueprint": false
       },
       {
         "id": "ariente:module_speed",
         "meta": 0,
         "max": 1,
         "chance": 0.1,
-        "blueprint": true
+        "blueprint": false
       },
       {
         "id": "ariente:module_fire",
