@@ -40,12 +40,28 @@ public class HologramRenderingChecks {
 
     private static final int SIZE = 384;
     private static final Matrix4f PROJECTION = new Matrix4f().ortho(-.7f, .7f, -.7f, .7f, .1f, 10);
+    private static int[] installedBrightness;
+    private static boolean removalCompared;
     private static boolean checked;
     private static int runs;
 
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
         Minecraft mc = Minecraft.getInstance();
+        if (Boolean.getBoolean("ariente.armorGuiStateCheck") && event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL
+                && mc.player != null && mc.level != null) {
+            boolean installed = mc.player.getItemBySlot(EquipmentSlot.CHEST).getOrCreateTag().getBoolean(ArmorUpgradeType.ENERGY.getModuleKey());
+            if (installed && installedBrightness == null) {
+                installedBrightness = moduleBrightness(mc, "installed");
+            } else if (installedBrightness != null && ArmorClientChecks.removalChecked && !removalCompared) {
+                int[] removed = moduleBrightness(mc, "removed");
+                for (int i = 0; i < removed.length; i++) {
+                    require(removed[i] < installedBrightness[i] * .85, "Removed module must visibly dim at angle " + i);
+                }
+                removalCompared = true;
+                ArienteWorld.setup.getLogger().info("ARMOR REMOVAL PIXEL CHECKS PASSED: installed and inventory-only differ at all five angles");
+            }
+        }
         if (checked || !Boolean.getBoolean("ariente.hologramRenderCheck") || event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL
                 || mc.player == null || !mc.player.getMainHandItem().is(Registration.ENHANCED_ENERGY_SABRE.get())
                 || !mc.player.getMainHandItem().getOrCreateTag().getBoolean(ArmorUpgradeType.ENERGY.getModuleKey())
@@ -158,6 +174,59 @@ public class HologramRenderingChecks {
             RenderSystem.applyModelViewMatrix();
             mc.getMainRenderTarget().bindWrite(true);
         }
+    }
+
+    private static int[] moduleBrightness(Minecraft mc, String state) {
+        HoloGuiEntity holo = new HoloGuiEntity(HOLOGUI_ENTITY_TYPE.get(), mc.level);
+        holo.setGuiId(ModGuis.GUI_ARMOR_CHEST);
+        holo.setScale(1);
+        holo.setYRot(180);
+        holo.yRotO = 180;
+        var target = new TextureTarget(SIZE, SIZE, true, Minecraft.ON_OSX);
+        var oldProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
+        var oldSorting = RenderSystem.getVertexSorting();
+        var modelView = RenderSystem.getModelViewStack();
+        modelView.pushPose();
+        modelView.setIdentity();
+        RenderSystem.applyModelViewMatrix();
+        int[] brightness = new int[5];
+        try {
+            RenderSystem.setProjectionMatrix(PROJECTION, oldSorting);
+            int index = 0;
+            for (float[] angle : new float[][]{{0, 0}, {35, 0}, {-35, 0}, {0, 25}, {0, -25}}) {
+                target.setClearColor(0, 0, 0, 0);
+                RenderSystem.depthMask(true);
+                target.clear(Minecraft.ON_OSX);
+                target.bindWrite(true);
+                PoseStack poses = new PoseStack();
+                poses.translate(0, 0, -2);
+                poses.mulPose(Axis.YP.rotationDegrees(angle[0]));
+                poses.mulPose(Axis.XP.rotationDegrees(angle[1]));
+                Matrix4f centered = new Matrix4f(poses.last().pose());
+                poses.translate(0, -.5, 0);
+                var buffers = MultiBufferSource.immediate(new BufferBuilder(4096));
+                mc.getEntityRenderDispatcher().getRenderer(holo).render(holo, 0, 0, poses, buffers, LightTexture.FULL_BRIGHT);
+                buffers.endBatch();
+                try (NativeImage image = Screenshot.takeScreenshot(target)) {
+                    save(image, "armor-module-" + state + "-" + index + ".png");
+                    int[] center = project(centered, -.27f, .18f);
+                    for (int y = center[1] - 7; y <= center[1] + 7; y++) {
+                        for (int x = center[0] - 7; x <= center[0] + 7; x++) {
+                            int color = image.getPixelRGBA(x, y);
+                            brightness[index] += (color & 255) + (color >> 8 & 255) + (color >> 16 & 255);
+                        }
+                    }
+                }
+                index++;
+            }
+        } finally {
+            target.destroyBuffers();
+            RenderSystem.setProjectionMatrix(oldProjection, oldSorting);
+            modelView.popPose();
+            RenderSystem.applyModelViewMatrix();
+            mc.getMainRenderTarget().bindWrite(true);
+        }
+        return brightness;
     }
 
     private static int[] project(Matrix4f view, float x, float y) {

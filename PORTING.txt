@@ -14,7 +14,8 @@ spawning, entrance/arrival generation, world commands and editing tools.
 ../Ariente/PORTING.txt owns equipment, machines, resource processing, recipe/JEI
 work, vehicle implementations, rendering, shared HoloGui and packaging details.
 Read BOTH files when continuing. In particular, ore PLACEMENT works here while
-ore DROPS/SMELTING and several armor effects are still missing in Ariente.
+ore DROPS/SMELTING remain missing in Ariente. Its phase-1 movement and equipment
+repairs now have focused server and survival-client checks.
 
 WORKSPACE, HISTORY AND USER REQUIREMENTS
 =======================================
@@ -41,10 +42,9 @@ WORKSPACE, HISTORY AND USER REQUIREMENTS
 - Preserve original assets, themes and deterministic generation. References:
   /data/Projects/MinecraftMods/ariente_screenshots, especially ariente_world2.jpg.
   The latter shows sprawling landscape cities, not just standalone complexes.
-- Both mods and HoloGui already have hundreds of staged port changes. Preserve
-  all existing staging and unrelated workspace edits. Ariente/ARIENTE_GUIDE.md
-  and Ariente/todo.txt have additional unstaged user changes at this handoff.
-  Stage task changes only and do not create commits or reset/clean the checkout.
+- The initial port checkpoint has been committed locally. All three checkouts
+  were clean at the start of Ariente's phase-1 equipment task. Preserve unrelated
+  edits/staging on future tasks; stage task changes and do not create commits.
 - Earlier work prioritized buildability, restored generation and reported bugs.
   A complete comparison against master and an end-to-end survival/multiplayer
   audit have NOT been completed. Do not equate the restored worldgen checkpoint
@@ -164,8 +164,9 @@ World integration still requiring validation
 - Complete fresh-world progression: encounter an entrance, locate it with a
   pearl, charge/travel/return, obtain city resources/blueprints/cards, fight
   guards, use captured technology and explore the large districts.
-  Ariente currently blocks that route with missing ore drops/smelting, original
-  mob resource loot and some equipment effects. Those fixes belong in its repo.
+  Ariente currently blocks that route with missing ore drops/smelting and original
+  mob resource loot. Its movement/equipment phase is implemented with focused
+  survival-client checks; complete survival progression is still unverified.
 - Validate AI across large/partially loaded footprints, unload/reload, alerts,
   waves, key drops/access, generator depletion and machine/security persistence.
 - Exercise natural spawning for sustained periods and check caps, difficulty,
@@ -221,7 +222,7 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   Both mods load in an integrated client. Latest renderer fixes also passed
   client checks in vanilla Fabulous and Embeddium/Oculus Fancy (no shader-pack
   compatibility claim). These builds do not prove all gameplay features work.
-- Last dedicated run: all 24 required Forge GameTests passed. Source files:
+- Latest dedicated run: all 29 required Forge GameTests passed. Source files:
   src/gameTest/java/mcjty/arienteworld/
     PortSmokeTests: dimension loading, companion/Ariente/HoloGui integration.
     CityGenerationTests: palettes/grid, cables/facades, all eight plans, authored
@@ -234,7 +235,11 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
       authored single ship doors and generation of the visual fixture.
     MachineInteractionTests: storage display, tank/generator synchronization,
       first GUI camera geometry, elevator controls, module NBT/inventory clicks
-      and levitator controls/corner travel. Does NOT test powered armor movement.
+      and levitator controls/corner travel. Movement is checked by the opt-in
+      client driver described below.
+    EquipmentRegressionTests: worn-stack identity, exhaustion/Scramble, atomic
+      split/shared-holder fuel, budgets/hotkeys, sabre slot/enchantment preservation
+      and potion ownership on equipment changes.
     MachinePersistenceTests: 31 registered Ariente block entity types.
     CombatRegressionTests: actual combat-drone line of sight/firing and laser hits.
 - Optional client classes live in src/gameTest/java/mcjty/arienteworld/client/.
@@ -243,10 +248,20 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   TankRenderingChecks covers sorted glass/beam quads and stacked seams at twelve
   viewing angles. HologramRenderingChecks uses actual rendered pixels at five
   angles for armor/sabre/cart controls and glass/shield occlusion, before/after
-  resource reload. ArmorClientChecks checks equipment/inventory synchronization,
-  NOT flight/speed effects or the latest uninstall-highlight/alignment report.
+  resource reload. ArmorClientChecks checks equipment/inventory synchronization
+  and configuration. With ariente.armorGuiStateCheck=true it also removes
+  a module and verifies returned inventory/cleared NBT; pixel comparisons verify
+  that the removed module dims at five angles. The state-check driver exits on
+  success. Final phase-1 GUI checks passed in vanilla Fabulous and
+  Embeddium 0.3.31/Oculus 1.8.0 Fancy without a shader pack.
   MachineGuiClientChecks, CartRenderChecks and PearlRenderChecks cover their
   respective integrated-client interaction/rendering regressions.
+  EquipmentMovementClientChecks (ariente.equipmentMovementCheck=true) separately
+  verifies actual survival thrust/120-tick hover/descent with allow-flight=false,
+  hotkey removal of Flight, Speed vs unequipped travel, a 1.5-block step obstacle,
+  preservation of another step modifier and falling after fuel exhaustion. It
+  builds an isolated arena near 90080/241/90080 and exits on success; never enable
+  it alongside other drivers that move/equip the player or in a player save.
 - Visual inspection already confirmed floating/large cities, restored surface/
   underground districts, station levitators, vegetation, purple sky, shields,
   drones, cable housings, sorted tank billboards and the improved HoloGui.
@@ -257,7 +272,8 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   These and local /tmp harnesses may not survive a new environment.
 - Latest client renderer changes were build/client-checked after the last
   dedicated suite. Do not claim all checks were repeated after each change.
-  This handoff rewrite changed documentation only and did not rerun tests.
+  Ariente phase-1 equipment changes reran the dedicated suite and focused clients;
+  refer to its handoff for the exact checks and remaining equipment limits.
 
 BUILDING, RUNNING AND REPRODUCING CHECKS
 ======================================

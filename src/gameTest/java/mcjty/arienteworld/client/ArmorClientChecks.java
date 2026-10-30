@@ -25,6 +25,7 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class ArmorClientChecks {
 
+    public static boolean removalChecked;
     private static boolean opened;
     private static int ticks;
     private static volatile HoloGuiEntity hologram;
@@ -56,6 +57,20 @@ public class ArmorClientChecks {
                 throw new IllegalStateException("Armor GUI changes must synchronize worn equipment and consumed inventory modules to the client");
             }
             ArienteWorld.setup.getLogger().info("ARMOR GUI CLIENT CHECK PASSED: installed/enabled module, hotkey and inventory reach client");
+        }
+        if (ticks == 200 && Boolean.getBoolean("ariente.armorGuiStateCheck")) {
+            server.execute(() -> click(server.getPlayerList().getPlayer(playerId), hologram, 1.5, 2.3));
+        } else if (ticks == 240 && Boolean.getBoolean("ariente.armorGuiStateCheck")) {
+            var tag = mc.player.getItemBySlot(EquipmentSlot.CHEST).getOrCreateTag();
+            if (tag.contains(ArmorUpgradeType.ENERGY.getModuleKey()) || tag.contains(ArmorUpgradeType.ENERGY.getWorkingKey())
+                    || tag.contains(ArmorUpgradeType.ENERGY.getHotkeyKey())
+                    || mc.player.getInventory().countItem(Registration.MODULE_ENERGY.get()) != 4) {
+                throw new IllegalStateException("Removal must synchronize cleared module/working/key state and returned item to the client");
+            }
+            removalChecked = true;
+            ArienteWorld.setup.getLogger().info("ARMOR GUI REMOVAL CLIENT CHECK PASSED: returned item and cleared equipment state");
+        } else if (ticks == 280 && Boolean.getBoolean("ariente.armorGuiStateCheck")) {
+            mc.stop();
         }
         if (opened) {
             return;
