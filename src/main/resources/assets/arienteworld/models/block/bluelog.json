@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "arienteworld:blocks/plants/bluelog_top",
+    "side": "arienteworld:blocks/plants/bluelog"
+  }
+}

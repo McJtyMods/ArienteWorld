@@ -1,54 +1,67 @@
 package mcjty.arienteworld.ai;
 
 import mcjty.ariente.api.*;
-import mcjty.arienteworld.ArienteStuff;
+import mcjty.ariente.Ariente;
+import mcjty.hologui.api.IHoloGuiEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.state.properties.RailShape;
+import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityPlan;
 import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.cities.Loot;
 import mcjty.arienteworld.config.AIConfiguration;
-import mcjty.arienteworld.dimension.IArienteChunkGenerator;
-import mcjty.arienteworld.setup.ModSetup;
 import mcjty.arienteworld.setup.Registration;
-import mcjty.hologui.api.IHoloGuiEntity;
+import mcjty.arienteworld.dimension.CityFeature;
 import mcjty.lib.tileentity.GenericTileEntity;
 import mcjty.lib.varia.OrientationTools;
 import mcjty.lib.varia.RedstoneMode;
-import mcjty.lib.varia.WeightedRandom;
-import mcjty.lib.varia.WorldTools;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.EquipmentSlotType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.NBTUtil;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.state.properties.RailShape;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.util.Constants;
+import mcjty.ariente.varia.WeightedRandom;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.nbt.Tag;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static mcjty.ariente.setup.Registration.ENERGY_SABRE;
+import static mcjty.ariente.setup.Registration.FLUX_BEAM;
+import static mcjty.ariente.setup.Registration.KEY_CARD;
+import static mcjty.ariente.setup.Registration.POWERSUIT_CHEST;
+import static mcjty.ariente.setup.Registration.POWERSUIT_FEET;
+import static mcjty.ariente.setup.Registration.POWERSUIT_HEAD;
+import static mcjty.ariente.setup.Registration.POWERSUIT_LEGS;
 
 public class CityAI implements ICityAI {
 
+    private int levitator = -1;
+    private int levitatorTicker = 20;
+    private BlockPos levitatorPrevPos;
+
     private final ChunkPos center;
+    private final ServerLevel level;
+    private final City city;
+    private Integer cityHeight;
     private boolean initialized = false;
 
     private CityAISettings settings = null;
@@ -62,16 +75,12 @@ public class CityAI implements ICityAI {
     private Map<BlockPos, Direction> guardPositions = new HashMap<>();
     private Map<BlockPos, Direction> soldierPositions = new HashMap<>();
     private Map<BlockPos, Direction> masterSoldierPositions = new HashMap<>();
-    private AxisAlignedBB soldierBoundingbox = null;
+    private AABB soldierBoundingbox = null;
 
     private int sentinelMovementTicks = 6;
     private int sentinelAngleOffset = 0;
 
     private int droneTicker = 0;
-
-    private int levitator = -1;
-    private int levitatorTicker = 20;
-    private BlockPos levitatorPrevPos = null;
 
     private String keyId;
     private String storageKeyId;
@@ -85,18 +94,30 @@ public class CityAI implements ICityAI {
 
     private static Random random = new Random();
 
-    public CityAI(ChunkPos center) {
+    public CityAI(ServerLevel level, ChunkPos center) {
+        this.level = level;
         this.center = center;
+        this.city = CityTools.getCity(level.getSeed(), center);
     }
 
     public ChunkPos getCenter() {
         return center;
     }
 
-    private boolean setup(World world) {
+    private int getLowestHeight(int chunkX, int chunkZ) {
+        if (cityHeight == null) {
+            cityHeight = CityTools.getCityHeight(level, city);
+        }
+        return cityHeight - CityTools.getCellarHeight(level.getSeed(), city, chunkX, chunkZ);
+    }
+
+    private boolean setup(Level world) {
+        if (!areChunksLoaded()) {
+            return false;
+        }
         if (!initialized) {
-            initialized = true;
             initialize(world);
+            initialized = true;
             return false;
         } else {
             findEquipment(world, false);
@@ -104,61 +125,81 @@ public class CityAI implements ICityAI {
         }
     }
 
+    private boolean areChunksLoaded() {
+        List<String> pattern = city.getPlan().getPlan();
+        int width = pattern.get(0).length();
+        int depth = pattern.size();
+        for (int x = center.x - width / 2; x < center.x - width / 2 + width; x++) {
+            for (int z = center.z - depth / 2; z < center.z - depth / 2 + depth; z++) {
+                if (level.getChunkSource().getChunkNow(x, z) == null) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     @Override
-    public void breakAICore(World world, BlockPos pos) {
-        if (!hasValidCoreExcept(world, pos)) {
+    public void breakAICore(Level world, BlockPos pos) {
+        setup(world);
+        if (initialized && !hasValidCoreExcept(world, pos)) {
             // There are no other valid AI cores. Spawn an item for the player
             // with the right security key
-            ItemStack stack = new ItemStack(ArienteStuff.keyCardItem);
-            City city = CityTools.getCity(center);
-            ModSetup.arienteSystem.addSecurity(stack, getStorageKeyId());
-            ModSetup.arienteSystem.setDescription(stack, "City: " + city.getName());
+            ItemStack stack = new ItemStack(KEY_CARD.get());
+            Ariente.arienteSystem.addSecurity(stack, getStorageKeyId());
+            Ariente.arienteSystem.setDescription(stack, "City: " + city.getName());
             ItemEntity entityitem = new ItemEntity(world, pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5, stack);
-            entityitem.setDefaultPickupDelay();
-            world.addEntity(entityitem);
+            entityitem.setDefaultPickUpDelay();
+            world.addFreshEntity(entityitem);
             setAlarmType(world, AlarmType.DEAD);
         }
     }
 
     // Return true if we potentially have to save the city system state
     @Override
-    public boolean tick(TileEntity tile) {
+    public boolean tick(BlockEntity tile) {
+        if (!areChunksLoaded()) {
+            return false;
+        }
         // We use the given AICoreTile parameter to make sure only one tick per city happens
-        if (setup(tile.getWorld())) {
+        if (setup(tile.getLevel())) {
             // If there are no more ai cores the city AI is dead
             if (aiCores.isEmpty()) {
                 return false;
             }
 
-            IAICoreTile core = findFirstValidAICore(tile.getWorld());
+            IAICoreTile core = findFirstValidAICore(tile.getLevel());
             if (core == null) {
                 // All cores are no longer valid and have been removed
                 return false;
             }
             // Only tick for the first valid aicore
-            if (!tile.getPos().equals(core.getCorePos())) {
+            if (!tile.getBlockPos().equals(core.getCorePos())) {
                 return false;
             }
 
-            handleAI(tile.getWorld());
+            handleAI(tile.getLevel());
             return true;
         }
         return true;
     }
 
     @Override
-    public boolean isDead(World world) {
+    public boolean isDead(Level world) {
         return !hasValidCoreExcept(world, null);
     }
 
     // Check if there is still a valid AI core except for the input parameter
-    public boolean hasValidCoreExcept(World world, @Nullable BlockPos exclude) {
+    public boolean hasValidCoreExcept(Level world, @Nullable BlockPos exclude) {
         if (!initialized) {
             return true;        // If not initialized we assume this city is alive
         }
         for (BlockPos pos : aiCores) {
             if (!pos.equals(exclude)) {
-                TileEntity te = world.getTileEntity(pos);
+                if (!world.hasChunkAt(pos)) {
+                    return true;
+                }
+                BlockEntity te = world.getBlockEntity(pos);
                 if (te instanceof IAICoreTile) {
                     return true;
                 }
@@ -168,9 +209,12 @@ public class CityAI implements ICityAI {
     }
 
     @Nullable
-    private IAICoreTile findFirstValidAICore(World world) {
+    private IAICoreTile findFirstValidAICore(Level world) {
         for (BlockPos pos : aiCores) {
-            TileEntity te = world.getTileEntity(pos);
+            if (!world.hasChunkAt(pos)) {
+                continue;
+            }
+            BlockEntity te = world.getBlockEntity(pos);
             if (te instanceof IAICoreTile) {
                 return (IAICoreTile) te;
             }
@@ -178,31 +222,31 @@ public class CityAI implements ICityAI {
         return null;
     }
 
-    private AxisAlignedBB getSoldierBoundingbox() {
+    private AABB getSoldierBoundingbox() {
         if (soldierBoundingbox == null) {
             for (Map.Entry<BlockPos, Direction> entry : soldierPositions.entrySet()) {
                 if (soldierBoundingbox == null) {
-                    soldierBoundingbox = new AxisAlignedBB(entry.getKey());
+                    soldierBoundingbox = new AABB(entry.getKey());
                 } else {
-                    soldierBoundingbox.union(new AxisAlignedBB(entry.getKey()));
+                    soldierBoundingbox = soldierBoundingbox.minmax(new AABB(entry.getKey()));
                 }
             }
             for (Map.Entry<BlockPos, Direction> entry : masterSoldierPositions.entrySet()) {
                 if (soldierBoundingbox == null) {
-                    soldierBoundingbox = new AxisAlignedBB(entry.getKey());
+                    soldierBoundingbox = new AABB(entry.getKey());
                 } else {
-                    soldierBoundingbox.union(new AxisAlignedBB(entry.getKey()));
+                    soldierBoundingbox = soldierBoundingbox.minmax(new AABB(entry.getKey()));
                 }
             }
             for (Map.Entry<BlockPos, Direction> entry : guardPositions.entrySet()) {
                 if (soldierBoundingbox == null) {
-                    soldierBoundingbox = new AxisAlignedBB(entry.getKey());
+                    soldierBoundingbox = new AABB(entry.getKey());
                 } else {
-                    soldierBoundingbox.union(new AxisAlignedBB(entry.getKey()));
+                    soldierBoundingbox = soldierBoundingbox.minmax(new AABB(entry.getKey()));
                 }
             }
             if (soldierBoundingbox != null) {
-                soldierBoundingbox = soldierBoundingbox.grow(10);
+                soldierBoundingbox = soldierBoundingbox.inflate(10);
             }
         }
         return soldierBoundingbox;
@@ -214,30 +258,28 @@ public class CityAI implements ICityAI {
         private int countDrone = -1;
         private int countSentinel = -1;
 
-        public int getCountSoldier(World world) {
+        public int getCountSoldier(Level world) {
             if (countSoldier == -1) {
                 countEntities(world);
             }
             return countSoldier;
         }
 
-        public int getCountDrone(World world) {
+        public int getCountDrone(Level world) {
             if (countDrone == -1) {
                 countEntities(world);
             }
             return countDrone;
         }
 
-        public int getCountSentinel(World world) {
+        public int getCountSentinel(Level world) {
             if (countSentinel == -1) {
                 countEntities(world);
             }
             return countSentinel;
         }
 
-        private void countEntities(World world) {
-            City city = CityTools.getCity(center);
-            assert city != null;
+        private void countEntities(Level world) {
             CityPlan plan = city.getPlan();
             List<String> pattern = plan.getPlan();
             int dimX = pattern.get(0).length() * 16 * 2;
@@ -249,12 +291,12 @@ public class CityAI implements ICityAI {
             AtomicInteger soldiers = new AtomicInteger(0);
             AtomicInteger drones = new AtomicInteger(0);
             AtomicInteger sentinels = new AtomicInteger(0);
-            AxisAlignedBB boundingbox = getSoldierBoundingbox();
-            world.getEntitiesWithinAABB(LivingEntity.class, new AxisAlignedBB(ctr).grow(dimX, 200, dimZ),
+            AABB boundingbox = getSoldierBoundingbox();
+            world.getEntitiesOfClass(LivingEntity.class, new AABB(ctr).inflate(dimX, 200, dimZ),
                     entity -> {
                         if (entity instanceof ISoldier) {
                             if (boundingbox != null) {
-                                if (boundingbox.contains(entity.getPositionVector())) {
+                                if (boundingbox.contains(entity.position())) {
                                     soldiers.incrementAndGet();
                                 }
                             }
@@ -274,7 +316,7 @@ public class CityAI implements ICityAI {
 
     }
 
-    private void handleAI(World world) {
+    private void handleAI(Level world) {
         EntityInfo info = new EntityInfo();
 
         handlePower(world);
@@ -285,30 +327,30 @@ public class CityAI implements ICityAI {
         handleFluxLevitators(world);
     }
 
-    private void handleFluxLevitators(World world) {
+    private void handleFluxLevitators(Level world) {
         // First check if there is a levitator and if it is near its destination
         if (levitator != -1) {
-            Entity entity = world.getEntityByID(levitator);
+            Entity entity = world.getEntity(levitator);
             if (!(entity instanceof IFluxLevitatorEntity)) {
                 levitator = -1;
             } else {
                 IFluxLevitatorEntity levitatorEntity = (IFluxLevitatorEntity) entity;
                 BlockPos desiredDestination = levitatorEntity.getDesiredDestination();
                 if (desiredDestination != null) {
-                    double distanceSq = entity.getPosition().distanceSq(desiredDestination);
+                    double distanceSq = entity.blockPosition().distSqr(desiredDestination);
                     if (distanceSq < 5 * 5) {
                         // Arrived
                         dismountAndKill(levitatorEntity);
                     } else {
                         // Check if we actually moved since last time. If not we let the soldier get out and remove the flux levitator
                         if (levitatorPrevPos != null) {
-                            distanceSq = entity.getPosition().distanceSq(levitatorPrevPos);
+                            distanceSq = entity.blockPosition().distSqr(levitatorPrevPos);
                             if (distanceSq <= 0.1) {
                                 dismountAndKill(levitatorEntity);
                             }
                         }
                     }
-                    levitatorPrevPos = entity.getPosition();
+                    levitatorPrevPos = entity.blockPosition();
                 } else {
                     dismountAndKill(levitatorEntity);
                 }
@@ -320,21 +362,21 @@ public class CityAI implements ICityAI {
         if (levitatorTicker <= 0) {
             levitatorTicker = 80;
             if (levitator != -1) {
-                Entity entity = world.getEntityByID(levitator);
+                Entity entity = world.getEntity(levitator);
                 if (entity != null) {
                     for (Entity passenger : entity.getPassengers()) {
-                        if (!(passenger instanceof IHoloGuiEntity) && !(passenger instanceof PlayerEntity)) {
-                            passenger.remove();
+                        if (!(passenger instanceof IHoloGuiEntity) && !(passenger instanceof Player)) {
+                            passenger.discard();
                         }
                     }
 
-                    entity.remove();
+                    entity.discard();
                 }
                 levitator = -1;
             } else {
                 LevitatorPath path = findValidBeam(world);
                 if (path != null) {
-                    List<? extends ISoldier> entities = ModSetup.arienteSystem.getSoldiersWithinAABB(world, new AxisAlignedBB(path.end).grow(15));
+                    List<? extends ISoldier> entities = Ariente.arienteSystem.getSoldiersWithinAABB(world, new AABB(path.end).inflate(15));
                     if (entities.size() > 2) {
                         // Too many already
                         return;
@@ -343,14 +385,14 @@ public class CityAI implements ICityAI {
 
                     BlockPos pos = path.start;
                     BlockState state = world.getBlockState(pos);
-                    RailShape dir = ModSetup.arienteSystem.getBeamDirection(state);
+                    RailShape dir = Ariente.arienteSystem.getBeamDirection(state);
                     double d0 = 0.0D;
 
                     if (dir.isAscending()) {
                         d0 = 0.5D;
                     }
 
-                    Entity entity = ModSetup.arienteSystem.createFluxLevitatorEntity(world, pos.getX() + 0.5D, pos.getY() + 0.0625D + d0, pos.getZ() + 0.5D);
+                    Entity entity = Ariente.arienteSystem.createFluxLevitatorEntity(world, pos.getX() + 0.5D, pos.getY() + 0.0625D + d0, pos.getZ() + 0.5D);
                     IFluxLevitatorEntity levitator = (IFluxLevitatorEntity) entity;
                     if (path.direction == Direction.SOUTH || path.direction == Direction.EAST) {
                         levitator.changeSpeed(-50);
@@ -358,11 +400,11 @@ public class CityAI implements ICityAI {
                         levitator.changeSpeed(50);
                     }
                     levitator.setDesiredDestination(path.end);
-                    world.addEntity(entity);
-                    this.levitator = entity.getEntityId();
+                    world.addFreshEntity(entity);
+                    this.levitator = entity.getId();
 
-                    LivingEntity soldier = ModSetup.arienteSystem.createSoldier(world, pos, path.direction, center, SoldierBehaviourType.SOLDIER_FIGHTER, false);
-                    soldier.setHeldItem(Hand.MAIN_HAND, new ItemStack(ArienteStuff.energySabre));
+                    LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, path.direction, center, SoldierBehaviourType.SOLDIER_FIGHTER, false);
+                    soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));
                     soldier.startRiding(entity);
                 }
             }
@@ -372,19 +414,22 @@ public class CityAI implements ICityAI {
     private void dismountAndKill(IFluxLevitatorEntity levitatorEntity) {
         Entity ent = (Entity) levitatorEntity;
         for (Entity passenger : ent.getPassengers()) {
-            if (!(passenger instanceof IHoloGuiEntity) && !(passenger instanceof PlayerEntity)) {
+            if (!(passenger instanceof IHoloGuiEntity) && !(passenger instanceof Player)) {
                 passenger.stopRiding();
             }
         }
-        ent.remove();
+        ent.discard();
         levitator = -1;
     }
 
-    private BlockPos isValidBeam(World world, ChunkPos c, Direction direction, int minOffset, int maxOffset) {
+    private BlockPos isValidBeam(Level world, ChunkPos c, Direction direction, int minOffset, int maxOffset) {
         for (int i = minOffset; i <= maxOffset; i++) {
-            BlockPos pos = new BlockPos(c.x * 16 + 8 + direction.getDirectionVec().getX() * i, 32, (c.z * 16) + 8 + direction.getDirectionVec().getZ() * i);
+            BlockPos pos = new BlockPos(c.x * 16 + 8 + direction.getStepX() * i, 32, (c.z * 16) + 8 + direction.getStepZ() * i);
+            if (!world.hasChunkAt(pos)) {
+                return null;
+            }
             BlockState state = world.getBlockState(pos);
-            if (state.getBlock() == ArienteStuff.fluxBeamBlock) {
+            if (state.getBlock() == FLUX_BEAM.get()) {
                 return pos;
             }
         }
@@ -403,28 +448,31 @@ public class CityAI implements ICityAI {
         }
     }
 
-    private boolean isValidPath(World world, BlockPos start, BlockPos end, Direction facing) {
+    private boolean isValidPath(Level world, BlockPos start, BlockPos end, Direction facing) {
         BlockPos p = start;
         while (!end.equals(p)) {
-            BlockState state = world.getBlockState(p);
-            if (state.getBlock() != ArienteStuff.fluxBeamBlock) {
+            if (!world.hasChunkAt(p)) {
                 return false;
             }
-            p = p.offset(facing.getOpposite());
+            BlockState state = world.getBlockState(p);
+            if (state.getBlock() != FLUX_BEAM.get()) {
+                return false;
+            }
+            p = p.relative(facing.getOpposite());
         }
-        List<? extends IFluxLevitatorEntity> entities = ModSetup.arienteSystem.getLevitatorsWithinAABB(world, new AxisAlignedBB(start).union(new AxisAlignedBB(end)));
+        List<? extends IFluxLevitatorEntity> entities = Ariente.arienteSystem.getLevitatorsWithinAABB(world, new AABB(start).minmax(new AABB(end)));
         return entities.isEmpty();
     }
 
     @Nullable
-    private LevitatorPath findValidBeam(World world) {
-        CityAISystem system = CityAISystem.getCityAISystem(world);
+    private LevitatorPath findValidBeam(Level world) {
+        CityAISystem system = CityAISystem.getCityAISystem(level);
         List<LevitatorPath> positions = new ArrayList<>();
         for (Direction facing : OrientationTools.HORIZONTAL_DIRECTION_VALUES) {
-            ChunkPos otherCoord = new ChunkPos(center.x + facing.getDirectionVec().getX() * 16,
-                    center.z + facing.getDirectionVec().getZ() * 16);
+            ChunkPos otherCoord = new ChunkPos(center.x + facing.getStepX() * 16,
+                    center.z + facing.getStepZ() * 16);
             CityAI otherCity = system.getCityAI(otherCoord);
-            if (otherCity != null && !otherCity.isDead(world)) {
+            if (otherCity != null && otherCity.areChunksLoaded() && !otherCity.isDead(world)) {
                 BlockPos end = isValidBeam(world, center, facing, 1, 40);
                 if (end != null) {
                     BlockPos start = isValidBeam(world, center, facing, 100, 120);
@@ -445,7 +493,7 @@ public class CityAI implements ICityAI {
         return positions.get(random.nextInt(positions.size()));
     }
 
-    private void handleAlert(World world) {
+    private void handleAlert(Level world) {
         // Handle alert mode
         if (onAlert > 0) {
             onAlert--;
@@ -454,7 +502,7 @@ public class CityAI implements ICityAI {
         if (onAlert > 0) {
             // Turn on forcefields if present
             for (BlockPos pos : forceFields) {
-                TileEntity te = world.getTileEntity(pos);
+                BlockEntity te = world.getBlockEntity(pos);
                 if (te instanceof IForceFieldTile) {
                     GenericTileEntity forcefield = (GenericTileEntity) te;
                     if (forcefield.getRSMode() != RedstoneMode.REDSTONE_IGNORED) {
@@ -468,7 +516,7 @@ public class CityAI implements ICityAI {
             watchingPlayers.clear();
             // Turn off forcefields if present
             for (BlockPos pos : forceFields) {
-                TileEntity te = world.getTileEntity(pos);
+                BlockEntity te = world.getBlockEntity(pos);
                 if (te instanceof IForceFieldTile) {
                     GenericTileEntity forcefield = (GenericTileEntity) te;
                     if (forcefield.getRSMode() != RedstoneMode.REDSTONE_ONREQUIRED) {
@@ -480,14 +528,14 @@ public class CityAI implements ICityAI {
     }
 
     @Nullable
-    private BlockPos findRandomPlayer(World world) {
+    private BlockPos findRandomPlayer(Level world) {
         List<BlockPos> players = new ArrayList<>();
         for (Map.Entry<UUID, BlockPos> entry : watchingPlayers.entrySet()) {
             UUID uuid = entry.getKey();
-            PlayerEntity player = world.getServer().getPlayerList().getPlayerByUUID(uuid);
-            if (player != null && player.getEntityWorld().getDimension().getType() == world.getDimension().getType()) {
+            Player player = world.getServer().getPlayerList().getPlayer(uuid);
+            if (player != null && player.level().dimension().equals(world.dimension())) {
                 BlockPos pos = entry.getValue();    // Use the last known position
-                double sq = pos.distanceSq(new BlockPos(center.x * 16 + 8, 50, center.z * 16 + 8));
+                double sq = pos.distSqr(new BlockPos(center.x * 16 + 8, 50, center.z * 16 + 8));
                 if (sq < 80 * 80) {
                     players.add(pos);
                 }
@@ -499,7 +547,7 @@ public class CityAI implements ICityAI {
         return players.get(random.nextInt(players.size()));
     }
 
-    private void handleDrones(World world, EntityInfo info) {
+    private void handleDrones(Level world, EntityInfo info) {
         if (onAlert > 0) {
             droneTicker--;
             if (droneTicker > 0) {
@@ -507,10 +555,8 @@ public class CityAI implements ICityAI {
             }
             droneTicker = 10;
 
-            City city = CityTools.getCity(center);
             CityPlan plan = city.getPlan();
-            IArienteChunkGenerator generator = (IArienteChunkGenerator) (((ServerWorld) world).getChunkProvider().getChunkGenerator());
-            int droneHeight = plan.getDroneHeightOffset() + CityTools.getLowestHeight(city, generator, center.x, center.z);
+            int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x, center.z);
 
             int desiredMinimumCount = 0;
             int newWaveMaximum = 0;
@@ -533,7 +579,7 @@ public class CityAI implements ICityAI {
 
             if (cnt < newWaveMaximum && random.nextFloat() < 0.1f) {
                 // Randomly spawn a new wave of drones
-                System.out.println("WAVE");
+
                 while (cnt < newWaveMaximum) {
                     spawnDrone(world, droneHeight);
                     cnt++;
@@ -542,7 +588,7 @@ public class CityAI implements ICityAI {
         }
     }
 
-    private void handleSoldiers(World world, EntityInfo info) {
+    private void handleSoldiers(Level world, EntityInfo info) {
         if (onAlert > 0) {
             soldierTicker--;
             if (soldierTicker > 0) {
@@ -550,7 +596,6 @@ public class CityAI implements ICityAI {
             }
             soldierTicker = 10;
 
-            City city = CityTools.getCity(center);
             CityPlan plan = city.getPlan();
 
             int desiredMinimumCount = 0;
@@ -578,7 +623,7 @@ public class CityAI implements ICityAI {
 
             if (cnt < newWaveMaximum && random.nextFloat() < 0.2f) {
                 // Randomly spawn a new wave of drones
-                System.out.println("SOLDIER WAVE");
+
                 while (cnt < newWaveMaximum) {
                     spawnSoldier(world);
                     cnt++;
@@ -587,13 +632,12 @@ public class CityAI implements ICityAI {
         }
     }
 
-    private void spawnSoldier(World world) {
+    private void spawnSoldier(Level world) {
         if (soldierPositions.isEmpty()) {
             return;
         }
 
         // Too few soldiers. Spawn a new one
-        City city = CityTools.getCity(center);
         CityPlan plan = city.getPlan();
 
         BlockPos pos;
@@ -601,7 +645,7 @@ public class CityAI implements ICityAI {
         int avoidNearby = 3;
         do {
             pos = new ArrayList<>(soldierPositions.keySet()).get(random.nextInt(soldierPositions.size()));
-            PlayerEntity closestPlayer = world.getClosestPlayer(pos.getX(), pos.getY(), pos.getZ(), 10, false);
+            Player closestPlayer = world.getNearestPlayer(pos.getX(), pos.getY(), pos.getZ(), 10, false);
             if (closestPlayer == null) {
                 avoidNearby = 0;
             } else {
@@ -609,24 +653,23 @@ public class CityAI implements ICityAI {
             }
         } while (avoidNearby > 0);
 
-        System.out.println("CityAI.spawnSoldier at " + pos);
 
         Direction facing = soldierPositions.get(pos);
-        LivingEntity entity = ModSetup.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER,
+        LivingEntity entity = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER,
                 random.nextDouble() < plan.getMasterChance());
-        entity.setHeldItem(Hand.MAIN_HAND, new ItemStack(ArienteStuff.energySabre));    // @todo need a lasergun
+        entity.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));    // @todo need a lasergun
 
         if (random.nextFloat() < plan.getPowerArmorChance()) {
-            entity.setItemStackToSlot(EquipmentSlotType.HEAD, createNiceHelmet());
-            entity.setItemStackToSlot(EquipmentSlotType.FEET, createNiceBoots());
-            entity.setItemStackToSlot(EquipmentSlotType.CHEST, createNiceChestplate(plan));
-            entity.setItemStackToSlot(EquipmentSlotType.LEGS, createNiceLegs());
+            entity.setItemSlot(EquipmentSlot.HEAD, createNiceHelmet());
+            entity.setItemSlot(EquipmentSlot.FEET, createNiceBoots());
+            entity.setItemSlot(EquipmentSlot.CHEST, createNiceChestplate(plan));
+            entity.setItemSlot(EquipmentSlot.LEGS, createNiceLegs());
         }
     }
 
     private ItemStack createNiceHelmet() {
-        ItemStack helmet = new ItemStack(ArienteStuff.powerSuitHelmet);
-        CompoundNBT compound = new CompoundNBT();
+        ItemStack helmet = new ItemStack(POWERSUIT_HEAD.get());
+        CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
         compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
         helmet.setTag(compound);
@@ -635,8 +678,8 @@ public class CityAI implements ICityAI {
 
 
     private ItemStack createNiceBoots() {
-        ItemStack helmet = new ItemStack(ArienteStuff.powerSuitBoots);
-        CompoundNBT compound = new CompoundNBT();
+        ItemStack helmet = new ItemStack(POWERSUIT_FEET.get());
+        CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
         compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
         helmet.setTag(compound);
@@ -645,8 +688,8 @@ public class CityAI implements ICityAI {
 
 
     private ItemStack createNiceChestplate(CityPlan plan) {
-        ItemStack helmet = new ItemStack(ArienteStuff.powerSuitChest);
-        CompoundNBT compound = new CompoundNBT();
+        ItemStack helmet = new ItemStack(POWERSUIT_CHEST.get());
+        CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
         compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
         if (random.nextFloat() < plan.getForcefieldChance()) {
@@ -660,8 +703,8 @@ public class CityAI implements ICityAI {
 
 
     private ItemStack createNiceLegs() {
-        ItemStack helmet = new ItemStack(ArienteStuff.powerSuitLegs);
-        CompoundNBT compound = new CompoundNBT();
+        ItemStack helmet = new ItemStack(POWERSUIT_LEGS.get());
+        CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
         compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
         helmet.setTag(compound);
@@ -669,17 +712,17 @@ public class CityAI implements ICityAI {
     }
 
 
-    private void spawnDrone(World world, int height) {
+    private void spawnDrone(Level world, int height) {
         // Too few drones. Spawn a new one
-        LivingEntity entity = ModSetup.arienteSystem.createDrone(world, center);
+        LivingEntity entity = Ariente.arienteSystem.createDrone(world, center);
         int cx = center.x * 16 + 8;
         int cy = height;
         int cz = center.z * 16 + 8;
-        entity.setPosition(cx, cy, cz);
-        world.addEntity(entity);
+        entity.setPos(cx, cy, cz);
+        world.addFreshEntity(entity);
     }
 
-    private void handleSentinels(World world, EntityInfo info) {
+    private void handleSentinels(Level world, EntityInfo info) {
         // Sentinel movement
         sentinelMovementTicks--;
         if (sentinelMovementTicks <= 0) {
@@ -693,10 +736,8 @@ public class CityAI implements ICityAI {
         // Small chance to revive sentinels if they are missing. Only revive if all are missing
         if (random.nextFloat() < .1f) {
             if (info.getCountSentinel(world) == 0) {
-                City city = CityTools.getCity(center);
                 CityPlan plan = city.getPlan();
-                IArienteChunkGenerator generator = (IArienteChunkGenerator) (((ServerWorld) world).getChunkProvider().getChunkGenerator());
-                int droneHeight = plan.getDroneHeightOffset() + CityTools.getLowestHeight(city, generator, center.x, center.z);
+                int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x, center.z);
                 for (int i = 0; i < settings.getNumSentinels(); i++) {
 //                    System.out.println("revive: i = " + i);
                     createSentinel(world, i, droneHeight);
@@ -705,16 +746,16 @@ public class CityAI implements ICityAI {
         }
     }
 
-    private void handlePower(World world) {
+    private void handlePower(Level world) {
         // Handle power
         for (BlockPos pos : negariteGenerators) {
-            TileEntity te = world.getTileEntity(pos);
+            BlockEntity te = world.getBlockEntity(pos);
             if (te instanceof IGenerator) {
                 ((IGenerator) te).feedDust(1);
             }
         }
         for (BlockPos pos : posiriteGenerators) {
-            TileEntity te = world.getTileEntity(pos);
+            BlockEntity te = world.getBlockEntity(pos);
             if (te instanceof IGenerator) {
                 ((IGenerator) te).feedDust(1);
             }
@@ -722,7 +763,7 @@ public class CityAI implements ICityAI {
     }
 
     @Override
-    public BlockPos requestNewSoldierPosition(World world, LivingEntity currentTarget) {
+    public BlockPos requestNewSoldierPosition(Level world, LivingEntity currentTarget) {
         // Sometimes we let a solider pick a different location independent of target
         if (random.nextFloat() > .6) {
             return null;
@@ -730,7 +771,7 @@ public class CityAI implements ICityAI {
 
         BlockPos target;
         if (currentTarget != null) {
-            target = currentTarget.getPosition();
+            target = currentTarget.blockPosition();
         } else {
             target = findRandomPlayer(world);
         }
@@ -745,10 +786,10 @@ public class CityAI implements ICityAI {
     }
 
     @Override
-    public BlockPos requestNewDronePosition(World world, LivingEntity currentTarget) {
+    public BlockPos requestNewDronePosition(Level world, LivingEntity currentTarget) {
         BlockPos target;
         if (currentTarget != null) {
-            target = currentTarget.getPosition();
+            target = currentTarget.blockPosition();
         } else {
             target = findRandomPlayer(world);
         }
@@ -763,15 +804,13 @@ public class CityAI implements ICityAI {
     }
 
     @Override
-    public BlockPos requestNewSentinelPosition(World world, int sentinelId) {
-        if (aiCores.isEmpty()) {
+    public BlockPos requestNewSentinelPosition(Level world, int sentinelId) {
+        if (aiCores.isEmpty() || settings == null || settings.getNumSentinels() == 0) {
             return null;
         }
 
-        City city = CityTools.getCity(center);
         CityPlan plan = city.getPlan();
-        IArienteChunkGenerator generator = (IArienteChunkGenerator) (((ServerWorld) world).getChunkProvider().getChunkGenerator());
-        int droneHeight = plan.getSentinelRelHeight() + CityTools.getLowestHeight(city, generator, center.x, center.z);
+        int droneHeight = plan.getSentinelRelHeight() + getLowestHeight(center.x, center.z);
 
         int angleI = (sentinelAngleOffset + sentinelId * 12 / settings.getNumSentinels()) % 12;
         int cx = center.x * 16 + 8;
@@ -785,18 +824,18 @@ public class CityAI implements ICityAI {
         return new BlockPos(cx, cy, cz);
     }
 
-    public void pacify(World world) {
+    public void pacify(Level world) {
         setAlarmType(world, AlarmType.SAFE);
         onAlert = 0;
         highAlert = false;
     }
 
     @Override
-    public void playerSpotted(PlayerEntity player) {
+    public void playerSpotted(Player player) {
         // The scramble module helps protect against player allertness
-        ItemStack helmet = player.getItemStackFromSlot(EquipmentSlotType.HEAD);
-        if (helmet.getItem() == ArienteStuff.powerSuitHelmet) {
-            if (ModSetup.arienteSystem.hasWorkingUpgrade(helmet, ArmorUpgradeType.SCRAMBLE)) {
+        ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
+        if (helmet.getItem() == POWERSUIT_HEAD.get()) {
+            if (Ariente.arienteSystem.hasWorkingUpgrade(helmet, ArmorUpgradeType.SCRAMBLE)) {
                 return;
             }
         }
@@ -805,38 +844,36 @@ public class CityAI implements ICityAI {
     }
 
     @Override
-    public void alertCity(PlayerEntity player) {
-        if (findFirstValidAICore(player.getEntityWorld()) == null) {
+    public void alertCity(Player player) {
+        if (findFirstValidAICore(player.level()) == null) {
             // City is dead
             return;
         }
 
         if (onAlert <= 0) {
             // Set alarm type in case it is not already set
-            setAlarmType(player.world, AlarmType.ALERT);
+            setAlarmType(player.level(), AlarmType.ALERT);
         }
         onAlert = AIConfiguration.ALERT_TIME.get();
-        watchingPlayers.put(player.getUniqueID(), player.getPosition());    // Register the last known position
+        watchingPlayers.put(player.getUUID(), player.blockPosition());    // Register the last known position
     }
 
-    public void highAlertMode(PlayerEntity player) {
+    public void highAlertMode(Player player) {
         alertCity(player);
         highAlert = true;
     }
 
-    private void findEquipment(World world, boolean firstTime) {
+    private void findEquipment(Level world, boolean firstTime) {
         if (foundEquipment) {
             return;
         }
 
         if (firstTime) {
-            keyId = ModSetup.arienteSystem.getSecuritySystem(world).generateKeyId(world);
-            storageKeyId = ModSetup.arienteSystem.getSecuritySystem(world).generateKeyId(world);
-            forcefieldId = ModSetup.arienteSystem.getSecuritySystem(world).generateKeyId(world);
+            keyId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
+            storageKeyId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
+            forcefieldId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
         }
 
-        City city = CityTools.getCity(center);
-        assert city != null;
         CityPlan plan = city.getPlan();
         List<String> pattern = plan.getPlan();
         int dimX = pattern.get(0).length();
@@ -846,32 +883,28 @@ public class CityAI implements ICityAI {
 
         Map<Integer, Integer> desiredToReal = new HashMap<>();
 
-        for (int dx = cx - dimX / 2 - 1; dx <= cx + dimX / 2 + 1; dx++) {
-            for (int dz = cz - dimZ / 2 - 1; dz <= cz + dimZ / 2 + 1; dz++) {
-                int starty;
-                if (plan.isUnderground()) {
-                    starty = 1;
-                } else {
-                    // @todo is this a safe minimum height to assume?
-                    starty = 30;
-                }
+        for (int dx = cx - dimX / 2; dx < cx - dimX / 2 + dimX; dx++) {
+            for (int dz = cz - dimZ / 2; dz < cz - dimZ / 2 + dimZ; dz++) {
+                int starty = getLowestHeight(dx, dz);
+                int top = starty + CityTools.getBuildingParts(level.getSeed(), city, dx, dz).stream()
+                        .mapToInt(BuildingPart::getSliceCount).sum();
                 for (int x = dx * 16; x < dx * 16 + 16; x++) {
                     for (int z = dz * 16; z < dz * 16 + 16; z++) {
-                        for (int y = starty; y < starty + 100; y++) {
+                        for (int y = starty; y < top; y++) {
                             BlockPos p = new BlockPos(x, y, z);
                             BlockState state = world.getBlockState(p);
                             Block block = state.getBlock();
                             if (block == Registration.GUARD_DUMMY.get()) {
-                                guardPositions.put(p, state.get(BlockStateProperties.HORIZONTAL_FACING));
-                                world.setBlockState(p, Blocks.AIR.getDefaultState());
+                                guardPositions.put(p, state.getValue(BlockStateProperties.HORIZONTAL_FACING));
+                                world.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
                             } else if (block == Registration.SOLDIER_DUMMY.get()) {
-                                soldierPositions.put(p, state.get(BlockStateProperties.HORIZONTAL_FACING));
-                                world.setBlockState(p, Blocks.AIR.getDefaultState());
+                                soldierPositions.put(p, state.getValue(BlockStateProperties.HORIZONTAL_FACING));
+                                world.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
                             } else if (block == Registration.MASTER_SOLDIER_DUMMY.get()) {
-                                masterSoldierPositions.put(p, state.get(BlockStateProperties.HORIZONTAL_FACING));
-                                world.setBlockState(p, Blocks.AIR.getDefaultState());
+                                masterSoldierPositions.put(p, state.getValue(BlockStateProperties.HORIZONTAL_FACING));
+                                world.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
                             } else {
-                                TileEntity te = world.getTileEntity(p);
+                                BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
                                 if (te instanceof ICityEquipment) {
                                     ((ICityEquipment) te).setup(this, world, firstTime);
                                 }
@@ -880,10 +913,9 @@ public class CityAI implements ICityAI {
                                     int desired = ((ISignalChannel) te).getDesiredChannel();
                                     if (!desiredToReal.containsKey(desired)) {
                                         // New channel is needed
-                                        IRedstoneChannels redstoneChannels = ModSetup.arienteSystem.getRedstoneChannels(world);
+                                        IRedstoneChannels redstoneChannels = Ariente.arienteSystem.getRedstoneChannels(world);
                                         int newChannel = redstoneChannels.newChannel();
                                         desiredToReal.put(desired, newChannel);
-                                        System.out.println("Mapping channel " + desired + " to " + newChannel);
                                     }
                                     desired = desiredToReal.get(desired);
                                     ((ISignalChannel) te).setChannel(desired);
@@ -891,6 +923,7 @@ public class CityAI implements ICityAI {
 
                                 if (te instanceof IAICoreTile) {
                                     aiCores.add(p);
+                                    ((IAICoreTile) te).setCityName(city.getName());
                                 } else if (te instanceof IForceFieldTile) {
                                     // We already have this as equipment but we need it separate
                                     ((IForceFieldTile) te).setCityCenter(center);
@@ -931,13 +964,11 @@ public class CityAI implements ICityAI {
 
     @Override
     public String getCityName() {
-        City city = CityTools.getCity(getCenter());
         return city.getName();
     }
 
     @Override
     public void fillLoot(IStorageTile te) {
-        City city = CityTools.getCity(getCenter());
         CityPlan plan = city.getPlan();
         fillLoot(plan, te);
     }
@@ -960,10 +991,7 @@ public class CityAI implements ICityAI {
                 te.setLoot(id, i, l.isBlueprint(), amount, l.getMeta());
             }
         }
-        // @dirty?
-//        ((GenericTileEntity) te).markDirtyClient();
-        // @todo 1.15
-        ((GenericTileEntity) te).markDirty();
+        ((GenericTileEntity) te).setChanged();
     }
 
     private static int getMinMax(Random rnd, int min, int max) {
@@ -973,18 +1001,17 @@ public class CityAI implements ICityAI {
         return min + rnd.nextInt(max - min);
     }
 
-    private void createSettings(World world) {
-        long seed = WorldTools.getOverworld(world).getSeed();
+    private void createSettings(Level world) {
+        long seed = level.getSeed();
         Random rnd = new Random(seed + center.x * 567000003533L + center.z * 234516783139L);
         rnd.nextFloat();
         rnd.nextFloat();
-        City city = CityTools.getCity(center);
         CityPlan plan = city.getPlan();
         settings = new CityAISettings();
         settings.setNumSentinels(getMinMax(rnd, plan.getMinSentinels(), plan.getMaxSentinels()));
     }
 
-    private void initialize(World world) {
+    private void initialize(Level world) {
         createSettings(world);
         findEquipment(world, true);
         initCityEquipment(world);
@@ -993,101 +1020,99 @@ public class CityAI implements ICityAI {
         initMasterSoldiers(world);
     }
 
-    private void initGuards(World world) {
+    private void initGuards(Level world) {
         for (Map.Entry<BlockPos, Direction> entry : guardPositions.entrySet()) {
             BlockPos pos = entry.getKey();
             Direction facing = entry.getValue();
-            LivingEntity soldier = ModSetup.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_GUARD, false);
-            soldier.setHeldItem(Hand.MAIN_HAND, new ItemStack(ArienteStuff.energySabre));
+            LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_GUARD, false);
+            soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));
         }
     }
 
-    private void initMasterSoldiers(World world) {
+    private void initMasterSoldiers(Level world) {
         for (Map.Entry<BlockPos, Direction> entry : masterSoldierPositions.entrySet()) {
             BlockPos pos = entry.getKey();
             Direction facing = entry.getValue();
-            LivingEntity soldier = ModSetup.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER, true);
-            soldier.setHeldItem(Hand.MAIN_HAND, new ItemStack(ArienteStuff.energySabre));
+            LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER, true);
+            soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));
         }
     }
 
-    private void initCityEquipment(World world) {
+    private void initCityEquipment(Level world) {
 
         setAlarmType(world, AlarmType.SAFE);
 
         for (BlockPos p : aiCores) {
-            TileEntity te = world.getTileEntity(p);
+            BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
             if (te instanceof IAICoreTile) {
-                City city = CityTools.getCity(center);
                 ((IAICoreTile) te).setCityName(city.getName());
             }
         }
 
         for (BlockPos p : negariteGenerators) {
-            TileEntity te = world.getTileEntity(p);
+            BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
             if (te instanceof GenericTileEntity) {
                 GenericTileEntity generator = (GenericTileEntity) te;
-                ModSetup.arienteSystem.fixNetworks(world, p);
+                Ariente.arienteSystem.fixNetworks(world, p);
                 generator.setRSMode(RedstoneMode.REDSTONE_IGNORED);
             }
         }
         for (BlockPos p : posiriteGenerators) {
-            TileEntity te = world.getTileEntity(p);
+            BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
             if (te instanceof GenericTileEntity) {
                 posiriteGenerators.add(p);
                 GenericTileEntity generator = (GenericTileEntity) te;
-                ModSetup.arienteSystem.fixNetworks(world, p);
+                Ariente.arienteSystem.fixNetworks(world, p);
                 generator.setRSMode(RedstoneMode.REDSTONE_IGNORED);
             }
         }
     }
 
-    public void setAlarmType(World world, AlarmType type) {
+    public void setAlarmType(Level world, AlarmType type) {
         for (BlockPos p : alarms) {
-            TileEntity te = world.getTileEntity(p);
+            BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
             if (te instanceof IAlarmTile) {
                 ((IAlarmTile) te).setAlarmType(type);
             }
         }
     }
 
-    private void initSentinels(World world) {
-        City city = CityTools.getCity(center);
+    private void initSentinels(Level world) {
         CityPlan plan = city.getPlan();
-        IArienteChunkGenerator generator = (IArienteChunkGenerator) (((ServerWorld) world).getChunkProvider().getChunkGenerator());
-        int droneHeight = plan.getDroneHeightOffset() + CityTools.getLowestHeight(city, generator, center.x, center.z);
+        int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x, center.z);
 
         int numSentinels = settings.getNumSentinels();
         for (int i = 0; i < numSentinels; i++) {
-            System.out.println("initSentinels: i = " + i);
+
             createSentinel(world, i, droneHeight);
         }
     }
 
-    private void createSentinel(World world, int i, int height) {
-        LivingEntity entity = ModSetup.arienteSystem.createSentinel(world, i, center);
+    private void createSentinel(Level world, int i, int height) {
+        LivingEntity entity = Ariente.arienteSystem.createSentinel(world, i, center);
         int cx = center.x * 16 + 8;
         int cy = height;
         int cz = center.z * 16 + 8;
-        entity.setPosition(cx, cy, cz);
-        world.addEntity(entity);
+        entity.setPos(cx, cy, cz);
+        world.addFreshEntity(entity);
     }
 
-    public void enableEditMode(World world) {
+    public void enableEditMode(Level world) {
         for (Map.Entry<BlockPos, Direction> entry : guardPositions.entrySet()) {
-            world.setBlockState(entry.getKey(), Registration.GUARD_DUMMY.get().getDefaultState().with(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
+            world.setBlockAndUpdate(entry.getKey(), Registration.GUARD_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
         }
         for (Map.Entry<BlockPos, Direction> entry : soldierPositions.entrySet()) {
-            world.setBlockState(entry.getKey(), Registration.SOLDIER_DUMMY.get().getDefaultState().with(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
+            world.setBlockAndUpdate(entry.getKey(), Registration.SOLDIER_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
         }
         for (Map.Entry<BlockPos, Direction> entry : masterSoldierPositions.entrySet()) {
-            world.setBlockState(entry.getKey(), Registration.MASTER_SOLDIER_DUMMY.get().getDefaultState().with(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
+            world.setBlockAndUpdate(entry.getKey(), Registration.MASTER_SOLDIER_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
         }
     }
 
-    public void readFromNBT(CompoundNBT nbt) {
+    public void readFromNBT(CompoundTag nbt) {
         initialized = nbt.getBoolean("initialized");
         settings = null;
+        readSetFromNBT(nbt.getList("cores", Tag.TAG_COMPOUND), aiCores);
         if (initialized) {
             if (nbt.contains("settings")) {
                 settings = new CityAISettings();
@@ -1098,33 +1123,33 @@ public class CityAI implements ICityAI {
             forcefieldId = nbt.getString("forcefieldId");
             watchingPlayers.clear();
             if (nbt.contains("players")) {
-                ListNBT list = nbt.getList("players", Constants.NBT.TAG_COMPOUND);
+                ListTag list = nbt.getList("players", Tag.TAG_COMPOUND);
                 for (int i = 0; i < list.size(); i++) {
-                    CompoundNBT tc = list.getCompound(i);
-                    UUID uuid = tc.getUniqueId("id");
-                    BlockPos pos = NBTUtil.readBlockPos(tc);
+                    CompoundTag tc = list.getCompound(i);
+                    UUID uuid = tc.getUUID("id");
+                    BlockPos pos = NbtUtils.readBlockPos(tc);
                     watchingPlayers.put(uuid, pos);
                 }
 
             }
             sentinelMovementTicks = nbt.getInt("sentinelMovementTicks");
             sentinelAngleOffset = nbt.getInt("sentinelAngleOffset");
+            levitatorTicker = nbt.getInt("levitatorTicker");
             onAlert = nbt.getInt("onAlert");
             highAlert = nbt.getBoolean("highAlert");
             droneTicker = nbt.getInt("droneTicker");
-            readMapFromNBT(nbt.getList("guards", Constants.NBT.TAG_COMPOUND), guardPositions);
-            readMapFromNBT(nbt.getList("soldierPositions", Constants.NBT.TAG_COMPOUND), soldierPositions);
-            readMapFromNBT(nbt.getList("masterSoldierPositions", Constants.NBT.TAG_COMPOUND), masterSoldierPositions);
-            levitator = nbt.getInt("levitator");
-            levitatorTicker = nbt.getInt("levitatorTicker");
+            readMapFromNBT(nbt.getList("guards", Tag.TAG_COMPOUND), guardPositions);
+            readMapFromNBT(nbt.getList("soldierPositions", Tag.TAG_COMPOUND), soldierPositions);
+            readMapFromNBT(nbt.getList("masterSoldierPositions", Tag.TAG_COMPOUND), masterSoldierPositions);
         }
     }
 
-    public void writeToNBT(CompoundNBT compound) {
+    public void writeToNBT(CompoundTag compound) {
         compound.putBoolean("initialized", initialized);
+        compound.put("cores", writeSetToNBT(aiCores));
         if (initialized) {
             if (settings != null) {
-                CompoundNBT tc = new CompoundNBT();
+                CompoundTag tc = new CompoundTag();
                 settings.writeToNBT(tc);
                 compound.put("settings", tc);
             }
@@ -1133,58 +1158,57 @@ public class CityAI implements ICityAI {
             compound.putString("storageKeyId", storageKeyId);
             compound.putString("forcefieldId", forcefieldId);
             if (!watchingPlayers.isEmpty()) {
-                ListNBT list = new ListNBT();
+                ListTag list = new ListTag();
                 for (Map.Entry<UUID, BlockPos> entry : watchingPlayers.entrySet()) {
-                    CompoundNBT tc = NBTUtil.writeBlockPos(entry.getValue());
-                    tc.putUniqueId("id", entry.getKey());
+                    CompoundTag tc = NbtUtils.writeBlockPos(entry.getValue());
+                    tc.putUUID("id", entry.getKey());
                     list.add(tc);
                 }
                 compound.put("players", list);
             }
             compound.putInt("sentinelMovementTicks", sentinelMovementTicks);
             compound.putInt("sentinelAngleOffset", sentinelAngleOffset);
+            compound.putInt("levitatorTicker", levitatorTicker);
             compound.putInt("onAlert", onAlert);
             compound.putBoolean("highAlert", highAlert);
             compound.putInt("droneTicker", droneTicker);
             compound.put("guards", writeMapToNBT(guardPositions));
             compound.put("soldierPositions", writeMapToNBT(soldierPositions));
             compound.put("masterSoldierPositions", writeMapToNBT(masterSoldierPositions));
-            compound.putInt("levitator", levitator);
-            compound.putInt("levitatorTicker", levitatorTicker);
         }
     }
 
-    private ListNBT writeSetToNBT(Set<BlockPos> set) {
-        ListNBT list = new ListNBT();
+    private ListTag writeSetToNBT(Set<BlockPos> set) {
+        ListTag list = new ListTag();
         for (BlockPos pos : set) {
-            list.add(NBTUtil.writeBlockPos(pos));
+            list.add(NbtUtils.writeBlockPos(pos));
         }
         return list;
     }
 
-    private void readSetFromNBT(ListNBT list, Set<BlockPos> set) {
+    private void readSetFromNBT(ListTag list, Set<BlockPos> set) {
         set.clear();
         for (int i = 0; i < list.size(); i++) {
-            BlockPos pos = NBTUtil.readBlockPos(list.getCompound(i));
+            BlockPos pos = NbtUtils.readBlockPos(list.getCompound(i));
             set.add(pos);
         }
     }
 
-    private ListNBT writeMapToNBT(Map<BlockPos, Direction> map) {
-        ListNBT list = new ListNBT();
+    private ListTag writeMapToNBT(Map<BlockPos, Direction> map) {
+        ListTag list = new ListTag();
         for (Map.Entry<BlockPos, Direction> entry : map.entrySet()) {
-            CompoundNBT tc = NBTUtil.writeBlockPos(entry.getKey());
+            CompoundTag tc = NbtUtils.writeBlockPos(entry.getKey());
             tc.putInt("facing", entry.getValue().ordinal());
             list.add(tc);
         }
         return list;
     }
 
-    private void readMapFromNBT(ListNBT list, Map<BlockPos, Direction> map) {
+    private void readMapFromNBT(ListTag list, Map<BlockPos, Direction> map) {
         map.clear();
         for (int i = 0; i < list.size(); i++) {
-            CompoundNBT tc = list.getCompound(i);
-            BlockPos pos = NBTUtil.readBlockPos(tc);
+            CompoundTag tc = list.getCompound(i);
+            BlockPos pos = NbtUtils.readBlockPos(tc);
             Direction facing = OrientationTools.DIRECTION_VALUES[tc.getInt("facing")];
             map.put(pos, facing);
         }

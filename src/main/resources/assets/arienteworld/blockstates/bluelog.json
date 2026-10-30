@@ -1,19 +1,7 @@
 {
-  "forge_marker": 1,
-  "defaults": {
-    "model": "cube",
-    "textures": {
-      "particle": "arienteworld:blocks/plants/bluelog",
-      "down": "arienteworld:blocks/plants/bluelog_top",
-      "up": "arienteworld:blocks/plants/bluelog_top",
-      "north": "arienteworld:blocks/plants/bluelog",
-      "east": "arienteworld:blocks/plants/bluelog",
-      "south": "arienteworld:blocks/plants/bluelog",
-      "west": "arienteworld:blocks/plants/bluelog"
-    }
-  },
   "variants": {
-    "normal": [{}],
-    "inventory": [{}]
+    "": {
+      "model": "arienteworld:block/bluelog"
+    }
   }
 }

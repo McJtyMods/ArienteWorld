@@ -1,31 +1,28 @@
 package mcjty.arienteworld.oregen;
 
 import mcjty.ariente.api.IWarper;
-import mcjty.ariente.api.MarbleColor;
-import mcjty.ariente.api.TechType;
-import mcjty.arienteworld.ArienteStuff;
+import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.config.WorldgenConfiguration;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.state.properties.SlabType;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
-import net.minecraft.world.gen.ChunkGenerator;
-import net.minecraft.world.gen.GenerationSettings;
+import mcjty.arienteworld.dimension.CityFeature;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 
-import static mcjty.ariente.api.MarbleColor.COLOR;
-import static mcjty.ariente.api.TechType.TYPE;
+import static mcjty.ariente.setup.Registration.WARPER;
 
 public class OverworldDungeonGen {
 
-    private static String[][] dungeon = {
+    private static final String[][] DUNGEON = {
             {
                     "fffffffffffff",
                     "faaaaaaaaaaaf",
@@ -103,65 +100,52 @@ public class OverworldDungeonGen {
             }
     };
 
-    public static BlockPos getNearestDungeon(World world, BlockPos pos) {
-        ChunkPos cp = new ChunkPos(pos);
-        if (isValidDungeonChunk(world, cp.x, cp.z)) {
-            return getDungeonPos(world, cp.x, cp.z);
+    @Nullable
+    public static BlockPos getNearestDungeon(ServerLevel world, BlockPos origin) {
+        if (!world.dimension().equals(Level.OVERWORLD)) {
+            return null;
         }
-        for (int d = 1 ; d < 20 ; d++) {
-            for (int m = 0 ; m < d*2 ; m++) {
-                int cx = cp.x - d + m;
-                int cz = cp.z - d;
-                if (isValidDungeonChunk(world, cx, cz)) {
-                    return getDungeonPos(world, cx, cz);
+        ChunkPos center = new ChunkPos(origin);
+        List<BlockPos> candidates = new ArrayList<>();
+        // Retain the original nineteen-chunk search radius. Only seeded entrance
+        // candidates are loaded; ordinary chunks in the search area are not generated.
+        for (int x = center.x - 19; x <= center.x + 19; x++) {
+            for (int z = center.z - 19; z <= center.z + 19; z++) {
+                if (isDungeonChunk(world, x, z)) {
+                    candidates.add(getDungeonPos(world, x, z));
                 }
-                cx = cp.x + d;
-                cz = cp.z - d + m;
-                if (isValidDungeonChunk(world, cx, cz)) {
-                    return getDungeonPos(world, cx, cz);
-                }
-                cx = cp.x + d - m;
-                cz = cp.z + d;
-                if (isValidDungeonChunk(world, cx, cz)) {
-                    return getDungeonPos(world, cx, cz);
-                }
-                cx = cp.x - d;
-                cz = cp.z + d - m;
-                if (isValidDungeonChunk(world, cx, cz)) {
-                    return getDungeonPos(world, cx, cz);
+            }
+        }
+        candidates.sort(Comparator.comparingDouble(pos -> {
+            double x = pos.getX() - origin.getX();
+            double z = pos.getZ() - origin.getZ();
+            return x * x + z * z;
+        }));
+        for (BlockPos candidate : candidates) {
+            world.getChunkAt(candidate);
+            for (int x = -2; x <= 2; x++) {
+                for (int y = -2; y <= 2; y++) {
+                    for (int z = -2; z <= 2; z++) {
+                        BlockPos pos = candidate.offset(x, y, z);
+                        if (world.getBlockState(pos).is(WARPER.get())
+                                && world.getBlockEntity(pos) instanceof IWarper) {
+                            return pos;
+                        }
+                    }
                 }
             }
         }
         return null;
     }
 
-    public static BlockPos getDungeonPos(IWorld world, int cx, int cz) {
-        return new BlockPos(cx * 16 + 8, getDungeonHeight(world, cx, cz), cz * 16 + 8);
-    }
-
-
-    /// Return true if this chunk can contain a dungeon and the warper is still present
-    public static boolean isValidDungeonChunk(IWorld world, int chunkX, int chunkZ) {
-        if (isDungeonChunk(world, chunkX, chunkZ)) {
-            BlockPos pos = getDungeonPos(world, chunkX, chunkZ);
-            for (int dx = -2 ; dx <= 2 ; dx++) {
-                for (int dy = -2 ; dy <= 2 ; dy++) {
-                    for (int dz = -2 ; dz <= 2 ; dz++) {
-                        TileEntity te = world.getTileEntity(pos.add(dx, dy, dz));
-                        if (te instanceof IWarper) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+    public static BlockPos getDungeonPos(WorldGenLevel world, int x, int z) {
+        return new BlockPos(x * 16 + 8, getDungeonHeight(world, x, z), z * 16 + 8);
     }
 
     /// Return true if this chunk can contain a dungeon
-    public static boolean isDungeonChunk(IWorld world, int chunkX, int chunkZ) {
+    public static boolean isDungeonChunk(WorldGenLevel world, int chunkX, int chunkZ) {
         // Only for the overworld!
-        if (world.getDimension().getType() == DimensionType.OVERWORLD) {
+        if (world.getLevel().dimension().equals(Level.OVERWORLD)) {
             Random rnd = new Random(world.getSeed() + chunkX * 198491317L + chunkZ * 776531419L);
             rnd.nextFloat();
             return rnd.nextFloat() < WorldgenConfiguration.OVERWORLD_DUNGEON_CHANCE.get();
@@ -170,20 +154,20 @@ public class OverworldDungeonGen {
         }
     }
 
-    private static int getDungeonHeight(IWorld world, int chunkX, int chunkZ) {
+    private static int getDungeonHeight(WorldGenLevel world, int chunkX, int chunkZ) {
         Random rnd = new Random(world.getSeed() + chunkX * 23567813L + chunkZ * 923568029L);
         rnd.nextFloat();
         return rnd.nextInt(25) + 8;
     }
 
-    public static void generate(Random random, int chunkX, int chunkZ, IWorld world, ChunkGenerator<? extends GenerationSettings> generator) {
+    public static void generate(Random random, int chunkX, int chunkZ, WorldGenLevel world) {
         if (isDungeonChunk(world, chunkX, chunkZ)) {
             BlockPos dungeonPos = getDungeonPos(world, chunkX, chunkZ);
             int midx = dungeonPos.getX();
             int midy = dungeonPos.getY();
             int midz = dungeonPos.getZ();
-            for (int dy = 0; dy < dungeon.length; dy++) {
-                String[] level = dungeon[dy];
+            for (int dy = 0; dy < DUNGEON.length; dy++) {
+                String[] level = DUNGEON[dy];
                 for (int dx = 0; dx < level.length; dx++) {
                     String slice = level[dx];
                     for (int dz = 0; dz < slice.length(); dz++) {
@@ -191,32 +175,30 @@ public class OverworldDungeonGen {
                         BlockPos pos = new BlockPos(midx + dx - level.length / 2, midy + dy, midz + dz - slice.length() / 2);
                         switch (c) {
                             case ' ':
-                                world.setBlockState(pos, Blocks.AIR.getDefaultState(), 2);
+                                set(world, pos, Blocks.AIR.defaultBlockState(), 2);
                                 break;
                             case 'a':
                                 setBlock(random, world, pos, 15,
-                                        ArienteStuff.marble.getDefaultState().with(COLOR, MarbleColor.BLACK),
-                                        ArienteStuff.marble_bricks.getDefaultState().with(COLOR, MarbleColor.BLACK),
-                                        ArienteStuff.marble_smooth.getDefaultState().with(COLOR, MarbleColor.BLACK));
+                                        LegacyBlockStates.read("ariente:marble@color=black"),
+                                        LegacyBlockStates.read("ariente:marble_bricks@color=black"),
+                                        LegacyBlockStates.read("ariente:marble_smooth@color=black"));
                                 break;
                             case 'f':
-                                if (!world.isAirBlock(pos)) {
+                                if (!world.isEmptyBlock(pos)) {
                                     setBlock(random, world, pos, 15,
-                                            ArienteStuff.marble.getDefaultState().with(COLOR, MarbleColor.GRAY),
-                                            ArienteStuff.marble_bricks.getDefaultState().with(COLOR, MarbleColor.GRAY),
-                                            ArienteStuff.marble_smooth.getDefaultState().with(COLOR, MarbleColor.GRAY));
+                                            LegacyBlockStates.read("ariente:marble@color=gray"),
+                                            LegacyBlockStates.read("ariente:marble_bricks@color=gray"),
+                                            LegacyBlockStates.read("ariente:marble_smooth@color=gray"));
                                 }
                                 break;
                             case 's':
-                                world.setBlockState(pos, ArienteStuff.marbleSlabBlock.getDefaultState()
-                                        .with(SlabBlock.TYPE, SlabType.BOTTOM)
-                                        .with(COLOR, MarbleColor.BLACK), 2);
+                                set(world, pos, LegacyBlockStates.read("ariente:marble_slab@color=black,type=bottom"), 2);
                                 break;
                             case 'x':
-                                world.setBlockState(pos, ArienteStuff.blackmarble_techpat.getDefaultState().with(TYPE, TechType.RED_LINES_GLOW), 2);
+                                set(world, pos, LegacyBlockStates.read("ariente:blacktech@type=red_lines_glow"), 2);
                                 break;
                             case '#':
-                                world.setBlockState(pos, ArienteStuff.warperBlock.getDefaultState(), 2);
+                                set(world, pos, LegacyBlockStates.read("ariente:warper"), 2);
                                 break;
                         }
                     }
@@ -225,16 +207,23 @@ public class OverworldDungeonGen {
         }
     }
 
-    private static void setBlock(Random random, IWorld world, BlockPos pos, int chances, BlockState common, BlockState s1, BlockState s2) {
+    private static void set(WorldGenLevel world, BlockPos pos, BlockState state, int flags) {
+        world.setBlock(pos, state, flags);
+        if (state.hasBlockEntity() && !CityFeature.hasBlockEntity(state)) {
+            world.getChunk(pos).removeBlockEntity(pos);
+        }
+    }
+
+    private static void setBlock(Random random, WorldGenLevel world, BlockPos pos, int chances, BlockState common, BlockState s1, BlockState s2) {
         switch (random.nextInt(chances)) {
             case 0:
-                world.setBlockState(pos, s1, 2);
+                set(world, pos, s1, 2);
                 break;
             case 1:
-                world.setBlockState(pos, s2, 2);
+                set(world, pos, s2, 2);
                 break;
             default:
-                world.setBlockState(pos, common, 2);
+                set(world, pos, common, 2);
                 break;
         }
 

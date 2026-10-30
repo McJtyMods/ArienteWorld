@@ -1,18 +1,20 @@
 package mcjty.arienteworld.cities;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class AbstractAssetRegistry<T extends IAsset> {
 
-    private final Map<String, T> assets = new HashMap<>();
+    private final Map<String, T> assets = new LinkedHashMap<>();
     private final List<String> assetNames = new ArrayList<>();
 
     public void register(T building) {
+        if (!assets.containsKey(building.getName())) {
+            assetNames.add(building.getName());
+        }
         assets.put(building.getName(), building);
-        assetNames.add(building.getName());
     }
 
     public void put(String name, T newversion) {
@@ -44,5 +46,6 @@ public class AbstractAssetRegistry<T extends IAsset> {
 
     public void reset() {
         assets.clear();
+        assetNames.clear();
     }
 }

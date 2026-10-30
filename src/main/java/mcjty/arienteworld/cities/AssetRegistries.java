@@ -4,7 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import mcjty.arienteworld.ArienteWorld;
-import mcjty.arienteworld.varia.Counter;
+import mcjty.arienteworld.config.Config;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -32,36 +33,45 @@ public class AssetRegistries {
         }
     }
 
-    private static void add(Map<Character, Set<String>> map, Character character, String partName) {
-        if (!map.containsKey(character)) {
-            map.put(character, new HashSet<>());
-        }
-        map.get(character).add(partName);
-    }
-
-    private static void printChars(String prefix, Counter<Character> counter) {
-        List<Character> chars = new ArrayList<>(counter.getMap().keySet());
-        chars.sort(Character::compareTo);
-        String s = "";
-        for (Character character : chars) {
-            s += character;
-        }
-        ArienteWorld.setup.getLogger().info(prefix + s);
-    }
-
-    private static void printMap(Map<Character, Set<String>> usersPerCharacter, List<Map.Entry<Character, Integer>> map) {
-        for (Map.Entry<Character, Integer> entry : map) {
-            Set<String> users = usersPerCharacter.get(entry.getKey());
-            String s = "    " + entry.getKey() + ": " + entry.getValue() + " Uses";
-            if (users.size() < 10) {
-                s += ", Used by: ";
-                for (String user : users) {
-                    s += user + ",";
-                }
+    public static void initialize() {
+        reset();
+        for (String asset : Config.ASSETS) {
+            if (asset.startsWith("$")) {
+                load(FMLPaths.CONFIGDIR.get().resolve(asset.substring(1)).toFile());
             } else {
-                s += ", Used " + users.size() + " times";
+                InputStream stream = ArienteWorld.class.getResourceAsStream(asset);
+                if (stream == null) {
+                    throw new IllegalStateException("Missing city asset: " + asset);
+                }
+                load(stream, asset);
             }
-            ArienteWorld.setup.getLogger().info(s);
+        }
+        validate();
+    }
+
+    public static void validate() {
+        for (CityPlan plan : CITYPLANS.getIterable()) {
+            Palette palette = PALETTES.get(plan.getPalette());
+            if (palette == null) {
+                throw new IllegalStateException("Missing palette for " + plan.getName());
+            }
+            for (PartPalette parts : plan.getPartPalette().values()) {
+                for (String name : parts.getPalette()) {
+                    BuildingPart part = PARTS.get(name);
+                    if (part == null || part.getXSize() > 16 || part.getZSize() > 16) {
+                        throw new IllegalStateException("Invalid city part: " + name);
+                    }
+                    for (int y = 0; y < part.getSliceCount(); y++) {
+                        for (int z = 0; z < part.getZSize(); z++) {
+                            for (int x = 0; x < part.getXSize(); x++) {
+                                if (!palette.getPalette().containsKey(part.getC(x, y, z))) {
+                                    throw new IllegalStateException("Missing palette entry in " + name + " at " + x + "," + y + "," + z);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

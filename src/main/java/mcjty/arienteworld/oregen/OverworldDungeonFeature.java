@@ -1,25 +1,25 @@
 package mcjty.arienteworld.oregen;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.gen.ChunkGenerator;
-import net.minecraft.world.gen.GenerationSettings;
-import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.feature.NoFeatureConfig;
-
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
+import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import java.util.Random;
 
-public class OverworldDungeonFeature extends Feature<NoFeatureConfig> {
+public class OverworldDungeonFeature extends Feature<NoneFeatureConfiguration> {
 
     public OverworldDungeonFeature() {
-        super(NoFeatureConfig::deserialize);
+        super(NoneFeatureConfiguration.CODEC);
     }
 
     @Override
-    public boolean place(IWorld worldIn, ChunkGenerator<? extends GenerationSettings> generator, Random rand, BlockPos pos, NoFeatureConfig config) {
-        ChunkPos cp = new ChunkPos(pos);
-        OverworldDungeonGen.generate(rand, cp.x, cp.z, worldIn, generator);
+    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        ChunkPos chunk = new ChunkPos(context.origin());
+        if (!OverworldDungeonGen.isDungeonChunk(context.level(), chunk.x, chunk.z)) {
+            return false;
+        }
+        OverworldDungeonGen.generate(new Random(context.level().getSeed() + chunk.x * 341873128712L + chunk.z * 132897987541L),
+                chunk.x, chunk.z, context.level());
         return true;
     }
 }

@@ -1,13 +1,7 @@
 {
-    "forge_marker": 1,
-    "defaults": {
-        "model": "cross",
-        "textures": {
-            "cross": "arienteworld:blocks/plants/blackbush"
-        }
-    },
-    "variants": {
-        "normal": [{}],
-        "inventory": [{}]
+  "variants": {
+    "": {
+      "model": "arienteworld:block/black_bush"
     }
+  }
 }

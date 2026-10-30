@@ -1,0 +1,17 @@
+{
+  "type": "arienteworld:ariente",
+  "generator": {
+    "type": "arienteworld:ariente",
+    "biome_source": {
+      "type": "arienteworld:ariente",
+      "biomes": [
+        "arienteworld:ariente_plains",
+        "arienteworld:ariente_hills",
+        "arienteworld:ariente_ocean",
+        "arienteworld:ariente_forest",
+        "arienteworld:ariente_rough",
+        "arienteworld:ariente_city"
+      ]
+    }
+  }
+}

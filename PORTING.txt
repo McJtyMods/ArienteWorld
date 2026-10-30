@@ -1,0 +1,378 @@
+ARIENTEWORLD - FORGE 1.20.1 PORT HANDOFF
+Updated: 2026-10-30
+
+STATUS AND SCOPE
+================
+Buildable development port with active Ariente terrain, surface/underground
+cities, dungeon complexes, transport networks, vegetation, ores, natural spawns
+and portals. This is NOT a complete gameplay port or a release candidate. Exact
+original terrain/tree-shape parity, authoring tools and full gameplay validation
+remain unfinished. Builds and focused tests are not proof of full parity.
+
+This file owns world generation, authored structures, city AI/security/loot,
+spawning, entrance/arrival generation, world commands and editing tools.
+../Ariente/PORTING.txt owns equipment, machines, resource processing, recipe/JEI
+work, vehicle implementations, rendering, shared HoloGui and packaging details.
+Read BOTH files when continuing. In particular, ore PLACEMENT works here while
+ore DROPS/SMELTING and several armor effects are still missing in Ariente.
+
+WORKSPACE, HISTORY AND USER REQUIREMENTS
+=======================================
+- Work in /data/Projects/McTech20/ArienteWorld, inside the MultiWorkspace at
+  /data/Projects/McTech20. Local branch: 1.20; workspace branch: 1.20_tech.
+  Target: Minecraft 1.20.1 / Forge 47.1.3 / Java 17 / Gradle wrapper 7.6.4.
+- Read /data/Projects/MinecraftMods/AGENTS.md and applicable repository guidance.
+  Follow McJty style and McJtyLib/HoloGui conventions. Keep workspace builds/runs
+  on included local Ariente, ModHoloGui, McJtyLib and TheOneProbe sources.
+- Branch 1.20 starts from origin/1.16:
+    1895a0e6bc98c1e4a566302809158a9d178a8c8a
+  Original 1.12.2 master reference:
+    8718c37b64d082e3b65bc98cf889216e69c1fe50
+  The branch named 1.16 actually targeted 1.15.2 / Forge 31.2.36 and contained
+  disabled/unfinished worldgen migrations. No changes were made to 1.16.
+  Compare master using git show/diff; do not switch this dirty working tree.
+- src/legacy/java contains intermediate historical implementations OUTSIDE the
+  compiled source set. Many were replaced by active modern implementations.
+  Archived source is reference material, not proof that a feature is absent or
+  active. Check src/main/java and current data before making either claim.
+- The user creates NEW WORLDS for every check. Old-chunk migration and previous
+  development-save compatibility are not required. Fix generation directly;
+  ordinary save/load correctness for current worlds still matters.
+- Preserve original assets, themes and deterministic generation. References:
+  /data/Projects/MinecraftMods/ariente_screenshots, especially ariente_world2.jpg.
+  The latter shows sprawling landscape cities, not just standalone complexes.
+- Both mods and HoloGui already have hundreds of staged port changes. Preserve
+  all existing staging and unrelated workspace edits. Ariente/ARIENTE_GUIDE.md
+  and Ariente/todo.txt have additional unstaged user changes at this handoff.
+  Stage task changes only and do not create commits or reset/clean the checkout.
+- Earlier work prioritized buildability, restored generation and reported bugs.
+  A complete comparison against master and an end-to-end survival/multiplayer
+  audit have NOT been completed. Do not equate the restored worldgen checkpoint
+  with completion of Ariente's equipment and survival progression.
+
+IMPLEMENTED WORLD GENERATION AND BEHAVIOR
+========================================
+Dimension and terrain
+- Dimension ID: arienteworld:ariente. Data-driven dimension/biomes use the custom
+  ArienteChunkGenerator and ArienteBiomeSource, not the earlier temporary plain
+  terrain checkpoint. Do not replace this with generic terrain again.
+- Original marble terrain, floating-island noise, six biome profiles, seven
+  seeded biome zoom layers, grass/foliage colors and bubble/sphere/glow-bubble/
+  spike landmarks are active. Modern quart sampling replaces the old final
+  Voronoi layer; seed-for-seed identity with 1.12 has not been established.
+- Purple sky and fog, original sun/moon/stars and no vanilla clouds are restored
+  through ArienteDimensionEffects. Companion blocks, models, translations,
+  creative entries and basic loot are registered.
+
+Cities, districts, stations and structure assembly
+- All eight original complex plans generate: city0_0, city0_1, city1_1, city1_2,
+  city2_1, city3_1, city4_1 and city5_1. These include surface, underground and
+  floating complexes and the large nine-by-nine layout.
+- Separate sprawling landscape cities are also active: towers, parks, roads,
+  walls, covered underground streets and local levitator routes. These are the
+  large surface/underground districts requested from ariente_world2.jpg.
+- Complex placement retains the original sixteen-chunk grid and seeded plan/name
+  selection. CityFeature writes only its current chunk; nearby chunks are not
+  force-loaded just to generate a city. City/terrain queries are tested for
+  seed/order isolation and city generation in shuffled chunk order.
+- Parts retain authored cellars, stacks, variants, palettes, facades, spawners,
+  machine settings and security metadata. LegacyBlockStates translates original
+  IDs/colors/metadata/slabs. Blocks and machine settings rotate/mirror together.
+  Palette cells are TWO characters; do not parse authored rows as one-char cells.
+- Surface footprints have black-marble foundations and original distance/noise
+  terrain transitions. Underground complexes retain their original height;
+  landscape district level is Y=65. Intercity tunnels/station infrastructure is
+  around Y=30; station travel beams are at Y=32. Preserve these conventions.
+- Intercity routes, nine-chunk station layouts, elevator shafts and local beams
+  generate. City AI can dispatch soldier levitators along loaded routes. Route
+  queries do not load neighboring chunks. Vehicle mechanics live in Ariente.
+- PaneConnections restores authored glass/pane neighbors, including chunk-border
+  connections. Wide door markers use opening width before transforms. Single
+  ship markers infer paired jambs at panel height, correcting the floating ship
+  interior doors. RenderingRegressionTests covers the actual c4_1_e part under
+  all eight transforms; panel orientation follows the repaired marker.
+
+City AI, equipment and alerts
+- CityAISystem/CityAI persist and initialize machine/security data, storage loot,
+  key/channel IDs, generator fuel, guards/sentinels, alerts and reinforcement
+  waves. Initialization/ticking waits for the required footprint to be loaded;
+  standing near one partially loaded building need not initialize an entire city.
+- Sentinels detect visible survival players within roughly 50 blocks, report
+  sightings and refresh alerts. Creative/spectator players and a working Scramble
+  helmet upgrade are ignored. Combat drones/guards also report their targets.
+- Ship forcefields activate during alerts, not simply because a player is near
+  a peaceful ship. Generated-ship tests verify detection, obstruction/range,
+  city notification and powered shield activation through authored equipment.
+- Sentinels are ALERT-ONLY in original master. Combat drones do the shooting;
+  their ranged goal, laser renderer and collision fixes are in Ariente. Do not
+  turn sentinels into combat drones just to reproduce a mistaken recollection.
+- Existing city storage/security setup is active; this does not certify every
+  loot output, resource drop, crafting path or combat balance decision.
+
+Population and travel
+- Seven tree varieties use native configured/placed features with the original
+  materials, weighted selection and biome densities. Black bushes, dark grass
+  and small flowers are active. Tree algorithms adapt the original shapes; they
+  are not bit-for-bit copies of the old generators.
+- Trees require valid soil under every trunk root, including all four roots of
+  giant trees. They must not turn authored city floors into dirt.
+- Marble deposits and all nine ore types use the original vein ranges, attempts
+  and Y ranges. Ores run before city construction. Resource loot and processing
+  are separate Ariente tasks and remain incomplete.
+- City biomes use the original soldier/master weights and group sizes; other
+  biomes use overworld hostile creatures. Soldiers use hostile mob caps, normal
+  ground/darkness checks and weapon equipment. Long-running spawn balance is
+  not proven by checking spawn tables and a short generation fixture.
+- Underground Overworld entrance rooms use the configured entrance chance.
+  Pearls locate nearby seeded intact entrance warpers rather than coordinates
+  of cities in another dimension. Broken entrances are skipped; the pearl uses
+  the original nineteen-chunk search radius. Ariente owns pearl item/rendering.
+- Arrival buildings use the original sixteen-chunk grid. Portals remember the
+  entrance for return travel, then use a valid Overworld bed or spawn fallback.
+  Arrival warpers have return charges and charge counts synchronize to clients.
+  Missing arrival structures have a fallback placement path; that existing path
+  is not a request to add further old-world migration support.
+
+CONFIRMED REMAINING WORK AND WHY
+================================
+Generation controls and parity
+- config/WorldgenConfiguration.CITY_DUNGEON_CHANCE (cityDungeonChance, default
+  0.7) is declared but not read by active complex selection. The setting was
+  missed when the generator was restored. Wire it consistently into generation
+  AND search/API lookup so commands/portals do not disagree with placement.
+  The separate Overworld entrance chance (default 0.002) IS used.
+- Compare original terrain landmarks, district layouts and tree/vegetation shapes
+  against master/reference images. Native tree implementations and quart biome
+  sampling intentionally replaced obsolete APIs; exact parity remains unverified.
+  Preserve deterministic/chunk-local behavior while correcting actual omissions.
+  Do not label all vegetation/ores/terrain as unported: their active replacements
+  already exist. Full seed identity is not an established completion criterion.
+
+City authoring and administrative tools
+- EditMode and EditModeClient remain archived, with related commands:
+  CommandEditMode, CommandSaveCity, CommandSyncChunk, CommandVariantCreate,
+  CommandVariantGet/Set/List/Switch, CommandInfo, CommandPacify and CommandCityCard.
+  Only exploration/search commands were migrated; the authoring workflow was
+  deferred while restoring runtime generation.
+- Restore the relevant command suite using Brigadier, current client/server
+  networking and the active part/palette/variant schema. Compare master as well
+  as intermediate legacy files; do not copy obsolete APIs or activate the whole
+  legacy source tree. Verify save/export/import, synchronized previews, security
+  cards and variant edits against the current structure loader.
+
+World integration still requiring validation
+- Complete fresh-world progression: encounter an entrance, locate it with a
+  pearl, charge/travel/return, obtain city resources/blueprints/cards, fight
+  guards, use captured technology and explore the large districts.
+  Ariente currently blocks that route with missing ore drops/smelting, original
+  mob resource loot and some equipment effects. Those fixes belong in its repo.
+- Validate AI across large/partially loaded footprints, unload/reload, alerts,
+  waves, key drops/access, generator depletion and machine/security persistence.
+- Exercise natural spawning for sustained periods and check caps, difficulty,
+  density and equipment instead of assuming table definitions prove balance.
+- Travel long station/intercity/local routes with passengers and check corners,
+  elevators, chunk transitions, AI transport and multiple players. Short cart
+  tests do not certify a complete transport system.
+- Multiplayer portal destinations, per-player return points, reconnects, safe
+  arrival, charge consumption and interaction with different bed/spawn states
+  need full play testing beyond the existing round-trip fixtures.
+- Perform a full server datagen/resource audit. Active world data is currently
+  authored directly; a complete successful datagen run has not been certified.
+- Standalone dependency publication/wiring and final versions/releases remain
+  unfinished. version=1.12-0.0.31-alpha is a historical label, not the target MC
+  version or evidence of publication. Follow the release guidance in Ariente's
+  handoff and repository instructions before changing version/changelog metadata.
+
+Separate user ideas, not missing original ports
+- User-edited ../Ariente/todo.txt proposes making the huge surface cube dungeon
+  50% rarer, adding more rooms/corridors and a boss. It also lists flux-network/
+  ship fixes and Patchouli support (mostly Ariente-owned). Preserve these notes.
+  Treat new city content/balance/documentation as enhancements, distinct from
+  restoring existing behavior; do not silently count them as completed parity.
+
+SOURCE MAP
+==========
+Java paths below are relative to src/main/java/mcjty/arienteworld/ unless an
+explicit source root is supplied. Resource/build paths are checkout-relative.
+- Runtime setup/API: ArienteWorld.java, setup/{Registration,ModSetup,ClientSetup},
+  apiimpl/ArienteWorldImplementation, dimension/DimensionRegister.
+- Terrain/biomes: dimension/{ArienteChunkGenerator,ArienteBiomeSource},
+  dimension/terrain/{ArienteTerrainGenerator,IslandsTerrainGenerator,
+  ArienteBiomeLayout,BiomeProfile,TerrainBuffer,NoiseGenerator*} and
+  dimension/features/{BubbleFeature,GlowBubbleFeature,SpheresFeature,SpikesFeature}.
+- Structures/routes: dimension/{CityFeature,CityChunk,ArienteLandscapeCity,
+  LevitatorNetworkGenerator,PaneConnections}; cities/{AssetRegistries,BuildingPart,
+  Palette,CompiledPalette,LegacyBlockStates,Transform,CityPlan,CityTools,Loot}.
+- City behavior: ai/{CityAI,CityAISystem,CityAISettings};
+  config/{AIConfiguration,LootConfiguration,WorldgenConfiguration}.
+- Population/portals: src/main/resources/data/arienteworld/worldgen/ and forge/
+  biome-modifier data, oregen/{OverworldDungeonFeature,OverworldDungeonGen},
+  dimension/PortalGenerator, blocks/plants/BlockArientePlant.
+- Sky: client/ArienteDimensionEffects. Commands: commands/ModCommands.
+- Original city plans/parts/palettes: src/main/resources/assets/arienteworld/citydata/.
+  Archived code: src/legacy/java/mcjty/arienteworld/{commands,dimension,biomes,
+  oregen,ai,...}; original master remains the feature reference.
+- Some counterpart implementations are Ariente's WarperTile, EntityArientePearl,
+  DroneEntity, SentinelDroneEntity, FluxLevitatorEntity and FluxElevatorEntity.
+
+VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
+======================================================
+- Java 17 workspace builds for both mods and HoloGui pass, including reobfuscation.
+  Both mods load in an integrated client. Latest renderer fixes also passed
+  client checks in vanilla Fabulous and Embeddium/Oculus Fancy (no shader-pack
+  compatibility claim). These builds do not prove all gameplay features work.
+- Last dedicated run: all 24 required Forge GameTests passed. Source files:
+  src/gameTest/java/mcjty/arienteworld/
+    PortSmokeTests: dimension loading, companion/Ariente/HoloGui integration.
+    CityGenerationTests: palettes/grid, cables/facades, all eight plans, authored
+      equipment and AI initialization, security save/load and alert/shield checks.
+    WorldGenerationTests: terrain/biome determinism, landscape districts, station
+      infrastructure/routes and a passenger travelling along generated beams.
+    PopulationTests: fresh forest logs/plants/ores, spawn tables/categories,
+      soil protection, entrances, pearl flight/use and portal round-trip/fallbacks.
+    RenderingRegressionTests: slopes/beam shapes, panes, doors/transforms,
+      authored single ship doors and generation of the visual fixture.
+    MachineInteractionTests: storage display, tank/generator synchronization,
+      first GUI camera geometry, elevator controls, module NBT/inventory clicks
+      and levitator controls/corner travel. Does NOT test powered armor movement.
+    MachinePersistenceTests: 31 registered Ariente block entity types.
+    CombatRegressionTests: actual combat-drone line of sight/firing and laser hits.
+- Optional client classes live in src/gameTest/java/mcjty/arienteworld/client/.
+  TextureModelChecks and SuitAndPanelRenderingChecks inspect native textures,
+  glow, slopes, cables, tanks, mounted panels, core/suit/laser geometry and reload.
+  TankRenderingChecks covers sorted glass/beam quads and stacked seams at twelve
+  viewing angles. HologramRenderingChecks uses actual rendered pixels at five
+  angles for armor/sabre/cart controls and glass/shield occlusion, before/after
+  resource reload. ArmorClientChecks checks equipment/inventory synchronization,
+  NOT flight/speed effects or the latest uninstall-highlight/alignment report.
+  MachineGuiClientChecks, CartRenderChecks and PearlRenderChecks cover their
+  respective integrated-client interaction/rendering regressions.
+- Visual inspection already confirmed floating/large cities, restored surface/
+  underground districts, station levitators, vegetation, purple sky, shields,
+  drones, cable housings, sorted tank billboards and the improved HoloGui.
+- Ignored images are under build/verification, including city4_1.png, city5_1.png,
+  restored-surface-city.png, restored-underground-city.png, restored-vegetation.png,
+  restored-station-levitator.png, ship-shield-sky.png, generated-cables.png,
+  tank-billboards-{fancy,fabulous}.png and hologram-world-{fancy,fabulous}.png.
+  These and local /tmp harnesses may not survive a new environment.
+- Latest client renderer changes were build/client-checked after the last
+  dedicated suite. Do not claim all checks were repeated after each change.
+  This handoff rewrite changed documentation only and did not rerun tests.
+
+BUILDING, RUNNING AND REPRODUCING CHECKS
+======================================
+Run from /data/Projects/McTech20 with Java 17 (see Ariente's handoff for the local
+JAVA_HOME example; do not add machine-specific paths to build configuration):
+  ./gradlew :Ariente:build :ArienteWorld:build :ModHoloGui:build
+  ./gradlew :ArienteWorld:runGameTestServer -Pariente_runs
+  ./gradlew :ArienteWorld:runClient -Pariente_runs
+  ./gradlew :workspace:runClient
+  ./gradlew :ArienteWorld:tasks --all
+Use the workspace directory or --project-dir ..; merely running ../gradlew from
+a mod directory selects its standalone settings and may fail on old fallback
+coordinates. Preserve standalone support, but do not replace local dependencies
+with published jars just to make the workspace launch.
+
+The -Pariente_runs property enables this project's focused development runs.
+They load local ArienteWorld/Ariente/HoloGui/McJtyLib/TOP source outputs and filter
+local built jars from launch classpaths so Forge cannot prefer stale jars.
+GameTest output is under build/gametest; test sources are not in release jars.
+The combined workspace client additionally has Embeddium 0.3.31 / Oculus 1.8.0;
+the focused client does not automatically include them. Test the actual renderer
+stack relevant to a reported bug as well as native graphics when appropriate.
+
+Optional client fixtures are NOT enabled by the normal runClient command.
+To reproduce, include the gameTest source set in the client run and pass JVM
+properties to the GAME JVM, not just -D flags to Gradle. A small external init
+script can configure it without changing tracked build files, for example:
+
+  gradle.afterProject { p ->
+      if (p.name == 'ArienteWorld') {
+          p.minecraft.runs.client.mods.arienteworld.source(p.sourceSets.gameTest)
+          p.tasks.withType(JavaExec).configureEach {
+              if (name == 'runClient') {
+                  dependsOn p.tasks.named('gameTestClasses')
+                  jvmArgs '-Dariente.armorGuiCheck=true',
+                          '-Dariente.hologramRenderCheck=true'
+                  doFirst {
+                      p.file('build/visual-check').mkdirs()
+                      workingDir p.file('build/visual-check')
+                  }
+              }
+          }
+      }
+  }
+
+Launch with -I /path/to/that-init.gradle -Pariente_runs. Supply an isolated test
+save under build/visual-check/saves; the init script does not create a save.
+RenderingRegressionTests builds the shared fixture in arienteworld:ariente around
+X/Z=90016..90027, floor Y=240. Run the dedicated tests to regenerate it, then copy
+that STOPPED test world into the isolated client's saves, or copy the fixture
+region into a compatible isolated test save. With commands enabled, teleport to
+90020.5 242 90023.5 in the Ariente dimension. Do not modify a running world's
+region files or overwrite the user's workspace/run worlds.
+
+Compatible armor/hologram drivers prepare their own gear/GUI once the fixture
+is loaded. Other optional game-JVM properties are ariente.machineGuiCheck,
+ariente.cartRenderCheck and ariente.pearlRenderCheck. Use the relevant driver;
+independent drivers can move the player or overwrite each other's fixtures.
+TextureModelChecks runs automatically when its fixture and source set are loaded.
+Previously used /tmp/ariente-hologui-client.gradle added the workspace's exact
+Embeddium/Oculus runtime dependencies; /tmp/ariente-hologui-vanilla-client.gradle
+selected Fabulous in the isolated options. Treat these scripts as conveniences,
+not prerequisites; recreate from the tracked tests and the setup above if absent.
+Confirm the real datagen task before running it and use isolated output first.
+Previous successful datagen was CLIENT-ONLY for Ariente models through a focused
+launch, not proof of a complete companion/server data-generation run.
+
+MANUAL WORLD/AI CHECKS
+======================
+Use a NEW creative test world with commands enabled; switch to survival and
+non-Peaceful difficulty for detection/combat tests:
+  /execute in arienteworld:ariente run tp @s 0 160 0
+  /arienteworld findcity
+  /arienteworld findcity city4_1
+  /arienteworld findcity city5_1
+  /arienteworld findcity surface
+  /arienteworld findcity underground
+  /arienteworld findcity station
+  /execute in minecraft:overworld run tp @s 0 160 0
+  /arienteworld findentrance
+/arworld is an alias. Tab completion lists layouts/district selectors. Results
+include coordinates and suggested teleport commands; search does not itself
+load all searched chunks. findentrance searches seeded sites within 1024 blocks,
+farther than the pearl. Charge the Overworld warper with Ariente Pearls and use
+its hologram to travel; return warpers start charged. Load the city footprint,
+then test sentinel visibility/range and alerts without a working Scramble helmet.
+Fly down from search teleport points to inspect surface/underground structures.
+Do not mistake an individual complex for the separate landscape-city system.
+
+FOUR-PHASE COMPLETION PLAN
+==========================
+Phase 1 - Finish world controls and identify real generation omissions.
+  Connect cityDungeonChance consistently, compare active terrain/district/tree
+  features with master and reference images, and correct verified omissions
+  without adding old-world migration. Keep Ariente's immediate armor fixes in
+  its repository; do not treat broken equipment as broken dimension generation.
+  Exit: generation, find commands and API placement predicates agree, and actual
+  parity differences are documented rather than inferred from legacy filenames.
+
+Phase 2 - Validate the exploration/progression loop with Ariente's data repairs.
+  Verify city loot/cards, sustained spawning/alerts and entrance/arrival/return
+  behavior while Ariente restores resource drops, processing and recipes.
+  Exit: a fresh survival player can reach cities, obtain meaningful resources
+  and security access, use captured/crafted equipment and return safely.
+
+Phase 3 - Restore authoring tools and complete city/transport workflows.
+  Port edit/save/variant/sync/admin commands against active assets; exercise large
+  city AI, security, stations and long routes, coordinating Ariente vehicle and
+  machine repairs. Keep optional new cube/boss content separate from parity.
+  Exit: authored content can be edited/exported/reloaded and runtime workflows
+  work across chunk boundaries and save/load, with targeted checks for repairs.
+
+Phase 4 - Integrate, validate and prepare release.
+  Complete multiplayer, long-running world/AI/spawn/portal tests, datagen and
+  asset coverage, standalone/workspace dependency checks and release metadata.
+  Exit: both handoffs and the gameplay guide reflect tested behavior and any
+  deliberate original limitations; release readiness is supported by a real
+  playthrough and integration evidence, not compilation alone.

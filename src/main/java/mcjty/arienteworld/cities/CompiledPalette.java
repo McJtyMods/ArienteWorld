@@ -1,11 +1,12 @@
 package mcjty.arienteworld.cities;
 
 import mcjty.lib.varia.Logging;
-import net.minecraft.block.BlockState;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * More efficient representation of a palette useful for a single chunk
@@ -14,13 +15,10 @@ public class CompiledPalette {
 
     private final Map<PaletteIndex, BlockState> palette = new HashMap<>();
 
-    private static final Map<String, CompiledPalette> compiledPaletteMap = new HashMap<>();
+    private static final Map<String, CompiledPalette> compiledPaletteMap = new ConcurrentHashMap<>();
 
     public static CompiledPalette getCompiledPalette(String name) {
-        if (!compiledPaletteMap.containsKey(name)) {
-            compiledPaletteMap.put(name, new CompiledPalette(AssetRegistries.PALETTES.get(name)));
-        }
-        return compiledPaletteMap.get(name);
+        return compiledPaletteMap.computeIfAbsent(name, key -> new CompiledPalette(AssetRegistries.PALETTES.get(key)));
     }
 
     public static CompiledPalette getNewCompiledPalette(String name) {

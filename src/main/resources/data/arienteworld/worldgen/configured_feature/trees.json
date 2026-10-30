@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:simple_random_selector",
+  "config": {
+    "features": [
+      "arienteworld:huge_blue_tree_shape",
+      "arienteworld:glow_tree_shape",
+      "arienteworld:glow_tree_shape",
+      "arienteworld:blue_tree_shape",
+      "arienteworld:blue_tree_shape",
+      "arienteworld:blue_tree_tall_shape",
+      "arienteworld:dark_tree_tall_shape",
+      "arienteworld:variant_tree_shape",
+      "arienteworld:dark_tree_shape",
+      "arienteworld:dark_tree_shape"
+    ]
+  }
+}

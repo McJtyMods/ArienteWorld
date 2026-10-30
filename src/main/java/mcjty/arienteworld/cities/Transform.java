@@ -1,244 +1,85 @@
 package mcjty.arienteworld.cities;
 
-import net.minecraft.state.properties.RailShape;
-import net.minecraft.util.math.BlockPos;
+import mcjty.ariente.api.EnumFacingUpDown;
+import mcjty.lib.blocks.BaseBlock;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Random;
 
 public enum Transform {
-    ROTATE_NONE(net.minecraft.util.Rotation.NONE),
-    ROTATE_90(net.minecraft.util.Rotation.CLOCKWISE_90),
-    ROTATE_180(net.minecraft.util.Rotation.CLOCKWISE_180),
-    ROTATE_270(net.minecraft.util.Rotation.COUNTERCLOCKWISE_90),
-    MIRROR_X(net.minecraft.util.Rotation.CLOCKWISE_180),
-    MIRROR_Z(net.minecraft.util.Rotation.CLOCKWISE_180),
-    MIRROR_90_X(net.minecraft.util.Rotation.CLOCKWISE_90);
+    ROTATE_NONE(Rotation.NONE, Mirror.NONE),
+    ROTATE_90(Rotation.CLOCKWISE_90, Mirror.NONE),
+    ROTATE_180(Rotation.CLOCKWISE_180, Mirror.NONE),
+    ROTATE_270(Rotation.COUNTERCLOCKWISE_90, Mirror.NONE),
+    MIRROR_X(Rotation.NONE, Mirror.FRONT_BACK),
+    MIRROR_Z(Rotation.NONE, Mirror.LEFT_RIGHT),
+    MIRROR_90_X(Rotation.CLOCKWISE_90, Mirror.FRONT_BACK);
 
-    private final net.minecraft.util.Rotation mcRotation;
+    private final Rotation rotation;
+    private final Mirror mirror;
 
-    public static final Transform[] VALUES = Transform.values();
-
-    Transform(net.minecraft.util.Rotation mcRotation) {
-        this.mcRotation = mcRotation;
-    }
-
-    public net.minecraft.util.Rotation getMcRotation() {
-        return mcRotation;
+    Transform(Rotation rotation, Mirror mirror) {
+        this.rotation = rotation;
+        this.mirror = mirror;
     }
 
     public static Transform random(Random random) {
-        return VALUES[random.nextInt(VALUES.length)];
+        return values()[random.nextInt(values().length)];
     }
 
-    public Transform getOpposite() {
-        switch (this) {
-            case ROTATE_NONE:
-                return ROTATE_NONE;
-            case ROTATE_270:
-                return ROTATE_90;
-            case ROTATE_180:
-                return ROTATE_180;
-            case ROTATE_90:
-                return ROTATE_270;
-            case MIRROR_X:
-                return MIRROR_X;
-            case MIRROR_Z:
-                return MIRROR_Z;
-            case MIRROR_90_X:
-                return MIRROR_90_X;
-        }
-        throw new IllegalStateException("Cannot happen!");
-    }
-
-    // Transform a relative position (position in chunk)
     public BlockPos transform(BlockPos pos) {
-        if (this == ROTATE_NONE) {
-            return pos;
-        }
         return new BlockPos(rotateX(pos.getX(), pos.getZ()), pos.getY(), rotateZ(pos.getX(), pos.getZ()));
     }
 
     public int rotateX(int x, int z) {
-        switch (this) {
-            case ROTATE_NONE:
-                return x;
-            case ROTATE_90:
-                return 15-z;
-            case ROTATE_180:
-                return 15-x;
-            case ROTATE_270:
-                return z;
-            case MIRROR_X:
-                return 15-x;
-            case MIRROR_Z:
-                return x;
-            case MIRROR_90_X:
-                return z;
-        }
-        throw new IllegalStateException("Cannot happen!");
+        return switch (this) {
+            case ROTATE_NONE, MIRROR_Z -> x;
+            case ROTATE_90 -> 15 - z;
+            case ROTATE_180, MIRROR_X -> 15 - x;
+            case ROTATE_270, MIRROR_90_X -> z;
+        };
     }
 
     public int rotateZ(int x, int z) {
-        switch (this) {
-            case ROTATE_NONE:
-                return z;
-            case ROTATE_90:
-                return x;
-            case ROTATE_180:
-                return 15-z;
-            case ROTATE_270:
-                return 15-x;
-            case MIRROR_X:
-                return z;
-            case MIRROR_Z:
-                return 15-z;
-            case MIRROR_90_X:
-                return x;
-        }
-        throw new IllegalStateException("Cannot happen!");
+        return switch (this) {
+            case ROTATE_NONE, MIRROR_X -> z;
+            case ROTATE_90, MIRROR_90_X -> x;
+            case ROTATE_180, MIRROR_Z -> 15 - z;
+            case ROTATE_270 -> 15 - x;
+        };
     }
 
-    public RailShape transform(RailShape shape) {
+    public BlockState transform(BlockState state) {
         if (this == ROTATE_NONE) {
-            return shape;
+            return state;
         }
-        switch (shape) {
-            case NORTH_SOUTH:
-                return (this == ROTATE_90 || this == ROTATE_270 || this == MIRROR_90_X) ? RailShape.EAST_WEST : shape;
-            case EAST_WEST:
-                return (this == ROTATE_90 || this == ROTATE_270) ? RailShape.NORTH_SOUTH : shape;
-            case ASCENDING_EAST:
-                switch (this) {
-                    case ROTATE_90:
-                        return RailShape.ASCENDING_SOUTH;
-                    case MIRROR_90_X:
-                        return RailShape.ASCENDING_NORTH;
-                    case ROTATE_180:
-                        return RailShape.ASCENDING_WEST;
-                    case ROTATE_270:
-                        return RailShape.ASCENDING_NORTH;
-                    case MIRROR_X:
-                        return RailShape.ASCENDING_WEST;
-                }
-                break;
-            case ASCENDING_WEST:
-                switch (this) {
-                    case ROTATE_90:
-                        return RailShape.ASCENDING_NORTH;
-                    case MIRROR_90_X:
-                        return RailShape.ASCENDING_SOUTH;
-                    case ROTATE_180:
-                        return RailShape.ASCENDING_EAST;
-                    case ROTATE_270:
-                        return RailShape.ASCENDING_SOUTH;
-                    case MIRROR_X:
-                        return RailShape.ASCENDING_EAST;
-                }
-                break;
-            case ASCENDING_NORTH:
-                switch (this) {
-                    case ROTATE_90:
-                        return RailShape.ASCENDING_EAST;
-                    case MIRROR_90_X:
-                        return RailShape.ASCENDING_WEST;
-                    case ROTATE_180:
-                        return RailShape.ASCENDING_SOUTH;
-                    case ROTATE_270:
-                        return RailShape.ASCENDING_WEST;
-                    case MIRROR_X:
-                        return RailShape.ASCENDING_SOUTH;
-                    case MIRROR_Z:
-                        return RailShape.ASCENDING_SOUTH;
-                }
-                break;
-            case ASCENDING_SOUTH:
-                switch (this) {
-                    case ROTATE_90:
-                        return RailShape.ASCENDING_WEST;
-                    case MIRROR_90_X:
-                        return RailShape.ASCENDING_EAST;
-                    case ROTATE_180:
-                        return RailShape.ASCENDING_NORTH;
-                    case ROTATE_270:
-                        return RailShape.ASCENDING_EAST;
-                    case MIRROR_X:
-                        return RailShape.ASCENDING_NORTH;
-                    case MIRROR_Z:
-                        return RailShape.ASCENDING_NORTH;
-                }
-                break;
-            case SOUTH_EAST:
-                switch (this) {
-                    case ROTATE_90:
-                        return RailShape.SOUTH_WEST;
-                    case MIRROR_90_X:
-                        return RailShape.NORTH_EAST;
-                    case ROTATE_180:
-                        return RailShape.NORTH_WEST;
-                    case ROTATE_270:
-                        return RailShape.NORTH_EAST;
-                    case MIRROR_X:
-                        return RailShape.SOUTH_WEST;
-                    case MIRROR_Z:
-                        return RailShape.NORTH_EAST;
-                }
-                break;
-            case SOUTH_WEST:
-                switch (this) {
-                    case ROTATE_90:
-                        return RailShape.NORTH_WEST;
-                    case MIRROR_90_X:
-                        return RailShape.SOUTH_EAST;
-                    case ROTATE_180:
-                        return RailShape.NORTH_EAST;
-                    case ROTATE_270:
-                        return RailShape.SOUTH_EAST;
-                    case MIRROR_X:
-                        return RailShape.SOUTH_EAST;
-                    case MIRROR_Z:
-                        return RailShape.NORTH_WEST;
-                }
-                break;
-            case NORTH_WEST:
-                switch (this) {
-                    case ROTATE_90:
-                        return RailShape.NORTH_EAST;
-                    case MIRROR_90_X:
-                        return RailShape.SOUTH_WEST;
-                    case ROTATE_180:
-                        return RailShape.SOUTH_EAST;
-                    case ROTATE_270:
-                        return RailShape.SOUTH_WEST;
-                    case MIRROR_X:
-                        return RailShape.NORTH_EAST;
-                    case MIRROR_Z:
-                        return RailShape.SOUTH_WEST;
-                }
-                break;
-            case NORTH_EAST:
-                switch (this) {
-                    case ROTATE_90:
-                        return RailShape.SOUTH_EAST;
-                    case MIRROR_90_X:
-                        return RailShape.NORTH_WEST;
-                    case ROTATE_180:
-                        return RailShape.SOUTH_WEST;
-                    case ROTATE_270:
-                        return RailShape.NORTH_WEST;
-                    case MIRROR_X:
-                        return RailShape.NORTH_WEST;
-                    case MIRROR_Z:
-                        return RailShape.SOUTH_EAST;
-                }
-                break;
+        if (state.hasProperty(EnumFacingUpDown.FACING)) {
+            EnumFacingUpDown facing = state.getValue(EnumFacingUpDown.FACING);
+            String name = facing.getSerializedName();
+            boolean up = name.endsWith("_up");
+            Direction direction = Direction.byName(name.replace("_up", ""));
+            direction = rotation.rotate(direction);
+            if (mirror == Mirror.FRONT_BACK && direction.getAxis() == Direction.Axis.X
+                    || mirror == Mirror.LEFT_RIGHT && direction.getAxis() == Direction.Axis.Z) {
+                direction = direction.getOpposite();
+            }
+            return state.setValue(EnumFacingUpDown.FACING, EnumFacingUpDown.byName(direction.getName() + (up ? "_up" : "")));
         }
-        throw new IllegalStateException("Cannot happen!");
-    }
-
-    public static void main(String[] args) {
-        int x;
-        int z;
-        x = 4; z = 4;
-        System.out.println("x,z = " + x +","+z + " -> " +ROTATE_90.rotateX(x, z) +","+ROTATE_90.rotateZ(x,z));
+        state = state.rotate(rotation);
+        if (state.getBlock() instanceof BaseBlock) {
+            // BaseBlock rotates its facing but inherits Block's no-op mirror implementation.
+            if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+                return state.setValue(BlockStateProperties.HORIZONTAL_FACING, mirror.mirror(state.getValue(BlockStateProperties.HORIZONTAL_FACING)));
+            }
+            if (state.hasProperty(BlockStateProperties.FACING)) {
+                return state.setValue(BlockStateProperties.FACING, mirror.mirror(state.getValue(BlockStateProperties.FACING)));
+            }
+        }
+        return state.mirror(mirror);
     }
 }

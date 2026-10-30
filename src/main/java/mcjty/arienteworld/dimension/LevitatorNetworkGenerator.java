@@ -3,15 +3,16 @@ package mcjty.arienteworld.dimension;
 import mcjty.ariente.api.EnumFacingUpDown;
 import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.api.TechType;
-import mcjty.arienteworld.ArienteStuff;
+import mcjty.ariente.blocks.utility.ElevatorTile;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import static mcjty.ariente.setup.Registration.*;
 import mcjty.arienteworld.cities.*;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.chunk.IChunk;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
 
 import static mcjty.ariente.api.EnumFacingUpDown.FACING;
 import static mcjty.ariente.api.MarbleColor.COLOR;
@@ -38,33 +39,33 @@ public class LevitatorNetworkGenerator {
     private static BlockState elevator;
     private static BlockState levelMarker;
 
-    private static void initialize() {
+    private static synchronized void initialize() {
         if (!initialized) {
-            airChar = Blocks.AIR.getDefaultState();
-            blueMarble = ArienteStuff.marble_smooth.getDefaultState().with(COLOR, MarbleColor.BLUE);
-            blackMarble = ArienteStuff.marble_smooth.getDefaultState().with(COLOR, MarbleColor.BLACK);
-            horizontalBeam = ArienteStuff.fluxBeamBlock.getDefaultState().with(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST);
-            verticalBeam = ArienteStuff.fluxBeamBlock.getDefaultState().with(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
-            slopeNorth = ArienteStuff.slopeBlock.getDefaultState().with(FACING, EnumFacingUpDown.NORTH);
-            slopeSouth = ArienteStuff.slopeBlock.getDefaultState().with(FACING, EnumFacingUpDown.SOUTH);
-            slopeWest = ArienteStuff.slopeBlock.getDefaultState().with(FACING, EnumFacingUpDown.WEST);
-            slopeEast = ArienteStuff.slopeBlock.getDefaultState().with(FACING, EnumFacingUpDown.EAST);
-            slopeNorthUp = ArienteStuff.slopeBlock.getDefaultState().with(FACING, EnumFacingUpDown.NORTH_UP);
-            slopeSouthUp = ArienteStuff.slopeBlock.getDefaultState().with(FACING, EnumFacingUpDown.SOUTH_UP);
-            slopeWestUp = ArienteStuff.slopeBlock.getDefaultState().with(FACING, EnumFacingUpDown.WEST_UP);
-            slopeEastUp = ArienteStuff.slopeBlock.getDefaultState().with(FACING, EnumFacingUpDown.EAST_UP);
-            glowLines = ArienteStuff.blackmarble_techpat.getDefaultState().with(TYPE, TechType.LINES_GLOW);
-            lampTop = ArienteStuff.flatLightBlock.getDefaultState().with(BlockStateProperties.FACING, Direction.DOWN);
-            elevator = ArienteStuff.elevatorBlock.getDefaultState();
-            levelMarker = ArienteStuff.levelMarkerBlock.getDefaultState();
+            airChar = Blocks.AIR.defaultBlockState();
+            blueMarble = LegacyBlockStates.read("ariente:marble_smooth@color=blue");
+            blackMarble = LegacyBlockStates.read("ariente:marble_smooth@color=black");
+            horizontalBeam = FLUX_BEAM.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.WEST);
+            verticalBeam = FLUX_BEAM.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH);
+            slopeNorth = SLOPE.get().defaultBlockState().setValue(FACING, EnumFacingUpDown.NORTH);
+            slopeSouth = SLOPE.get().defaultBlockState().setValue(FACING, EnumFacingUpDown.SOUTH);
+            slopeWest = SLOPE.get().defaultBlockState().setValue(FACING, EnumFacingUpDown.WEST);
+            slopeEast = SLOPE.get().defaultBlockState().setValue(FACING, EnumFacingUpDown.EAST);
+            slopeNorthUp = SLOPE.get().defaultBlockState().setValue(FACING, EnumFacingUpDown.NORTH_UP);
+            slopeSouthUp = SLOPE.get().defaultBlockState().setValue(FACING, EnumFacingUpDown.SOUTH_UP);
+            slopeWestUp = SLOPE.get().defaultBlockState().setValue(FACING, EnumFacingUpDown.WEST_UP);
+            slopeEastUp = SLOPE.get().defaultBlockState().setValue(FACING, EnumFacingUpDown.EAST_UP);
+            glowLines = LegacyBlockStates.read("ariente:blacktech@type=lines_glow");
+            lampTop = FLAT_LIGHT.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.DOWN);
+            elevator = ELEVATOR.get().defaultBlockState();
+            levelMarker = LEVEL_MARKER.get().defaultBlockState();
             initialized = true;
         }
     }
 
 
-    public static void generate(int chunkX, int chunkZ, IChunk primer, IArienteChunkGenerator generator) {
-        if (CityTools.isDungeonChunk(chunkX, chunkZ)) {
-            City city = CityTools.getNearestDungeon(chunkX, chunkZ);
+    public static void generate(int chunkX, int chunkZ, CityChunk primer, ChunkGenerator generator) {
+        if (CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ)) {
+            City city = CityTools.getCity(primer.getLevel().getSeed(), CityTools.getNearestDungeonCenter(chunkX, chunkZ));
             if (city != null && city.getPlan().isUnderground()) {
                 return;
             }
@@ -81,24 +82,29 @@ public class LevitatorNetworkGenerator {
         // At -X,+Z we have a possible elevator
         // At -X,-Z we have a possible elevator
 
-        BlockPos.Mutable pos = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         if (CityTools.isStationChunk(chunkX, chunkZ)) {
-            BuildingPart part = CityTools.getStationPart(chunkX, chunkZ);
+            BuildingPart part = CityTools.getStationPart(primer.getLevel().getSeed(), chunkX, chunkZ);
             if (part != null) {
                 CityPlan station = AssetRegistries.CITYPLANS.get("station");
-                int lowest = generator.getDungeonGenerator().generatePart(primer, station.getPalette(), part, Transform.ROTATE_NONE, 0, CityTools.getStationHeight(), 0);
+                int lowest = primer.placePart(station.getPalette(), part, Transform.ROTATE_NONE, 0, CityTools.getStationHeight(), 0);
 
                 BlockPos elevatorPos = null;
-                if (cx == 7 && cz == 9 && CityTools.isDungeonChunk(chunkX, chunkZ)) {
+                if (cx == 7 && cz == 9 && CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ)) {
                     int startz = 12;
                     elevatorPos = createElevatorShaft(chunkX, chunkZ, primer, generator, lowest, startz);
-                } else if (cx == 7 && cz == 7 && CityTools.isDungeonChunk(chunkX, chunkZ) && !CityTools.isDungeonChunk(chunkX, chunkZ+2)) {
+                } else if (cx == 7 && cz == 7 && CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ) && !CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ+2)) {
                     int startz = 3;
                     elevatorPos = createElevatorShaft(chunkX, chunkZ, primer, generator, lowest, startz);
                 }
                 if (elevatorPos != null) {
-                    ArienteChunkGeneratorNew.registerStationLevitatorTodo(new ChunkPos(chunkX, chunkZ), elevatorPos);
+                    if (primer.getLevel().getBlockEntity(elevatorPos) instanceof ElevatorTile tile) {
+                        City city = CityTools.getCity(primer.getLevel().getSeed(), CityTools.getNearestDungeonCenter(chunkX, chunkZ));
+                        int floor = CityTools.getCityHeight(city, generator, primer.getLevel(), primer.getLevel().getLevel().getChunkSource().randomState())
+                                - CityTools.getCellarHeight(primer.getLevel().getSeed(), city, chunkX, chunkZ);
+                        tile.setHeight(floor - CityTools.getStationHeight() + 5);
+                    }
                 }
             }
         } else if (candidateX) {
@@ -124,7 +130,7 @@ public class LevitatorNetworkGenerator {
                     fillSide(primer, 12, dz);
                 }
             }
-            primer.setBlockState(pos.setPos(8, 36, 8), lampTop, false);
+            primer.setBlockState(pos.set(8, 36, 8), lampTop, false);
         } else if (candidateZ) {
             for (int dx = 0 ; dx <= 15 ; dx++) {
                 for (int dz = 5 ; dz <= 11 ; dz++) {
@@ -148,17 +154,17 @@ public class LevitatorNetworkGenerator {
                     fillSide(primer, dx, 12);
                 }
             }
-            // @todo 1.15
-//            primer.data[(8 << 12) | (8 << 8) + 36] = lampTop;
+            primer.setBlockState(pos.set(8, 36, 8), lampTop, false);
         }
     }
 
-    private static BlockPos createElevatorShaft(int chunkX, int chunkZ, IChunk primer, IArienteChunkGenerator generator, int lowest, int startz) {
+    private static BlockPos createElevatorShaft(int chunkX, int chunkZ, CityChunk primer, ChunkGenerator generator, int lowest, int startz) {
         ChunkPos center = CityTools.getNearestDungeonCenter(chunkX, chunkZ);
-        City city = CityTools.getCity(center);
-        int cityBottom = CityTools.getLowestHeight(city, generator, chunkX, chunkZ);
+        City city = CityTools.getCity(primer.getLevel().getSeed(), center);
+        int cityBottom = CityTools.getCityHeight(city, generator, primer.getLevel(), primer.getLevel().getLevel().getChunkSource().randomState())
+                - CityTools.getCellarHeight(primer.getLevel().getSeed(), city, chunkX, chunkZ);
 
-        BlockPos.Mutable pos = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int sx = 3 ; sx >= 1 ; sx--) {
             for (int sz = startz ; sz <= startz+2 ; sz++) {
                 int y = lowest-1;
@@ -169,76 +175,76 @@ public class LevitatorNetworkGenerator {
                     f = glowLines;
                 }
                 while (y <= cityBottom) {
-                    primer.setBlockState(pos.setPos(sx, y, sz), f, false);
+                    primer.setBlockState(pos.set(sx, y, sz), f, false);
                     y++;
                 }
 
             }
         }
 
-        primer.setBlockState(pos.setPos(2, CityTools.getStationHeight(), startz+1), elevator, false);
-        primer.setBlockState(pos.setPos(1, CityTools.getStationHeight()+1, startz+2), levelMarker, false);
-        primer.setBlockState(pos.setPos(1, cityBottom+1, startz+2), levelMarker, false);
+        primer.setBlockState(pos.set(2, CityTools.getStationHeight(), startz+1), elevator, false);
+        primer.setBlockState(pos.set(1, CityTools.getStationHeight()+1, startz+2), levelMarker, false);
+        primer.setBlockState(pos.set(1, cityBottom+1, startz+2), levelMarker, false);
         return new BlockPos(chunkX * 16 + 2, CityTools.getStationHeight(), chunkZ * 16 + startz+1);
     }
 
-    private static void fillInner(IChunk primer, int dx, int dz) {
-        BlockPos.Mutable pos = new BlockPos.Mutable();
-        primer.setBlockState(pos.setPos(dx, 30, dz), blueMarble, false);
+    private static void fillInner(CityChunk primer, int dx, int dz) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        primer.setBlockState(pos.set(dx, 30, dz), blueMarble, false);
         for (int y = 1 ; y < 6 ; y++) {
-            primer.setBlockState(pos.setPos(dx, 30+y, dz), airChar, false);
+            primer.setBlockState(pos.set(dx, 30+y, dz), airChar, false);
         }
-        primer.setBlockState(pos.setPos(dx, 30+6, dz), blueMarble, false);
+        primer.setBlockState(pos.set(dx, 30+6, dz), blueMarble, false);
     }
 
-    private static void fillInnerRamp(IChunk primer, int dx, int dz, BlockState rampBlock, BlockState rampBlockUp) {
-        BlockPos.Mutable pos = new BlockPos.Mutable();
-        primer.setBlockState(pos.setPos(dx, 30, dz), blueMarble, false);
-        primer.setBlockState(pos.setPos(dx, 31, dz), rampBlock, false);
-        primer.setBlockState(pos.setPos(dx, 32, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 33, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 34, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 35, dz), rampBlock, false);
-        primer.setBlockState(pos.setPos(dx, 36, dz), blueMarble, false);
+    private static void fillInnerRamp(CityChunk primer, int dx, int dz, BlockState rampBlock, BlockState rampBlockUp) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        primer.setBlockState(pos.set(dx, 30, dz), blueMarble, false);
+        primer.setBlockState(pos.set(dx, 31, dz), rampBlock, false);
+        primer.setBlockState(pos.set(dx, 32, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 33, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 34, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 35, dz), rampBlockUp, false);
+        primer.setBlockState(pos.set(dx, 36, dz), blueMarble, false);
     }
 
-    private static void fillSide(IChunk primer, int dx, int dz) {
-        BlockPos.Mutable pos = new BlockPos.Mutable();
-        primer.setBlockState(pos.setPos(dx, 30, dz), blueMarble, false);
+    private static void fillSide(CityChunk primer, int dx, int dz) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        primer.setBlockState(pos.set(dx, 30, dz), blueMarble, false);
         for (int y = 1 ; y < 6 ; y++) {
-            primer.setBlockState(pos.setPos(dx, 30+y, dz), blackMarble, false);
+            primer.setBlockState(pos.set(dx, 30+y, dz), blackMarble, false);
         }
-        primer.setBlockState(pos.setPos(dx, 30+6, dz), blueMarble, false);
+        primer.setBlockState(pos.set(dx, 30+6, dz), blueMarble, false);
     }
 
-    private static void fillGlowingSide(IChunk primer, int dx, int dz) {
-        BlockPos.Mutable pos = new BlockPos.Mutable();
-        primer.setBlockState(pos.setPos(dx, 30, dz), blueMarble, false);
+    private static void fillGlowingSide(CityChunk primer, int dx, int dz) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        primer.setBlockState(pos.set(dx, 30, dz), blueMarble, false);
         for (int y = 1 ; y < 6 ; y++) {
-            primer.setBlockState(pos.setPos(dx, 30+y, dz), glowLines, false);
+            primer.setBlockState(pos.set(dx, 30+y, dz), glowLines, false);
         }
-        primer.setBlockState(pos.setPos(dx, 30+6, dz), blueMarble, false);
+        primer.setBlockState(pos.set(dx, 30+6, dz), blueMarble, false);
     }
 
-    private static void fillHorizontalBeam(IChunk primer, int dx, int dz) {
-        BlockPos.Mutable pos = new BlockPos.Mutable();
-        primer.setBlockState(pos.setPos(dx, 30, dz), blueMarble, false);
-        primer.setBlockState(pos.setPos(dx, 31, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 32, dz), horizontalBeam, false);
-        primer.setBlockState(pos.setPos(dx, 33, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 34, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 35, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 36, dz), blueMarble, false);
+    private static void fillHorizontalBeam(CityChunk primer, int dx, int dz) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        primer.setBlockState(pos.set(dx, 30, dz), blueMarble, false);
+        primer.setBlockState(pos.set(dx, 31, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 32, dz), horizontalBeam, false);
+        primer.setBlockState(pos.set(dx, 33, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 34, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 35, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 36, dz), blueMarble, false);
     }
 
-    private static void fillVerticalBeam(IChunk primer, int dx, int dz) {
-        BlockPos.Mutable pos = new BlockPos.Mutable();
-        primer.setBlockState(pos.setPos(dx, 30, dz), blueMarble, false);
-        primer.setBlockState(pos.setPos(dx, 31, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 32, dz), verticalBeam, false);
-        primer.setBlockState(pos.setPos(dx, 33, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 34, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 35, dz), airChar, false);
-        primer.setBlockState(pos.setPos(dx, 36, dz), blueMarble, false);
+    private static void fillVerticalBeam(CityChunk primer, int dx, int dz) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        primer.setBlockState(pos.set(dx, 30, dz), blueMarble, false);
+        primer.setBlockState(pos.set(dx, 31, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 32, dz), verticalBeam, false);
+        primer.setBlockState(pos.set(dx, 33, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 34, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 35, dz), airChar, false);
+        primer.setBlockState(pos.set(dx, 36, dz), blueMarble, false);
     }
 }

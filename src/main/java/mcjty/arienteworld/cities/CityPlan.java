@@ -4,14 +4,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import mcjty.lib.varia.WeightedRandom;
-import net.minecraft.item.Item;
-import net.minecraft.util.ResourceLocation;
+import mcjty.ariente.varia.WeightedRandom;
+import net.minecraft.world.item.Item;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +20,7 @@ public class CityPlan implements IAsset {
     private String name;
     private String palette;
     private boolean isCity = true;
-    private Map<Character, PartPalette> partPalette = new HashMap<>();
+    private Map<Character, PartPalette> partPalette = new LinkedHashMap<>();
     private List<String> cellar = new ArrayList<>();
     private List<String> plan = new ArrayList<>();
     private List<String> layer2 = new ArrayList<>();
@@ -28,7 +28,7 @@ public class CityPlan implements IAsset {
     private boolean underground = false;
     private boolean floating = false;
 
-    private final Map<String, Integer> variants = new HashMap<>();
+    private final Map<String, Integer> variants = new LinkedHashMap<>();
 
     private List<Loot> loot = new ArrayList<>();
     private WeightedRandom<Loot> randomLoot = null;

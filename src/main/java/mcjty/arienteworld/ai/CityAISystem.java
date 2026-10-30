@@ -2,74 +2,66 @@ package mcjty.arienteworld.ai;
 
 import mcjty.ariente.api.ICityAISystem;
 import mcjty.lib.worlddata.AbstractWorldData;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 
 public class CityAISystem extends AbstractWorldData<CityAISystem> implements ICityAISystem {
 
     private static final String NAME = "ArienteCityAI";
+    private final ServerLevel level;
+    private final Map<ChunkPos, CityAI> cities = new HashMap<>();
 
-    // Indexed by city center
-    private Map<ChunkPos, CityAI> cityAIMap = new HashMap<>();
+    private CityAISystem(ServerLevel level) {
+        this.level = level;
+    }
 
-    public CityAISystem(String name) {
-        super(name);
+    public static CityAISystem getCityAISystem(ServerLevel level) {
+        return level.getDataStorage().computeIfAbsent(tag -> load(level, tag), () -> new CityAISystem(level), NAME);
+    }
+
+    private static CityAISystem load(ServerLevel level, CompoundTag tag) {
+        CityAISystem system = new CityAISystem(level);
+        ListTag list = tag.getList("cities", Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag cityTag = list.getCompound(i);
+            ChunkPos center = new ChunkPos(cityTag.getInt("chunkx"), cityTag.getInt("chunkz"));
+            CityAI city = new CityAI(level, center);
+            city.readFromNBT(cityTag);
+            system.cities.put(center, city);
+        }
+        return system;
     }
 
     @Override
-    public CityAI getCityAI(ChunkPos coord) {
-        if (!cityAIMap.containsKey(coord)) {
-            CityAI cityAI = new CityAI(coord);
-            cityAIMap.put(coord, cityAI);
-            save();
-        }
-        return cityAIMap.get(coord);
+    public CityAI getCityAI(ChunkPos center) {
+        return cities.computeIfAbsent(center, key -> {
+            setDirty();
+            return new CityAI(level, key);
+        });
     }
 
     @Override
     public void saveSystem() {
-        save();
-    }
-
-    @Nonnull
-    public static CityAISystem getCityAISystem(World world) {
-        return getData(world, () -> new CityAISystem(NAME), NAME);
+        setDirty();
     }
 
     @Override
-    public void read(CompoundNBT compound) {
-        ListNBT cityList = compound.getList("cities", Constants.NBT.TAG_COMPOUND);
-        cityAIMap.clear();
-        for (int i = 0 ; i < cityList.size() ; i++) {
-            CompoundNBT nbt = cityList.getCompound(i);
-            int chunkX = nbt.getInt("chunkx");
-            int chunkZ = nbt.getInt("chunkz");
-            ChunkPos coord = new ChunkPos(chunkX, chunkZ);
-            CityAI ai = new CityAI(coord);
-            ai.readFromNBT(nbt);
-            cityAIMap.put(coord, ai);
-        }
-    }
-
-    @Override
-    public CompoundNBT write(CompoundNBT compound) {
-        ListNBT cityList = new ListNBT();
-        for (Map.Entry<ChunkPos, CityAI> entry : cityAIMap.entrySet()) {
-            CompoundNBT nbt = new CompoundNBT();
-            nbt.putInt("chunkx", entry.getKey().x);
-            nbt.putInt("chunkz", entry.getKey().z);
-            entry.getValue().writeToNBT(nbt);
-            cityList.add(nbt);
-        }
-        compound.put("cities", cityList);
-
-        return compound;
+    public CompoundTag save(CompoundTag tag) {
+        ListTag list = new ListTag();
+        cities.forEach((center, city) -> {
+            CompoundTag cityTag = new CompoundTag();
+            cityTag.putInt("chunkx", center.x);
+            cityTag.putInt("chunkz", center.z);
+            city.writeToNBT(cityTag);
+            list.add(cityTag);
+        });
+        tag.put("cities", list);
+        return tag;
     }
 }

@@ -1,19 +1,7 @@
 {
-  "forge_marker": 1,
-  "defaults": {
-    "model": "cube",
-    "textures": {
-      "particle": "arienteworld:blocks/plants/glowlog",
-      "down": "arienteworld:blocks/plants/glowlog_top",
-      "up": "arienteworld:blocks/plants/glowlog_top",
-      "north": "arienteworld:blocks/plants/glowlog",
-      "east": "arienteworld:blocks/plants/glowlog",
-      "south": "arienteworld:blocks/plants/glowlog",
-      "west": "arienteworld:blocks/plants/glowlog"
-    }
-  },
   "variants": {
-    "normal": [{}],
-    "inventory": [{}]
+    "": {
+      "model": "arienteworld:block/glowlog"
+    }
   }
 }

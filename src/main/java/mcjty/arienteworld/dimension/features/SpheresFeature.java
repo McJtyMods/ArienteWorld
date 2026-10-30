@@ -1,12 +1,11 @@
 package mcjty.arienteworld.dimension.features;
 
 import mcjty.ariente.api.MarbleColor;
-import mcjty.arienteworld.ArienteStuff;
-import mcjty.arienteworld.dimension.NoiseGeneratorPerlin;
-import net.minecraft.block.BlockState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.chunk.IChunk;
+import mcjty.arienteworld.cities.LegacyBlockStates;
+import mcjty.arienteworld.dimension.terrain.NoiseGeneratorPerlin;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.BlockPos;
+import mcjty.arienteworld.dimension.terrain.TerrainBuffer;
 
 import java.util.Random;
 
@@ -19,9 +18,9 @@ public class SpheresFeature implements IFeature {
     public SpheresFeature() {
     }
 
-    private NoiseGeneratorPerlin getNoise(IWorld world) {
+    private NoiseGeneratorPerlin getNoise(long seed) {
         if (featureNoise == null) {
-            Random random = new Random(world.getSeed() * 257017164707L + 101754694003L);
+            Random random = new Random(seed * 257017164707L + 101754694003L);
             featureNoise = new NoiseGeneratorPerlin(random, 4);
         }
         return featureNoise;
@@ -33,18 +32,18 @@ public class SpheresFeature implements IFeature {
     }
 
     @Override
-    public void generate(IWorld world, IChunk primer, int chunkX, int chunkZ, int dx, int dz) {
-        Random random = new Random(world.getSeed() + (chunkZ+dz) * 256203221L + (chunkX+dx) * 899809363L);
+    public void generate(long seed, TerrainBuffer primer, int chunkX, int chunkZ, int dx, int dz) {
+        Random random = new Random(seed + (chunkZ+dz) * 256203221L + (chunkX+dx) * 899809363L);
         random.nextFloat();
         int radius = random.nextInt(6) + 6;
         int centery = random.nextInt(60) + 40;
 
-        BlockState block = ArienteStuff.marble.getDefaultState().with(MarbleColor.COLOR, MarbleColor.BLUE);
+        BlockState block = LegacyBlockStates.read("ariente:marble@color=blue");
         int centerx = 8 + (dx) * 16;
         int centerz = 8 + (dz) * 16;
         double sqradius = radius * radius;
 
-        BlockPos.Mutable pos = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = 0 ; x < 16 ; x++) {
             double dxdx = (x-centerx) * (x-centerx);
             for (int z = 0 ; z < 16 ; z++) {
@@ -53,7 +52,7 @@ public class SpheresFeature implements IFeature {
                     double dydy = (y-centery) * (y-centery);
                     double sqdist = dxdx + dydy + dzdz;
                     if (sqdist <= sqradius) {
-                        primer.setBlockState(pos.setPos(x, y, z), block, false);
+                        primer.setBlockState(pos.set(x, y, z), block, false);
                     }
                 }
             }
@@ -61,8 +60,8 @@ public class SpheresFeature implements IFeature {
     }
 
     @Override
-    public double getFactor(IWorld world, int chunkX, int chunkZ) {
-        double v = (getNoise(world).getValue(chunkX / 20.0f, chunkZ / 20.0f) - 1) / 70;
+    public double getFactor(long seed, int chunkX, int chunkZ) {
+        double v = (getNoise(seed).getValue(chunkX / 20.0f, chunkZ / 20.0f) - 1) / 70;
         if (v < 0) {
             return 0;
         } else if (v > 1) {
@@ -73,8 +72,8 @@ public class SpheresFeature implements IFeature {
     }
 
     @Override
-    public Random getRandom(IWorld world, int chunkX, int chunkZ) {
-        return new Random(world.getSeed() + chunkZ * 899809363L + chunkX * 256203221L);
+    public Random getRandom(long seed, int chunkX, int chunkZ) {
+        return new Random(seed + chunkZ * 899809363L + chunkX * 256203221L);
     }
 
     @Override

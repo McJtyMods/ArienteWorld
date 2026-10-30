@@ -1,0 +1,297 @@
+package mcjty.arienteworld;
+
+import com.mojang.authlib.GameProfile;
+import mcjty.ariente.entities.drone.EntityAIScanForPlayer;
+import mcjty.ariente.entities.drone.SentinelDroneEntity;
+import mcjty.ariente.api.IAICoreTile;
+import mcjty.ariente.api.ICityEquipment;
+import mcjty.ariente.api.ISignalChannel;
+import mcjty.ariente.blocks.aicore.AICoreTile;
+import mcjty.ariente.blocks.defense.ForceFieldTile;
+import mcjty.ariente.power.PowerSystem;
+import mcjty.lib.tileentity.TickingTileEntity;
+import mcjty.ariente.cables.GenericCableTileEntity;
+import net.minecraft.world.level.block.EntityBlock;
+import mcjty.arienteworld.ai.CityAI;
+import mcjty.arienteworld.ai.CityAISystem;
+import mcjty.arienteworld.cities.AssetRegistries;
+import mcjty.arienteworld.cities.BuildingPart;
+import mcjty.arienteworld.cities.City;
+import mcjty.arienteworld.cities.CityPlan;
+import mcjty.arienteworld.cities.CityTools;
+import mcjty.arienteworld.cities.LegacyBlockStates;
+import mcjty.arienteworld.cities.Palette;
+import mcjty.arienteworld.dimension.DimensionRegister;
+import mcjty.arienteworld.dimension.CityFeature;
+import net.minecraft.core.BlockPos;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.util.FakePlayer;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraftforge.gametest.GameTestHolder;
+import net.minecraftforge.gametest.PrefixGameTestTemplate;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+
+import static mcjty.ariente.setup.Registration.NETCABLE;
+
+@GameTestHolder(ArienteWorld.MODID)
+@PrefixGameTestTemplate(false)
+public class CityGenerationTests {
+
+    @GameTest(template = "empty")
+    public static void legacyPalettesAndCityGrid(GameTestHelper helper) {
+        AssetRegistries.validate();
+        helper.assertTrue(LegacyBlockStates.read("ariente:marble@color=black")
+                        .equals(LegacyBlockStates.read("ariente:marble_black")), "Marble variants must keep their color");
+        helper.assertTrue(LegacyBlockStates.read("ariente:double_marble_slab@color=white,type=bottom")
+                        .equals(LegacyBlockStates.read("ariente:marble_slab_white@type=double")), "Double slabs must remain full blocks");
+        helper.assertTrue(CityTools.getNearestDungeonCenter(-1, -17).equals(new ChunkPos(-8, -24)),
+                "Negative coordinates must use the same city grid");
+        City original = CityTools.getCity(123, new ChunkPos(-8, -24));
+        CityTools.getCity(456, original.getCenter());
+        City repeated = CityTools.getCity(123, original.getCenter());
+        helper.assertTrue(original.getPlan() == repeated.getPlan() && original.getName().equals(repeated.getName()),
+                "Switching worlds must not change a seed's city layout");
+        int commandResult = helper.getLevel().getServer().getCommands().performPrefixedCommand(
+                helper.getLevel().getServer().createCommandSourceStack(), "arienteworld findcity city4_1");
+        helper.assertTrue(commandResult == 1, "The city search command must find a floating city");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void cityCableAppearanceAndNetworkData(GameTestHelper helper) {
+        BlockState cableState = NETCABLE.get().defaultBlockState();
+        EntityBlock block = (EntityBlock) cableState.getBlock();
+        GenericCableTileEntity cable = (GenericCableTileEntity) block.newBlockEntity(BlockPos.ZERO, cableState);
+        BlockState facade = LegacyBlockStates.read("ariente:double_marble_slab@color=white,type=bottom");
+        cable.setMimicBlock(facade);
+        cable.setCableId(42);
+        GenericCableTileEntity restored = (GenericCableTileEntity) block.newBlockEntity(BlockPos.ZERO, cableState);
+        restored.load(cable.saveWithoutMetadata());
+        helper.assertTrue(restored.getCableId() == 42, "City cable must preserve its network ID");
+        helper.assertTrue(facade.equals(restored.getMimicBlock()), "City facade must preserve its full block state");
+        GenericCableTileEntity client = (GenericCableTileEntity) block.newBlockEntity(BlockPos.ZERO, cableState);
+        client.handleUpdateTag(cable.getUpdateTag());
+        helper.assertTrue(facade.equals(client.getMimicBlock()), "City facade must be included in the initial client chunk data");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 1200)
+    public static void allCityPlansGenerateAndInitialize(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel().getServer().getLevel(DimensionRegister.DIMENSION);
+        FixtureData fixtures = level.getDataStorage().computeIfAbsent(FixtureData::load, FixtureData::new, "ariente_city_test_fixtures");
+        int fixtureZ = -1272 - fixtures.iteration++ * 256;
+        fixtures.setDirty();
+        int index = 0;
+        for (CityPlan plan : AssetRegistries.CITYPLANS.getIterable()) {
+            if (!plan.isCity()) {
+                continue;
+            }
+            City city = findCity(level.getSeed(), plan, fixtureZ);
+            int tick = ++index * 5;
+            helper.runAtTickTime(tick, () -> verifyCity(helper, level, city));
+        }
+        helper.runAtTickTime((index + 1) * 5, helper::succeed);
+    }
+
+    private static City findCity(long seed, CityPlan plan, int fixtureZ) {
+        // Keep the generated fixtures away from the ordinary smoke-test chunks.
+        for (int i = 0; i < 1000; i++) {
+            City city = CityTools.getCity(seed, new ChunkPos(1032 + i * 16, fixtureZ));
+            if (city.getPlan() == plan) {
+                return city;
+            }
+        }
+        throw new AssertionError("Could not find a city using " + plan.getName());
+    }
+
+    private static void verifyCity(GameTestHelper helper, ServerLevel level, City city) {
+        CityPlan plan = city.getPlan();
+        int width = plan.getPlan().get(0).length();
+        int depth = plan.getPlan().size();
+        List<ChunkPos> chunks = new ArrayList<>();
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < depth; z++) {
+                chunks.add(new ChunkPos(city.getCenter().x - width / 2 + x, city.getCenter().z - depth / 2 + z));
+            }
+        }
+        Collections.shuffle(chunks, new Random(123));
+        for (ChunkPos chunk : chunks) {
+            level.getChunk(chunk.x, chunk.z);
+        }
+        Palette palette = AssetRegistries.PALETTES.get(plan.getPalette());
+        AICoreTile core = null;
+        int blocks = 0;
+        for (ChunkPos chunk : chunks) {
+            int floor = CityTools.getLowestHeight(level, city, chunk.x, chunk.z);
+            for (BuildingPart part : CityTools.getBuildingParts(level.getSeed(), city, chunk.x, chunk.z)) {
+                for (int x = 0; x < part.getXSize(); x++) {
+                    for (int z = 0; z < part.getZSize(); z++) {
+                        for (int y = 0; y < part.getSliceCount(); y++) {
+                            BlockState expected = palette.getPalette().get(part.getC(x, y, z));
+                            if (expected.isAir()) {
+                                continue;
+                            }
+                            BlockPos pos = new BlockPos(chunk.getMinBlockX() + x, floor + y, chunk.getMinBlockZ() + z);
+                            int shaftZ = (chunk.z & 15) == 9 ? 12 : 3;
+                            boolean shaft = !plan.isUnderground() && (chunk.x & 15) == 7
+                                    && ((chunk.z & 15) == 9 || (chunk.z & 15) == 7
+                                    && !CityTools.isDungeonChunk(level.getSeed(), chunk.x, chunk.z + 2))
+                                    && x >= 1 && x <= 3 && z >= shaftZ && z <= shaftZ + 2
+                                    && pos.getY() <= CityTools.getLowestHeight(level, city, chunk.x, chunk.z) + 1;
+                            if (shaft) {
+                                // Station elevator shafts deliberately open the authored entrance floor.
+                                continue;
+                            }
+                            helper.assertTrue(level.getBlockState(pos).is(expected.getBlock()),
+                                    plan.getName() + ": missing " + expected + " at " + pos + ", found " + level.getBlockState(pos));
+                            blocks++;
+                            BlockEntity tile = CityFeature.hasBlockEntity(expected) ? level.getBlockEntity(pos) : null;
+                            if (tile instanceof AICoreTile aiCore) {
+                                core = aiCore;
+                            }
+                            Map<String, Object> data = part.getTeInfo().get(new BlockPos(x, y, z));
+                            if (data != null && tile instanceof ICityEquipment equipment) {
+                                if (data.containsKey("channel") && tile instanceof ISignalChannel signal) {
+                                    helper.assertTrue(signal.getDesiredChannel() == (Integer) data.get("channel"),
+                                            "City equipment must retain its desired channel");
+                                }
+                                Map<String, Object> actual = equipment.save();
+                                for (String key : List.of("height", "scale", "horizontal", "vertical")) {
+                                    if (data.containsKey(key)) {
+                                        helper.assertTrue(actual != null && data.get(key).equals(actual.get(key)),
+                                                "City equipment must retain " + key + " at " + pos);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                floor += part.getSliceCount();
+            }
+        }
+        helper.assertTrue(blocks > 0, "City must contain authored blocks: " + plan.getName());
+        helper.assertTrue(core != null, "City must contain an AI core: " + plan.getName());
+        CityAI ai = CityAISystem.getCityAISystem(level).getCityAI(city.getCenter());
+        ai.tick(core);
+        helper.assertTrue(ai.getStorageKeyId() != null && !ai.getStorageKeyId().isEmpty(), "City must initialize its security");
+        helper.assertTrue(((IAICoreTile) core).getCityName().equals(city.getName()), "Core must receive its city name");
+        CompoundTag saved = new CompoundTag();
+        ai.writeToNBT(saved);
+        CityAI restored = new CityAI(level, city.getCenter());
+        restored.readFromNBT(saved);
+        helper.assertTrue(restored.getStorageKeyId().equals(ai.getStorageKeyId()), "City security must survive saving");
+        helper.assertTrue(!restored.isDead(level), "Saved core positions must survive loading");
+        restored.tick(core);
+        helper.assertTrue(restored.getStorageKeyId().equals(ai.getStorageKeyId()), "Reload must not reinitialize city security");
+        if (plan.isFloating()) {
+            verifySentinelAlert(helper, level, city, ai, core);
+            List<TickingTileEntity> machines = new ArrayList<>();
+            List<ForceFieldTile> fields = new ArrayList<>();
+            for (ChunkPos chunk : chunks) {
+                for (BlockEntity tile : level.getChunk(chunk.x, chunk.z).getBlockEntities().values()) {
+                    if (tile instanceof ForceFieldTile field) {
+                        fields.add(field);
+                    } else if (tile instanceof TickingTileEntity machine) {
+                        machines.add(machine);
+                    }
+                }
+            }
+            for (int tick = 0; tick < 400; tick++) {
+                PowerSystem.getPowerSystem(level).tick();
+                machines.forEach(TickingTileEntity::tick);
+                fields.forEach(ForceFieldTile::tickServer);
+            }
+            helper.assertTrue(!fields.isEmpty(), "Floating ship must contain a forcefield generator");
+            for (ForceFieldTile field : fields) {
+                long panels = Arrays.stream(field.getPanelInfo()).filter(panel -> panel != null && panel.getLife() > 0).count();
+                helper.assertTrue(panels > 0, "Authored ship generators/cables must power its forcefield");
+                ForceFieldTile display = new ForceFieldTile(field.getBlockPos(), field.getBlockState());
+                display.handleUpdateTag(field.getUpdateTag());
+                helper.assertTrue(Arrays.stream(display.getPanelInfo()).filter(panel -> panel != null && panel.getLife() > 0).count() == panels,
+                        "Active shield panels must reach newly joining clients");
+            }
+        }
+        ArienteWorld.setup.getLogger().info("Verified city {} at {}, {} ({} blocks)", plan.getName(),
+                city.getCenter().getMiddleBlockX(), city.getCenter().getMiddleBlockZ(), blocks);
+    }
+
+    private static void verifySentinelAlert(GameTestHelper helper, ServerLevel level, City city, CityAI ai, AICoreTile core) {
+        BlockPos pos = core.getBlockPos().above(60);
+        SentinelDroneEntity sentinel = SentinelDroneEntity.create(level, 0, city.getCenter());
+        sentinel.moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + .5);
+        FakePlayer player = new FakePlayer(level, new GameProfile(UUID.randomUUID(), "sentinel-test"));
+        player.setGameMode(GameType.CREATIVE);
+        player.moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + 10.5);
+        level.addFreshEntity(player);
+        EntityAIScanForPlayer scan = new EntityAIScanForPlayer(sentinel);
+        BlockPos obstruction = pos.south(5).above();
+        try {
+            ai.pacify(level);
+            ai.tick(core);
+            helper.assertTrue(!scan.canUse(), "Sentinels must ignore creative players");
+            player.setGameMode(GameType.SPECTATOR);
+            helper.assertTrue(!scan.canUse(), "Sentinels must ignore spectators");
+            player.setGameMode(GameType.SURVIVAL);
+            level.setBlockAndUpdate(obstruction, Blocks.STONE.defaultBlockState());
+            sentinel.getSensing().tick();
+            helper.assertTrue(!scan.canUse(), "Sentinels must not spot players through walls");
+            level.removeBlock(obstruction, false);
+            sentinel.getSensing().tick();
+            helper.assertTrue(scan.canUse(), "Sentinels must spot visible survival players");
+            scan.start();
+            CompoundTag alerted = new CompoundTag();
+            ai.writeToNBT(alerted);
+            helper.assertTrue(alerted.getInt("onAlert") > 0, "Spotting a player must alert the city");
+            helper.assertTrue(sentinel.getLastHurtByMob() == null, "Spotting must not simulate being hurt by a player");
+            helper.assertTrue(scan.canContinueToUse(), "Sentinels must keep watching visible players");
+            ai.pacify(level);
+            for (int tick = 0; tick < 20; tick++) {
+                scan.tick();
+            }
+            ai.writeToNBT(alerted);
+            helper.assertTrue(alerted.getInt("onAlert") > 0, "Continuing sightings must refresh the alert");
+            player.moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + 60.5);
+            helper.assertTrue(!scan.canContinueToUse(), "Sentinels must lose players beyond their detection range");
+            scan.stop();
+            helper.assertTrue(!scan.canUse(), "Players beyond 50 blocks must not be detected");
+            ai.tick(core);
+        } finally {
+            level.removeBlock(obstruction, false);
+            player.discard();
+            sentinel.discard();
+        }
+    }
+
+    private static class FixtureData extends SavedData {
+
+        private int iteration;
+
+        private static FixtureData load(CompoundTag tag) {
+            FixtureData data = new FixtureData();
+            data.iteration = tag.getInt("iteration");
+            return data;
+        }
+
+        @Override
+        public CompoundTag save(CompoundTag tag) {
+            tag.putInt("iteration", iteration);
+            return tag;
+        }
+    }
+
+}

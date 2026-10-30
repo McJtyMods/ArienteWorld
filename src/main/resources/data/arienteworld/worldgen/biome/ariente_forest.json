@@ -1,0 +1,99 @@
+{
+  "has_precipitation": false,
+  "temperature": 0.8,
+  "downfall": 0.4,
+  "effects": {
+    "sky_color": 8103167,
+    "fog_color": 5313887,
+    "water_color": 5635976,
+    "water_fog_color": 5635976,
+    "grass_color": 4491383,
+    "foliage_color": 2245751
+  },
+  "spawners": {
+    "monster": [
+      {
+        "type": "minecraft:spider",
+        "weight": 100,
+        "minCount": 4,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:zombie",
+        "weight": 95,
+        "minCount": 4,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:zombie_villager",
+        "weight": 5,
+        "minCount": 1,
+        "maxCount": 1
+      },
+      {
+        "type": "minecraft:skeleton",
+        "weight": 100,
+        "minCount": 4,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:creeper",
+        "weight": 100,
+        "minCount": 4,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:slime",
+        "weight": 100,
+        "minCount": 4,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:enderman",
+        "weight": 10,
+        "minCount": 1,
+        "maxCount": 4
+      },
+      {
+        "type": "minecraft:witch",
+        "weight": 5,
+        "minCount": 1,
+        "maxCount": 1
+      }
+    ]
+  },
+  "spawn_costs": {},
+  "carvers": {},
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "arienteworld:ore_marble_blue",
+      "arienteworld:ore_marble_black",
+      "arienteworld:ore_marble_white",
+      "arienteworld:ore_lithiumore",
+      "arienteworld:ore_manganeseore",
+      "arienteworld:ore_platinumore",
+      "arienteworld:ore_siliconore",
+      "arienteworld:ore_silverore",
+      "arienteworld:ore_lapisore",
+      "arienteworld:ore_glowstoneore",
+      "arienteworld:ore_negarite",
+      "arienteworld:ore_posirite"
+    ],
+    [],
+    [],
+    [
+      "arienteworld:grass_forest",
+      "arienteworld:trees_forest",
+      "arienteworld:plants"
+    ],
+    [
+      "arienteworld:city"
+    ]
+  ]
+}

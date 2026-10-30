@@ -1,24 +1,19 @@
 package mcjty.arienteworld.setup;
 
-
-import mcjty.arienteworld.ClientForgeEventHandlers;
-import net.minecraft.client.audio.MusicTicker;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 public class ClientSetup {
 
-    public static MusicTicker.MusicType arienteMusic;
-
     public static void init(FMLClientSetupEvent event) {
-        MinecraftForge.EVENT_BUS.register(new ClientForgeEventHandlers());
-        // @todo 1.15
-//        arienteMusic = EnumHelperClient.addMusicType("ariente_music", ModSounds.music, 12000, 24000);
+        event.enqueueWork(() -> {
+            ItemBlockRenderTypes.setRenderLayer(Registration.GLOWLEAVES.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(Registration.BLUELEAVES.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(Registration.DARKLEAVES.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(Registration.BLACKBUSH.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(Registration.DARKGRASS.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(Registration.SMALLFLOWER.get(), RenderType.cutout());
+        });
     }
-
-//    @SubscribeEvent
-//    public static void registerModels(ModelRegistryEvent event) {
-//        ModBlocks.initModels();
-//    }
-
 }

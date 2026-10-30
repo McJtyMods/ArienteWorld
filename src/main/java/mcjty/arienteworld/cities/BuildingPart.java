@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import mcjty.lib.varia.Logging;
-import net.minecraft.block.BlockState;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.BlockPos;
 
 import java.util.*;
 
@@ -56,9 +56,11 @@ public class BuildingPart implements IAsset {
         Object o = metadata.get(key);
         return o instanceof Boolean ? (Boolean) o : false;
     }
+
     public Float getMetaFloat(String key) {
         return (Float) metadata.get(key);
     }
+
     public String getMetaString(String key) {
         return (String) metadata.get(key);
     }

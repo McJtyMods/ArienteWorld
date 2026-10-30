@@ -2,18 +2,16 @@ package mcjty.arienteworld.dimension;
 
 import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.api.TechType;
-import mcjty.arienteworld.ArienteStuff;
-import mcjty.arienteworld.biomes.IArienteBiome;
+import mcjty.arienteworld.dimension.terrain.ArienteBiomeLayout;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import mcjty.arienteworld.cities.*;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.provider.BiomeProvider;
-import net.minecraft.world.chunk.IChunk;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.WorldGenLevel;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -28,8 +26,8 @@ public class ArienteLandscapeCity {
 
     public static final String CITY_PALETTE = "landscapecities";
 
-    private static Map<ChunkPos, Boolean> cityChunkCache = new HashMap<>();
-    private static Map<ChunkPos, LStripInfo> cityStripInfoCache = new HashMap<>();
+    private static final Cache<Long, ArienteBiomeLayout> LAYOUTS = CacheBuilder.newBuilder().maximumSize(8).build();
+    private static final Cache<ChunkPos, LStripInfo> STRIPS = CacheBuilder.newBuilder().maximumSize(16384).build();
 
     // For the citylev network (city levitator network)
     private static class LStripInfo {
@@ -56,12 +54,13 @@ public class ArienteLandscapeCity {
     }
 
     private static LStripInfo getStripInfo(int chunkX, int chunkZ) {
-        ChunkPos cp = new ChunkPos(chunkX, chunkZ);
-        if (!cityStripInfoCache.containsKey(cp)) {
-            LStripInfo info = new LStripInfo(chunkX, chunkZ);
-            cityStripInfoCache.put(cp, info);
+        ChunkPos pos = new ChunkPos(chunkX, chunkZ);
+        LStripInfo info = STRIPS.getIfPresent(pos);
+        if (info == null) {
+            info = new LStripInfo(chunkX, chunkZ);
+            STRIPS.put(pos, info);
         }
-        return cityStripInfoCache.get(cp);
+        return info;
     }
 
     private static boolean isStripStartStation(int chunkX, int chunkZ) {
@@ -145,31 +144,13 @@ public class ArienteLandscapeCity {
     }
 
 
-    private static Biome[] biomesForGeneration;
-
-    public static boolean isLandscapeCityChunk(int chunkX, int chunkZ, IWorld world, BiomeProvider biomesForGeneration) {
-        ChunkPos pos = new ChunkPos(chunkX, chunkZ);
-        if (!cityChunkCache.containsKey(pos)) {
-            // @todo 1.15
-            Set<Biome> biomes = biomesForGeneration.getBiomes(chunkX << 4, world.getSeaLevel(), chunkZ << 4, 16);
-//            Biome biome = world.getBiomeManager().getBiome(new BlockPos(pos.getXStart() + 8, world.getSeaLevel(), pos.getZStart() + 8));
-//                biomesForGeneration = world.getBiomeProvider().getBiomes(biomesForGeneration, chunkX * 16, chunkZ * 16, 16, 16);
-            cityChunkCache.put(pos, hasCityBiomes(biomes));
+    public static boolean isLandscapeCityChunk(long seed, int chunkX, int chunkZ) {
+        ArienteBiomeLayout layout = LAYOUTS.getIfPresent(seed);
+        if (layout == null) {
+            layout = new ArienteBiomeLayout(seed);
+            LAYOUTS.put(seed, layout);
         }
-        return cityChunkCache.get(pos);
-    }
-
-    private static boolean hasCityBiomes(Set<Biome> biomesForGeneration) {
-        int yes = 0;
-        int no = 0;
-        for (Biome biome : biomesForGeneration) {
-            if (biome instanceof IArienteBiome && ((IArienteBiome) biome).isCityBiome()) {
-                yes++;
-            } else {
-                no++;
-            }
-        }
-        return yes > no+((yes+no)/10);
+        return layout.isCityChunk(chunkX, chunkZ);
     }
 
     // Only relevant on city chunks. Returns the part name
@@ -224,27 +205,26 @@ public class ArienteLandscapeCity {
             Pair.of("citylev_cross", Transform.ROTATE_NONE)         // 1111: OK
     );
 
-    public static void generate(int chunkX, int chunkZ, IChunk primer, ArienteDungeonGenerator cityGenerator) {
-        BlockState baseChar = ArienteStuff.marble.getDefaultState();
-        BlockState fillChar = ArienteStuff.marble.getDefaultState().with(MarbleColor.COLOR, MarbleColor.BLACK);
+    public static void generate(int chunkX, int chunkZ, CityChunk primer) {
+        BlockState baseChar = LegacyBlockStates.read("ariente:marble");
+        BlockState fillChar = LegacyBlockStates.read("ariente:marble@color=black");
 
         boolean undergroundDungeon = false;
-        if (CityTools.isDungeonChunk(chunkX, chunkZ)) {
+        if (CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ)) {
             ChunkPos center = CityTools.getNearestDungeonCenter(chunkX, chunkZ);
-            City city = CityTools.getCity(center);
+            City city = CityTools.getCity(primer.getLevel().getSeed(), center);
             undergroundDungeon = city.getPlan().isUnderground();
             if (!city.getPlan().isUnderground() && !city.getPlan().isFloating()) {
-//                PrimerTools.fillChunk(primer, baseChar, 0, CITY_LEVEL + CITYLEV_HEIGHT);
                 return;
             }
         }
 
         // If there is a dungeon chunk adjacent to this we restrict to flat (unless it is underground)
-        boolean adjacentDungeon = (!undergroundDungeon) && (CityTools.isDungeonChunk(chunkX-1, chunkZ) ||
-                CityTools.isDungeonChunk(chunkX+1, chunkZ) ||
-                CityTools.isDungeonChunk(chunkX, chunkZ-1) ||
-                CityTools.isDungeonChunk(chunkX, chunkZ+1) ||
-                CityTools.isDungeonChunk(chunkX, chunkZ));
+        boolean adjacentDungeon = (!undergroundDungeon) && (CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX-1, chunkZ) ||
+                CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX+1, chunkZ) ||
+                CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ-1) ||
+                CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ+1) ||
+                CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ));
 
         int yOffset = getBuildingYOffset(chunkX, chunkZ);
         boolean levitatorChunk = isCityLevitatorChunk(chunkX, chunkZ);
@@ -252,8 +232,7 @@ public class ArienteLandscapeCity {
             yOffset -= CITYLEV_HEIGHT;   // Building height is where the building starts. We need to go lower here
         }
 
-//        PrimerTools.fillChunk(primer, baseChar, 0, CITY_LEVEL-2);
-        PrimerTools.fillChunk(primer, fillChar, CITY_LEVEL-2, yOffset);
+        primer.fill(fillChar, CITY_LEVEL-2, yOffset);
 
         boolean undergroundPark = false;        // True if this park section is underground
         Pair<String, Transform> part = getBuildingPart(chunkX, chunkZ);
@@ -273,7 +252,7 @@ public class ArienteLandscapeCity {
         if (levitatorChunk) {
             Pair<String, Transform> pair = getCityLevitatorPart(chunkX, chunkZ);
             BuildingPart buildingPart = AssetRegistries.PARTS.get(pair.getKey());
-            cityGenerator.generatePart(primer, CITY_PALETTE, buildingPart,
+            primer.placePart(CITY_PALETTE, buildingPart,
                     pair.getValue(), 0, yOffset, 0);
             start += buildingPart.getSliceCount();
 
@@ -284,7 +263,7 @@ public class ArienteLandscapeCity {
                 part = null;
             } else {
                 // We generate a roofpart on top of which the building will come
-                cityGenerator.generatePart(primer, CITY_PALETTE, AssetRegistries.PARTS.get("citylev_roofpart"),
+                primer.placePart(CITY_PALETTE, AssetRegistries.PARTS.get("citylev_roofpart"),
                         Transform.ROTATE_NONE, 0, yOffset, 0);
                 yOffset += CITYLEV_HEIGHT;
             }
@@ -292,22 +271,22 @@ public class ArienteLandscapeCity {
 
         if (part != null) {
             BuildingPart buildingPart = AssetRegistries.PARTS.get(part.getKey());
-            cityGenerator.generatePart(primer, CITY_PALETTE, buildingPart, part.getValue(), 0, yOffset, 0);
+            primer.placePart(CITY_PALETTE, buildingPart, part.getValue(), 0, yOffset, 0);
             start += buildingPart.getSliceCount();
         }
 
         if (undergroundPark) {
-            BlockState air = Blocks.AIR.getDefaultState();
-            BlockState marble = ArienteStuff.marble_smooth.getDefaultState().with(MarbleColor.COLOR, MarbleColor.BLACK);
-            BlockState tech = ArienteStuff.blackmarble_techpat.getDefaultState().with(TechType.TYPE, TechType.LINES);
+            BlockState air = Blocks.AIR.defaultBlockState();
+            BlockState marble = LegacyBlockStates.read("ariente:marble_smooth@color=black");
+            BlockState tech = LegacyBlockStates.read("ariente:blacktech@type=lines");
             int layerHeight = CITY_LEVEL + CITYLEV_HEIGHT + 6;
             if (start < layerHeight) {
-                PrimerTools.fillChunk(primer, air, start, layerHeight);
+                primer.fill(air, start, layerHeight);
             }
-            BlockPos.Mutable pos = new BlockPos.Mutable();
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
             for (int dx = 0 ; dx < 16 ; dx++) {
                 for (int dz = 0; dz < 16; dz++) {
-                    pos.setPos(dx, layerHeight, dz);
+                    pos.set(dx, layerHeight, dz);
                     if (primer.getBlockState(pos) != air) {
                         if (dx == 6 || dx == 9 || dz == 6 || dz == 9) {
                             primer.setBlockState(pos, tech, false);
@@ -320,15 +299,15 @@ public class ArienteLandscapeCity {
         }
     }
 
-    private static boolean isChunkOccupied(IChunk primer, int y1, int y2) {
-        BlockState air = Blocks.AIR.getDefaultState();
+    private static boolean isChunkOccupied(CityChunk primer, int y1, int y2) {
+        BlockState air = Blocks.AIR.defaultBlockState();
 
-        BlockPos.Mutable pos = new BlockPos.Mutable();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int dx = 0 ; dx < 16 ; dx += 2) {
             for (int dz = 0 ; dz < 16 ; dz += 2) {
                 int y = y1;
                 while (y <= y2) {
-                    if (primer.getBlockState(pos.setPos(dx, y, dz)) != air) {
+                    if (primer.getBlockState(pos.set(dx, y, dz)) != air) {
                         return true;
                     }
                     y += 2;
@@ -349,15 +328,4 @@ public class ArienteLandscapeCity {
         return CITYLEV_PARTS.get(mask);
     }
 
-    public static void main(String[] args) {
-        for (int z = 0 ; z < 60 ; z++) {
-            String b = "";
-            for (int x = 0 ; x < 60 ; x++) {
-                boolean chunk = isCityLevitatorChunk(x, z);
-                LStripInfo info = getStripInfo(x, z);
-                b += chunk ? (info.isLevel0Chunk ? '#' : ((info.isLevel1Chunk != null && info.isLevel1Chunk) ? '*' : '+')) : ' ';
-            }
-            System.out.println(b);
-        }
-    }
 }
