@@ -27,171 +27,74 @@
     "floating": false,
     "loot": [
       {
-        "meta": 0,
-        "max": 3,
-        "chance": 0.4,
-        "blueprint": true
-      },
-      {
-        "id": "ariente:circuit",
-        "meta": 0,
-        "max": 2,
-        "chance": 0.1,
-        "blueprint": false
-      },
-      {
         "id": "ariente:advanced_circuit",
         "meta": 0,
-        "max": 1,
-        "chance": 0.1,
+        "max": 12,
+        "chance": 4,
         "blueprint": false
       },
       {
         "id": "ariente:flux_capacitor",
         "meta": 0,
-        "max": 1,
-        "chance": 0.1,
-        "blueprint": false
-      },
-      {
-        "id": "ariente:ingot_silver",
-        "meta": 0,
-        "max": 3,
-        "chance": 0.2,
-        "blueprint": false
-      },
-      {
-        "id": "ariente:ingot_manganese",
-        "meta": 0,
-        "max": 2,
-        "chance": 0.2,
-        "blueprint": false
-      },
-      {
-        "id": "ariente:dust_negarite",
-        "meta": 0,
-        "max": 8,
-        "chance": 0.1,
-        "blueprint": false
-      },
-      {
-        "id": "ariente:dust_posirite",
-        "meta": 0,
-        "max": 8,
-        "chance": 0.1,
-        "blueprint": false
-      },
-      {
-        "id": "ariente:energy_sabre",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
-        "blueprint": false
-      },
-      {
-        "id": "ariente:module_inhibit",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
-        "blueprint": true
-      },
-      {
-        "id": "ariente:key_card",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
+        "max": 4,
+        "chance": 3,
         "blueprint": false
       },
       {
         "id": "ariente:enhanced_energy_sabre",
         "meta": 0,
         "max": 1,
-        "chance": 0.1,
+        "chance": 1,
         "blueprint": true
       },
       {
-        "id": "ariente:module_armor",
+        "id": "ariente:module_flight",
         "meta": 0,
         "max": 1,
-        "chance": 0.1,
-        "blueprint": true
-      },
-      {
-        "id": "ariente:module_energy",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
-        "blueprint": true
-      },
-      {
-        "id": "ariente:module_regeneration",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
-        "blueprint": false
-      },
-      {
-        "id": "ariente:module_speed",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
-        "blueprint": false
-      },
-      {
-        "id": "ariente:module_fire",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
-        "blueprint": true
-      },
-      {
-        "id": "ariente:module_energy",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
+        "chance": 1,
         "blueprint": true
       },
       {
         "id": "ariente:module_forcefield",
         "meta": 0,
         "max": 1,
-        "chance": 0.1,
-        "blueprint": true
-      },
-      {
-        "id": "ariente:powersuit_legs",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
+        "chance": 1,
         "blueprint": true
       },
       {
         "id": "ariente:powersuit_chest",
         "meta": 0,
         "max": 1,
-        "chance": 0.1,
+        "chance": 1,
         "blueprint": true
       },
       {
-        "id": "ariente:powersuit_head",
+        "id": "ariente:module_energy",
         "meta": 0,
         "max": 1,
-        "chance": 0.1,
+        "chance": 1,
         "blueprint": true
       },
       {
-        "id": "ariente:powersuit_feet",
+        "id": "ariente:module_regeneration",
         "meta": 0,
         "max": 1,
-        "chance": 0.1,
-        "blueprint": true
+        "chance": 2,
+        "blueprint": false
       },
       {
-        "id": "ariente:flux_levitator",
+        "id": "ariente:module_speed",
         "meta": 0,
         "max": 1,
-        "chance": 0.1,
-        "blueprint": true
+        "chance": 2,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:module_power",
+        "meta": 0,
+        "max": 1,
+        "chance": 2,
+        "blueprint": false
       }
     ],
     "variants": [],
@@ -27587,6 +27490,134 @@
       {
         "char": "C ",
         "block": "ariente:marble_slab@color=black,type=top"
+      },
+      {
+        "char": "!0",
+        "block": "minecraft:air"
+      },
+      {
+        "char": "!1",
+        "block": "ariente:marble_smooth@color=black"
+      },
+      {
+        "char": "!2",
+        "block": "ariente:marble_bricks@color=black"
+      },
+      {
+        "char": "!3",
+        "block": "ariente:blacktech@type=lines_glow"
+      },
+      {
+        "char": "!4",
+        "block": "ariente:blacktech@type=red_lines_glow"
+      },
+      {
+        "char": "!5",
+        "block": "ariente:storage@facing=south"
+      },
+      {
+        "char": "!6",
+        "block": "ariente:elevator"
+      },
+      {
+        "char": "!7",
+        "block": "ariente:marble_pilar@color=black"
+      },
+      {
+        "char": "!8",
+        "block": "ariente:fluxglow"
+      },
+      {
+        "char": "!9",
+        "block": "ariente:level_marker"
+      },
+      {
+        "char": "!a",
+        "block": "ariente:marble_smooth@color=darkblue"
+      },
+      {
+        "char": "!b",
+        "block": "ariente:blacktech@type=panel"
+      },
+      {
+        "char": "!c",
+        "block": "ariente:blacktech@type=red_var1"
+      },
+      {
+        "char": "!d",
+        "block": "minecraft:stained_glass@color=cyan"
+      },
+      {
+        "char": "!e",
+        "block": "ariente:blacktech@type=var1"
+      },
+      {
+        "char": "!f",
+        "block": "ariente:tech_fence"
+      },
+      {
+        "char": "!g",
+        "block": "ariente:slope@facing=north"
+      },
+      {
+        "char": "!h",
+        "block": "ariente:slope@facing=south"
+      },
+      {
+        "char": "!i",
+        "block": "ariente:slope@facing=west"
+      },
+      {
+        "char": "!j",
+        "block": "ariente:slope@facing=east"
+      },
+      {
+        "char": "!k",
+        "block": "ariente:flatlight@facing=north"
+      },
+      {
+        "char": "!l",
+        "block": "ariente:flatlight@facing=south"
+      },
+      {
+        "char": "!m",
+        "block": "ariente:flatlight@facing=west"
+      },
+      {
+        "char": "!n",
+        "block": "ariente:flatlight@facing=east"
+      },
+      {
+        "char": "!o",
+        "block": "ariente:marble_fence"
+      },
+      {
+        "char": "!p",
+        "block": "ariente:blue_glass_fence"
+      },
+      {
+        "char": "!q",
+        "block": "ariente:blacktech@type=darkblue_blue"
+      },
+      {
+        "char": "!r",
+        "block": "ariente:blacktech@type=darkblue_red"
+      },
+      {
+        "char": "!s",
+        "block": "ariente:blacktech@type=var1_anim"
+      },
+      {
+        "char": "!t",
+        "block": "ariente:blacktech@type=red_var1_anim"
+      },
+      {
+        "char": "!u",
+        "block": "ariente:door_marker@facing=north"
+      },
+      {
+        "char": "!v",
+        "block": "ariente:door_marker@facing=west"
       }
     ]
   }

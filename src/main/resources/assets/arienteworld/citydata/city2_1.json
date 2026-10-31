@@ -3828,6 +3828,134 @@
       {
         "char": "C ",
         "block": "ariente:posirite_tank"
+      },
+      {
+        "char": "!0",
+        "block": "minecraft:air"
+      },
+      {
+        "char": "!1",
+        "block": "ariente:marble_smooth@color=black"
+      },
+      {
+        "char": "!2",
+        "block": "ariente:marble_bricks@color=black"
+      },
+      {
+        "char": "!3",
+        "block": "ariente:blacktech@type=lines_glow"
+      },
+      {
+        "char": "!4",
+        "block": "ariente:blacktech@type=red_lines_glow"
+      },
+      {
+        "char": "!5",
+        "block": "ariente:storage@facing=south"
+      },
+      {
+        "char": "!6",
+        "block": "ariente:elevator"
+      },
+      {
+        "char": "!7",
+        "block": "ariente:marble_pilar@color=black"
+      },
+      {
+        "char": "!8",
+        "block": "ariente:fluxglow"
+      },
+      {
+        "char": "!9",
+        "block": "ariente:level_marker"
+      },
+      {
+        "char": "!a",
+        "block": "ariente:marble_smooth@color=darkblue"
+      },
+      {
+        "char": "!b",
+        "block": "ariente:blacktech@type=panel"
+      },
+      {
+        "char": "!c",
+        "block": "ariente:blacktech@type=red_var1"
+      },
+      {
+        "char": "!d",
+        "block": "minecraft:stained_glass@color=cyan"
+      },
+      {
+        "char": "!e",
+        "block": "ariente:blacktech@type=var1"
+      },
+      {
+        "char": "!f",
+        "block": "ariente:tech_fence"
+      },
+      {
+        "char": "!g",
+        "block": "ariente:slope@facing=north"
+      },
+      {
+        "char": "!h",
+        "block": "ariente:slope@facing=south"
+      },
+      {
+        "char": "!i",
+        "block": "ariente:slope@facing=west"
+      },
+      {
+        "char": "!j",
+        "block": "ariente:slope@facing=east"
+      },
+      {
+        "char": "!k",
+        "block": "ariente:flatlight@facing=north"
+      },
+      {
+        "char": "!l",
+        "block": "ariente:flatlight@facing=south"
+      },
+      {
+        "char": "!m",
+        "block": "ariente:flatlight@facing=west"
+      },
+      {
+        "char": "!n",
+        "block": "ariente:flatlight@facing=east"
+      },
+      {
+        "char": "!o",
+        "block": "ariente:marble_fence"
+      },
+      {
+        "char": "!p",
+        "block": "ariente:blue_glass_fence"
+      },
+      {
+        "char": "!q",
+        "block": "ariente:blacktech@type=darkblue_blue"
+      },
+      {
+        "char": "!r",
+        "block": "ariente:blacktech@type=darkblue_red"
+      },
+      {
+        "char": "!s",
+        "block": "ariente:blacktech@type=var1_anim"
+      },
+      {
+        "char": "!t",
+        "block": "ariente:blacktech@type=red_var1_anim"
+      },
+      {
+        "char": "!u",
+        "block": "ariente:door_marker@facing=north"
+      },
+      {
+        "char": "!v",
+        "block": "ariente:door_marker@facing=west"
       }
     ]
   }

@@ -19,8 +19,8 @@ import java.util.*;
 public class ArienteLandscapeCity {
 
     public static final int CITY_LEVEL = 65;    // @todo make variable?
-    public static final int NUM_PARKS = 9;
-    public static final int NUM_BUILDINGS = 13;
+    public static final int NUM_PARKS = 18;
+    public static final int NUM_BUILDINGS = 26;
     public static final int MAX_STRIP_LENGTH = 6;
     public static final int CITYLEV_HEIGHT = 6;        // The height of city levitator section
 

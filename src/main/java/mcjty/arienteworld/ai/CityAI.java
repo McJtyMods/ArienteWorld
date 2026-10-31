@@ -984,6 +984,25 @@ public class CityAI implements ICityAI {
     }
 
     public static void fillLoot(CityPlan plan, IStorageTile te) {
+        if (plan.getName().equals("city5_1")) {
+            GenericTileEntity tile = (GenericTileEntity) te;
+            Random cache = new Random(((ServerLevel) tile.getLevel()).getSeed() ^ tile.getBlockPos().asLong());
+            List<Loot> rewards = plan.getLoot();
+            double totalWeight = rewards.stream().mapToDouble(Loot::getChance).sum();
+            for (int slot = 0; slot < 4 && totalWeight > 0; slot++) {
+                double choice = cache.nextDouble() * totalWeight;
+                for (Loot reward : rewards) {
+                    choice -= reward.getChance();
+                    if (choice < 0) {
+                        te.setLoot(reward.getId(), slot, reward.isBlueprint(),
+                                1 + cache.nextInt(Math.max(1, reward.getMaxAmount())), reward.getMeta());
+                        break;
+                    }
+                }
+            }
+            tile.setChanged();
+            return;
+        }
         WeightedRandom<Loot> randomLoot = plan.getRandomLoot();
         if (randomLoot.weightedList.isEmpty()) {
             return;

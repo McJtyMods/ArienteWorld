@@ -4,6 +4,8 @@ import mcjty.ariente.blocks.BlockProperties;
 import mcjty.ariente.Ariente;
 import mcjty.hologui.gui.HoloGuiEntity;
 import mcjty.ariente.blocks.utility.ElevatorTile;
+import mcjty.ariente.power.IPowerReceiver;
+import mcjty.ariente.power.IPowerUser;
 import mcjty.ariente.blocks.utility.autofield.AbstractNodeTile;
 import mcjty.ariente.blocks.utility.autofield.AutoFieldTile;
 import mcjty.ariente.blocks.utility.autofield.InputItemNodeTile;
@@ -289,23 +291,19 @@ public class SystemRegressionTests {
     }
 
     @GameTest(template = "empty")
-    public static void elevatorRequiresPower(GameTestHelper helper) {
+    public static void elevatorWorksWithoutPower(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos pos = helper.absolutePos(BlockPos.ZERO);
         level.setBlockAndUpdate(pos, Registration.ELEVATOR.get().defaultBlockState());
         var elevator = (ElevatorTile) level.getBlockEntity(pos);
+        elevator.setHeight(23);
         elevator.tickServer();
-        helper.assertTrue(!elevator.isPowered() && elevator.getUsingPower() == 0, "An unpowered elevator must stay inactive");
-        power(level, pos, 730200);
-        elevator.tickServer();
-        helper.assertTrue(elevator.isPowered() && elevator.getUsingPower() > 0, "Power must activate the beam and movement");
+        helper.assertTrue(!((Object) elevator instanceof IPowerReceiver)
+                && !((Object) elevator instanceof IPowerUser), "Elevators must not require or report power");
         var client = new ElevatorTile(pos, elevator.getBlockState());
         client.load(elevator.getUpdateTag());
-        helper.assertTrue(client.isPowered(), "The beam's active state must reach client chunk data");
-        level.removeBlock(pos.north(), false);
-        level.removeBlock(pos.south(), false);
-        elevator.tickServer();
-        helper.assertTrue(!elevator.isPowered(), "Disconnecting power must stop the elevator");
+        helper.assertTrue(client.getHeight() == 23 && !elevator.getUpdateTag().contains("powered"),
+                "Travel height must sync without a power gate");
         helper.succeed();
     }
 

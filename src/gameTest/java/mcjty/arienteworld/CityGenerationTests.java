@@ -30,6 +30,7 @@ import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.cities.Palette;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import mcjty.arienteworld.dimension.CityFeature;
+import mcjty.arienteworld.dimension.DungeonInteriors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -146,7 +147,8 @@ public class CityGenerationTests {
         int blocks = 0;
         for (ChunkPos chunk : chunks) {
             int floor = CityTools.getLowestHeight(level, city, chunk.x, chunk.z);
-            for (BuildingPart part : CityTools.getBuildingParts(level.getSeed(), city, chunk.x, chunk.z)) {
+            for (BuildingPart authored : CityTools.getBuildingParts(level.getSeed(), city, chunk.x, chunk.z)) {
+                BuildingPart part = DungeonInteriors.vary(authored, palette, level.getSeed(), chunk.x, chunk.z);
                 for (int x = 0; x < part.getXSize(); x++) {
                     for (int z = 0; z < part.getZSize(); z++) {
                         for (int y = 0; y < part.getSliceCount(); y++) {
@@ -257,6 +259,10 @@ public class CityGenerationTests {
                     cores.add(aiCore);
                 }
             }
+        }
+        if (plan.getName().equals("city5_1")) {
+            helper.assertTrue(storageCount >= 4 && lootStacks >= storageCount * 4,
+                    "Cube caches must contain four guaranteed end-game rewards");
         }
         ArienteWorld.setup.getLogger().info("City {} has {} authored storage cubes and {} loot stacks", plan.getName(), storageCount, lootStacks);
         if (plan.getName().equals("city0_1")) {

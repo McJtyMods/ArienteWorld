@@ -83,7 +83,9 @@ public class BuildingPart implements IAsset {
         for (int i = 0 ; i < slices.length ; i++) {
             copySlices[i] = slices[i].copy();
         }
-        return new BuildingPart(newName, xSize, zSize, copySlices, teInfo);
+        BuildingPart copy = new BuildingPart(newName, xSize, zSize, copySlices, teInfo);
+        copy.metadata.putAll(metadata);
+        return copy;
     }
 
     /**

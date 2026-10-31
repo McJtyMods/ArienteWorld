@@ -3,9 +3,7 @@ package mcjty.arienteworld.dimension;
 import mcjty.ariente.api.ICityEquipment;
 import mcjty.ariente.api.IStorageTile;
 import mcjty.arienteworld.ai.CityAI;
-import mcjty.arienteworld.dimension.terrain.NoiseGeneratorPerlin;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import java.util.Random;
 import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.facade.IFacadeSupport;
 import mcjty.arienteworld.cities.LegacyBlockStates;
@@ -23,6 +21,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
@@ -96,7 +95,7 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
         }
         Palette palette = AssetRegistries.PALETTES.get(city.getPlan().getPalette());
         for (BuildingPart part : parts) {
-            placePart(level, new BlockPos(chunk.getMinBlockX(), y, chunk.getMinBlockZ()), part, palette);
+            placePart(level, new BlockPos(chunk.getMinBlockX(), y, chunk.getMinBlockZ()), DungeonInteriors.vary(part, palette, level.getSeed(), chunk.x, chunk.z), palette);
             y += part.getSliceCount();
         }
         LevitatorNetworkGenerator.generate(chunk.x, chunk.z, writer, context.chunkGenerator());
@@ -132,7 +131,7 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                 int z = chunk.z + dz;
                 if (CityTools.isDungeonChunk(level.getSeed(), x, z)) {
                     City city = CityTools.getCity(level.getSeed(), CityTools.getNearestDungeonCenter(x, z));
-                    if (!city.getPlan().isUnderground()) {
+                    if (!city.getPlan().isUnderground() && !city.getPlan().isFloating()) {
                         heights[dx + 1][dz + 1] = CityTools.getCityHeight(city, generator, level, level.getLevel().getChunkSource().randomState());
                         nearby = true;
                     }
@@ -142,8 +141,6 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
         if (!nearby) {
             return;
         }
-        NoiseGeneratorPerlin noise = new NoiseGeneratorPerlin(new Random((level.getSeed() + 516) * 314), 4);
-        double[] variation = noise.getRegion(null, chunk.getMinBlockX(), chunk.getMinBlockZ(), 16, 16, 1.0 / 16, 1.0 / 16, 1);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
@@ -161,16 +158,40 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                         }
                     }
                 }
-                double variance = variation[x + z * 16] / (distance <= 1 ? 3 : distance <= 2 ? 2 : distance <= 3 ? 1.5 : 1);
-                for (int y = height + distance * 2 + (int) variance; y < 128; y++) {
-                    level.setBlock(pos.set(chunk.getMinBlockX() + x, y, chunk.getMinBlockZ() + z), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                if (distance >= 12) {
+                    continue;
+                }
+                int wx = chunk.getMinBlockX() + x;
+                int wz = chunk.getMinBlockZ() + z;
+                int natural = generator.getBaseHeight(wx, wz, Heightmap.Types.OCEAN_FLOOR_WG,
+                        level, level.getLevel().getChunkSource().randomState());
+                int target = approachHeight(height, natural, distance);
+                int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, wx, wz);
+                for (int y = target; y < surface; y++) {
+                    level.setBlock(pos.set(wx, y, wz), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                    level.getChunk(pos).removeBlockEntity(pos);
+                }
+                // Fill low approaches as well as cutting hills. The inner landing joins the
+                // dungeon floor exactly; the outer slope rejoins the original terrain.
+                for (int y = Math.min(natural - 1, target - 1); y < target; y++) {
+                    BlockState state = y == target - 1 ? (distance <= 1
+                            ? LegacyBlockStates.read("ariente:marble_smooth@color=black")
+                            : Blocks.GRASS_BLOCK.defaultBlockState()) : Blocks.DIRT.defaultBlockState();
+                    level.setBlock(pos.set(wx, y, wz), state, Block.UPDATE_CLIENTS);
+                    level.getChunk(pos).removeBlockEntity(pos);
                 }
             }
         }
     }
 
+    public static int approachHeight(int floor, int natural, int distance) {
+        // A two-block landing followed by a deterministic graded apron.
+        double blend = Math.max(0, Math.min(1, (distance - 1) / 10.0));
+        return (int) Math.round((floor + 1) * (1 - blend) + natural * blend);
+    }
+
     private static void prepareTerrain(WorldGenLevel level, ChunkPos chunk, int bottom) {
-        BlockState foundation = LegacyBlockStates.read("ariente:marble_bricks@color=black");
+        BlockState foundation = LegacyBlockStates.read("ariente:marble_smooth@color=black");
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = chunk.getMinBlockX(); x <= chunk.getMaxBlockX(); x++) {
             for (int z = chunk.getMinBlockZ(); z <= chunk.getMaxBlockZ(); z++) {
@@ -239,12 +260,16 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                     if (state.is(DOOR_MARKER.get())) {
                         state = orientDoor(part, palette, x, y, z, state);
                     }
-                    // Preserve ground beneath a part, but carve its rooms after the first solid block.
+                    BlockPos pos = origin.offset(transform.transform(new BlockPos(x, y, z)));
+                    // Preserve terrain beneath the first authored solid, but never retain
+                    // plants in an authored empty column (including the alternate air symbol).
                     if (!started && state.isAir()) {
+                        if (level.getBlockState(pos).getBlock() instanceof BushBlock) {
+                            level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                        }
                         continue;
                     }
                     started = true;
-                    BlockPos pos = origin.offset(transform.transform(new BlockPos(x, y, z)));
                     state = transform.transform(state);
                     level.setBlock(pos, state, Block.UPDATE_CLIENTS);
                     // BaseBlock also implements EntityBlock for decorative blocks with no supplier.

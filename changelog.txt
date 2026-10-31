@@ -1,4 +1,7 @@
 1.20-0.0.31-alpha:
+- Expanded the huge cube dungeon with varied multi-deck interiors, valuable storage-cube loot, and a large arena reserved for a future boss.
+- Doubled surface city buildings and parks, with taller technological spires.
+- Added procedural underground machinery islands and alternate detailing for ships, stations, and smaller dungeons.
 - Added an ArienteWorld chapter to the Ariente Tablet, covering expeditions, cities and their defenses.
 - Ported to Minecraft 1.20.1 (Forge).
 - Alerted dungeons deploy mobile soldier reinforcements independently of their fixed defenders and neighboring troops.

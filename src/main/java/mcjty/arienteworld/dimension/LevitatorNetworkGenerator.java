@@ -88,6 +88,8 @@ public class LevitatorNetworkGenerator {
             BuildingPart part = CityTools.getStationPart(primer.getLevel().getSeed(), chunkX, chunkZ);
             if (part != null) {
                 CityPlan station = AssetRegistries.CITYPLANS.get("station");
+                part = DungeonInteriors.vary(part, AssetRegistries.PALETTES.get(station.getPalette()),
+                        primer.getLevel().getSeed(), chunkX, chunkZ);
                 int lowest = primer.placePart(station.getPalette(), part, Transform.ROTATE_NONE, 0, CityTools.getStationHeight(), 0);
 
                 BlockPos elevatorPos = null;
