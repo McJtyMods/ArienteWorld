@@ -1,0 +1,32 @@
+// Opt-in fixture; see PORTING.txt. All saves and reports stay under build/verification.
+gradle.afterProject { p ->
+    if (p.name == 'ArienteWorld') {
+        def fixtureName = p.findProperty('worldcheck_name') ?: 'world-lifecycle'
+        def role = p.findProperty('worldcheck_role') ?: 'Alpha'
+        if (!(fixtureName ==~ /[a-zA-Z0-9_-]+/) || !(role in ['Alpha', 'Beta'])) {
+            throw new GradleException('Invalid disposable fixture name or role')
+        }
+        p.minecraft.runs {
+            server {
+                mods.arienteworld.source(p.sourceSets.gameTest)
+                workingDirectory p.file("build/verification/${fixtureName}/server")
+                property 'arienteworld.lifecycleCheck', 'true'
+                property 'arienteworld.soakTicks', (p.findProperty('worldcheck_soak_ticks') ?: '12000').toString()
+                property 'forge.logging.console.level', 'info'
+                args '--nogui'
+            }
+            client {
+                mods.arienteworld.source(p.sourceSets.gameTest)
+                workingDirectory p.file("build/verification/${fixtureName}/${role}")
+                property 'arienteworld.worldClientCheck', 'true'
+                property 'arienteworld.worldClientRole', role
+                property 'forge.logging.console.level', 'info'
+                args '--username', "WorldCheck${role}", '--width', '640', '--height', '480'
+            }
+        }
+        p.tasks.withType(JavaExec).configureEach {
+            if (name in ['runServer', 'runClient']) dependsOn p.tasks.named('gameTestClasses')
+            if (name == 'runServer') standardInput = System.in
+        }
+    }
+}

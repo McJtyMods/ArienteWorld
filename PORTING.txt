@@ -5,9 +5,10 @@ STATUS AND SCOPE
 ================
 Buildable development port with active Ariente terrain, surface/underground
 cities, dungeon complexes, transport networks, vegetation, ores, natural spawns
-and portals. This is NOT a complete gameplay port or a release candidate. Exact
-original terrain/tree-shape parity and full gameplay validation
-remain unfinished. Builds and focused tests are not proof of full parity.
+and portals. All four phases have automated implementation/verification
+checkpoints below. Distribution still requires a human survival playthrough and
+public matching dependencies; this is not a release candidate. Modern worldgen
+adaptations and original unfinished content remain documented explicitly.
 
 This file owns world generation, authored structures, city AI/security/loot,
 spawning, entrance/arrival generation, world commands and editing tools.
@@ -393,23 +394,21 @@ World integration still requiring validation
   navigation, combat difficulty, resource/blueprint rarity and captured equipment
   balance. Phase 2 checks mechanisms with supplied inputs and scripted movement;
   it does not certify the time/difficulty of the complete player journey.
-- Validate AI across large/partially loaded footprints and actual chunk unload/
-  reload/server restart. Phase 2 covers repeated loaded-city waves, alert expiry,
-  key access, generator depletion and NBT persistence, not a long-running soak.
-- Longer natural-spawn density/balance observations and multiple players remain
-  phase-4 work; short native observations cannot establish every biome's balance.
+- Broader AI/spawn/combat balance across roaming players, biomes and large cities,
+  multi-hour operation and mod interactions remain manual release checks. Phase 4
+  adds actual city chunk unload/reload, process restart and native ticking/spawn
+  observation; its exact duration and controlled-mob limitations are below.
 - Travel long station/intercity/local routes with passengers and check corners,
   elevators, chunk transitions, AI transport and multiple players. Short cart
   tests do not certify a complete transport system.
-- Real multiplayer portal concurrency/reconnects need broader play testing.
-  Phase 2 tests independent per-player return positions, bed/spawn fallbacks and
-  the original non-consuming charge threshold with server-side fixtures.
-- Perform a full server datagen/resource audit. Active world data is currently
-  authored directly; a complete successful datagen run has not been certified.
-- Standalone dependency publication/wiring and final versions/releases remain
-  unfinished. version=1.12-0.0.31-alpha is a historical label, not the target MC
-  version or evidence of publication. Follow the release guidance in Ariente's
-  handoff and repository instructions before changing version/changelog metadata.
+- Broader multiplayer travel/combat/transport play remains a release check.
+  Two real clients now exercise shared arrival, separate returns, reconnects and
+  death/respawn; phase 2 also covers bed/spawn fallbacks and the non-consuming
+  charge threshold. These do not cover every placement, obstruction or modpack.
+- Matching Ariente/HoloGui must be published to the configured PUBLIC Maven
+  fallback before public-only standalone builds/distribution. Workspace and
+  standalone builds using isolated staging artifacts pass; metadata is aligned
+  to the unpublished 1.20-0.0.31-alpha target. No public upload was performed.
 
 Separate user ideas, not missing original ports
 - User-edited ../Ariente/todo.txt proposes making the huge surface cube dungeon
@@ -449,7 +448,7 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   Both mods load in an integrated client. Latest renderer fixes also passed
   client checks in vanilla Fabulous and Embeddium/Oculus Fancy (no shader-pack
   compatibility claim). These builds do not prove all gameplay features work.
-- Latest dedicated run: all 56 required Forge GameTests passed. Source files:
+- Latest dedicated run: all 58 required Forge GameTests passed. Source files:
   src/gameTest/java/mcjty/arienteworld/
     PortSmokeTests: dimension loading, companion/Ariente/HoloGui integration.
     CityGenerationTests: palettes/grid, cables/facades, all eight plans, authored
@@ -464,7 +463,10 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
     ExplorationRegressionTests: server charge threshold, actual pearl charging,
       independent returns/bed fallback, repeated alert waves/expiry/reload,
       last-core card use, loot withdrawal, defeated-generator depletion and
-      natural soldier/master weapon initialization/reload.
+      natural soldier/master weapon initialization/reload; entrance return
+      survives player death/respawn cloning with an independent NBT copy.
+    WorldDataTests: codec round trips for all 61 companion biome/configured-
+      feature/placed-feature/dimension-type entries and the custom generator.
     RenderingRegressionTests: slopes/beam shapes, panes, doors/transforms,
       authored single ship doors and generation of the visual fixture.
     MachineInteractionTests: storage display, tank/generator synchronization,
@@ -547,11 +549,169 @@ marker, so previous fixture locks cannot make reruns fail. No door gameplay
 behavior was changed. Tests and fixtures stay outside release jars.
 Ariente/HoloGui now use 1.20 version labels; this companion's dependency minima
 and lowercase Maven artifact ID/reobfuscation dependency are aligned. Its OWN
-historical version/changelog and full datagen/release preparation remain a
-separate phase-4 task. Default public HoloGui Maven resolution still requires
-publication; Ariente standalone build passes against a local staging artifact.
+historical version/changelog were subsequently aligned in the companion phase-4
+checkpoint below. Default public dependency resolution still requires publication;
+standalone builds pass against isolated staging artifacts.
 The no-companion native client also passes actual JEI, fresh Overworld ore
 generation and dungeon blueprint loot checks through Ariente's tracked runs.
+
+ARIENTEWORLD PHASE 4 - INTEGRATION AND RELEASE PREPARATION (2026-10-31)
+=====================================================================
+Data, resources and packaging
+- Added native server data generators for all 13 registered blocks' loot tables
+  and the existing log/leaf tags. runData --all passes both providers, generating
+  15 JSON files into build/verification/datagen. Their checked-in counterparts
+  moved from main resources to generated resources, preventing duplicate paths.
+  Drops/tag membership are preserved; native serialization adds default bonus
+  rolls and loot random-sequence IDs. No recipes, saplings or city interiors added.
+- Worldgen/biomes/dimensions and original city assets remain authored resources.
+  The dedicated registry-codec audit checks all 61 loaded world-data entries plus
+  the custom generator; existing all-plan tests validate city assets and placement.
+  There is no claim that the new generators generate authored cities or biomes.
+- tools/audit_resources.py passes for 189 resources / 141 JSON/metadata files,
+  all 13 blocks' loot/models/translations, local and paired Ariente asset references,
+  biome/feature links, generated drift and the reobfuscated release jar. It rejects
+  duplicate paths, stale/missing resources and any gameTest fixture class in jars.
+  Removed the shared helper's dangling FMLAT manifest declaration: this mod needs
+  no access transformer. Both mods' resource/jar audits pass; Ariente's separate
+  audit still reproduces all 650 generated files and checks 1,065 resources.
+  Both jar audits reject development-mapped bytecode: finish with build/reobfJar
+  AFTER dev runs, which can rebuild dependency jars in development mappings.
+- Both real clients check every registered model BEFORE and AFTER reload:
+  Ariente 146 items / 9,467 block states; companion 13 items / 103 block states.
+  This is model availability, with prior pixel/shader-stack evidence unchanged.
+
+Native lifecycle and multiplayer fixtures
+- WorldLifecycleFixture and client/WorldNetworkClientChecks use a new disposable
+  dedicated server and two native clients. Each survival player charges a separate
+  entrance through pearl item use, reaches a shared arrival, sees the other player,
+  disconnects/reconnects in Ariente, dies/respawns there and returns through the
+  shared warper to THEIR OWN entrance. Inventory identity and equipment effects
+  remain isolated. Both clients acknowledge seeing their peer before either
+  disconnects, avoiding a timing-dependent observation. Fixture commands invoke
+  the production Warper; this is not
+  an additional claim about native hologram pointer/button packets.
+- Repaired Ariente's return-memory lifecycle: Forge copies only its reserved
+  persisted NBT section on player replacement. The entrance was stored outside
+  that section, so death discarded it. PlayerEvent.Clone now copies just the
+  entrance compound, independently of inventory retention and other player data.
+  A focused regression verifies both retention and independent compound ownership.
+- A generated 4x4 city is exercised with a missing FULL footprint chunk while
+  retaining a ticking core, then all city tickets are released. Actual full-city
+  ChunkEvent.Unload events are required before reloading. Its security, every loot
+  stack and guard UUIDs survive actual chunk/entity load without rerolls/duplicates.
+  Minecraft can retain partial-status chunks around a core ticket; the partial
+  check tests FULL availability, not an invented unload event for those chunks.
+- The fixture runs 12,000 ordinary server ticks (ten minutes at 20 TPS) after
+  reload, refreshing high alert and measuring local troop counts and repeated
+  fuel burns/refills for BOTH generator types. No accelerated tick loops are used.
+  Mobs are stationary, gravity-free and persistent to isolate lifecycle/counters;
+  this is not a free-roaming combat/despawn or global population-cap certification.
+  Completed run: peak 20 soldiers / 4 drones; 20 refills for EACH fuel type.
+  Kept the ORIGINAL core counter's 11-game-tick cadence. The old config comment
+  says times ten; the guide now records the actual 400-step timeout as roughly
+  220 seconds at 20 TPS. This is a documentation correction, not a balance change.
+- The server saves and exits, then a second process opens THAT SAME current test
+  world to check exact CityAISystem SavedData before ticks, reloaded loot/security/
+  guard UUIDs and the original players/entrance charges. Both real clients repeat
+  the network journey after restart. This is ordinary current-world persistence,
+  not support for migrating previous development worlds.
+- The fixture uses keepInventory=true to isolate return-memory/effect retention,
+  supplies test gear, grants local operator status and disables natural spawning
+  for the AI counter test. Native natural-spawn observation is separate below.
+  All fixtures remain outside release jars; NEVER enable them in a player world.
+
+Longer natural-spawn and connected-progression check
+- tools/spawn_verification.gradle reuses ExplorationClientChecks with three
+  3,600-game-tick windows (three minutes each): normal, hard and normal after
+  100 peaceful ticks. It passes in a NEW native integrated-client world, with
+  12 / 19 / 25 natural soldier joins, one master and maximum observed monster
+  count 12. Soldiers are armed, peaceful clears nearby hostiles, spawning resumes,
+  and the complete city-card/loot/Constructor/sabre/return journey still passes.
+- The observation area, one glass player perch, supplied inputs and scripted
+  movement/healing/core destruction have the same limits as the phase-2 fixture.
+  Rates/light checks/loot weights are not boosted. This is nine minutes of actual
+  game ticks, not an accelerated or multi-hour soak, cap-saturation or combat
+  balance test. Use a NEW disposable singleplayer world named SpawnSoak under
+  build/verification/spawn-soak/saves and run :ArienteWorld:runClient with
+  -Pariente_runs -I ArienteWorld/tools/spawn_verification.gradle. It exits on success.
+  The shorter default phase-2 observation remains 1,200 ticks per window.
+
+Local evidence (ignored output, not durable prerequisites)
+- /tmp/arienteworld-phase4-server-final.log: partial FULL availability, real full
+  unload/reload, 12,000 native AI ticks, both fuel types and pre-restart save/exit.
+- /tmp/arienteworld-phase4-{alpha,beta}-final.log: both real network journeys and
+  model/reload audits before process restart.
+- /tmp/arienteworld-phase4-server-restart.log and the {alpha,beta}-restart.log
+  counterparts: exact pre-tick SavedData and reloaded city checks, then both
+  real network journeys again after process restart. Guard UUIDs and the configured
+  sentinel population are checked, including rejection of duplicate respawns.
+- The final clean-exit network replay is recorded in
+  /tmp/arienteworld-phase4-{server,alpha,beta}-clean.log. Clients accept the
+  expected server disconnect after reporting their completed checks.
+- /tmp/arienteworld-phase4-spawn-soak.log: the longer spawn/progression check.
+- /tmp/arienteworld-phase4-{data,tests,standalone,local-dependencies}.log and
+  build/verification/{datagen,phase4-gametest,world-final,spawn-soak}: supporting
+  datagen/build/test/save evidence. Recreate from the tracked tools when absent.
+
+Build and publication status
+- Java 17 workspace builds/reobfuscation pass for Ariente, ArienteWorld and HoloGui;
+  all 58 required dedicated GameTests pass in a NEW isolated world under
+  build/verification/phase4-gametest. Log: /tmp/arienteworld-phase4-tests.log.
+- Standalone companion build/reobfuscation passes with current Ariente and HoloGui
+  published to a disposable LOCAL Maven staging repository. The optional
+  ariente_dependency_repository property supports this without replacing normal
+  repositories or included-project preference. Actual workspace resolution selects
+  project :Ariente, :ModHoloGui, :McJtyLib and :TheOneProbe; standalone selects the
+  corresponding binary dependencies. Source outputs stay preferred in dev runs.
+- Own version is now 1.20-0.0.31-alpha, with matching jar/changelog heading and
+  CurseForge/Modrinth release configuration. Required relations are Ariente,
+  HoloGui and McJtyLib; TOP is optional. Existing 1.12 notes remain historical.
+  Checked CurseForge and Modrinth on 2026-10-31: only 1.12.2 companion files exist,
+  including the old 1.12-0.0.31-alpha. The distinct 1.20 target is unpublished.
+  Matching current Ariente/HoloGui POMs return 404 from configured public Maven;
+  local staging success does not establish public availability. Nothing uploaded.
+  Sources: https://www.curseforge.com/minecraft/mc-mods/ariente-world/files/all
+           https://api.modrinth.com/v2/project/ariente-world/version
+           https://modmaven.dev/com/github/mcjty/ariente/1.20-0.0.31-alpha/ariente-1.20-0.0.31-alpha.pom
+           https://modmaven.dev/com/github/mcjty/hologui/1.20-0.0.10-beta/hologui-1.20-0.0.10-beta.pom
+
+Repeat the phase-4 checks (Java 17, workspace root)
+  ./gradlew :ArienteWorld:runData -Pariente_runs
+  ./gradlew :Ariente:build :ArienteWorld:build :ModHoloGui:build
+  ./gradlew :ArienteWorld:runGameTestServer -Pariente_runs
+  python3 ArienteWorld/tools/audit_resources.py --generated ArienteWorld/build/verification/datagen --jar ArienteWorld/build/libs/arienteworld-1.20-0.0.31-alpha.jar
+For standalone checks, publish ONLY to a disposable absolute STAGING path:
+  ./gradlew :ModHoloGui:publishMavenJavaPublicationToMavenRepository :Ariente:publishMavenJavaPublicationToMavenRepository -Pmavendir=STAGING
+  cd ArienteWorld
+  ./gradlew build -Pariente_dependency_repository=STAGING
+Standalone and workspace builds share outputs: run sequentially, and do not
+recompile classes while fixture clients/servers are running.
+
+tools/world_verification.gradle enables the isolated dedicated fixture. Prepare
+build/verification/world-lifecycle/server/eula.txt and server.properties with:
+  eula=true                         (in eula.txt)
+  server-ip=127.0.0.1
+  server-port=25597
+  online-mode=false
+  level-name=worldcheck
+  level-seed=8675309
+  allow-flight=false
+  difficulty=normal
+  view-distance=3
+  simulation-distance=3
+  spawn-protection=0
+Use a NEW disposable world. Compile gameTestClasses first; start runServer with
+-Pariente_runs -I ArienteWorld/tools/world_verification.gradle. Once ready, start
+runClient with the same flags and -Pworldcheck_role=Alpha, then a second client
+with -Pworldcheck_role=Beta. Clients exit on success. The server exits after the
+10-minute soak and both journeys complete. Start the server and both clients
+AGAIN with the same fixture name/saves for the process-restart assertions.
+-Pworldcheck_name=NAME chooses a different disposable directory tree under
+build/verification. Only names made of letters/digits/underscore/hyphen are allowed.
+An optional -Pworldcheck_soak_ticks exists for harness debugging; shortened runs
+do not count as the full soak. Completed fixtures repeat the reload/network checks;
+use a NEW name/world for a fresh complete audit and timed soak.
 
 BUILDING, RUNNING AND REPRODUCING CHECKS
 ======================================
@@ -615,9 +775,8 @@ Previously used /tmp/ariente-hologui-client.gradle added the workspace's exact
 Embeddium/Oculus runtime dependencies; /tmp/ariente-hologui-vanilla-client.gradle
 selected Fabulous in the isolated options. Treat these scripts as conveniences,
 not prerequisites; recreate from the tracked tests and the setup above if absent.
-Confirm the real datagen task before running it and use isolated output first.
-Previous successful datagen was CLIENT-ONLY for Ariente models through a focused
-launch, not proof of a complete companion/server data-generation run.
+The companion's focused runData now generates server block loot/tags into isolated
+output; the phase-4 audit checks all authored world data and model resources too.
 
 MANUAL WORLD/AI CHECKS
 ======================
@@ -666,7 +825,7 @@ Phase 3 - Restore authoring tools and complete city/transport workflows (impleme
   Exit: authored content can be edited/exported/reloaded and runtime workflows
   work across chunk boundaries and save/load, with targeted checks for repairs.
 
-Phase 4 - Integrate, validate and prepare release.
+Phase 4 - Integrate, validate and prepare release (automated checkpoint; release gates open).
   Complete multiplayer, long-running world/AI/spawn/portal tests, datagen and
   asset coverage, standalone/workspace dependency checks and release metadata.
   Exit: both handoffs and the gameplay guide reflect tested behavior and any

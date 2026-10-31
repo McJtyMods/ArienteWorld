@@ -64,6 +64,8 @@ import java.util.UUID;
 @Mod.EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class ExplorationClientChecks {
 
+    private static final int OBSERVATION_TICKS = Math.max(1200, Integer.getInteger("arienteworld.spawnObservationTicks", 1200));
+    private static final int RETURN_TICK = OBSERVATION_TICKS * 3 + 100;
     private static boolean started;
     private static UUID playerId;
     private static BlockPos entrance;
@@ -245,8 +247,8 @@ public class ExplorationClientChecks {
             player.setHealth(player.getMaxHealth());
             player.getFoodData().setFoodLevel(20);
             ticks++;
-            if (ticks > 3700) {
-                if (ticks == 3730) {
+            if (ticks > RETURN_TICK) {
+                if (ticks == RETURN_TICK + 30) {
                     captureAndCraft(player);
                     returnHome(player);
                 }
@@ -257,10 +259,10 @@ public class ExplorationClientChecks {
                 maximumCount = Math.max(maximumCount, state.getMobCategoryCounts().getInt(MobCategory.MONSTER));
                 require(maximumCount <= MobCategory.MONSTER.getMaxInstancesPerChunk(), "Natural monsters must respect the dimension's hostile cap");
             }
-            if (ticks == 1200 || ticks == 2400) {
+            if (ticks == OBSERVATION_TICKS || ticks == OBSERVATION_TICKS * 2) {
                 require(SPAWNS[period] > 0, "Natural soldiers must spawn during normal and hard difficulty observation");
                 ArienteWorld.setup.getLogger().info("PHASE 2 NATURAL SPAWNS: period={}, new soldiers={}, max monster count={}", period, SPAWNS[period], maximumCount);
-                if (ticks == 1200) {
+                if (ticks == OBSERVATION_TICKS) {
                     level.getEntitiesOfClass(Mob.class, new AABB(observation).inflate(160), mob -> mob.getType().getCategory() == MobCategory.MONSTER)
                             .forEach(Mob::discard);
                     period = 1;
@@ -268,12 +270,12 @@ public class ExplorationClientChecks {
                 } else {
                     player.getServer().setDifficulty(Difficulty.PEACEFUL, true);
                 }
-            } else if (ticks == 2500) {
+            } else if (ticks == OBSERVATION_TICKS * 2 + 100) {
                 require(level.getEntitiesOfClass(Mob.class, new AABB(observation).inflate(128),
                         mob -> mob.getType().getCategory() == MobCategory.MONSTER).isEmpty(), "Peaceful must clear nearby hostile inhabitants");
                 period = 2;
                 player.getServer().setDifficulty(Difficulty.NORMAL, true);
-            } else if (ticks == 3700) {
+            } else if (ticks == RETURN_TICK) {
                 require(SPAWNS[2] > 0, "Natural soldier spawning must resume after peaceful difficulty");
                 level.getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false, player.getServer());
                 prepareCity(player);

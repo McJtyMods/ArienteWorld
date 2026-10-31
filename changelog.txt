@@ -1,4 +1,7 @@
-Upcoming:
+1.20-0.0.31-alpha:
+- Ported to Minecraft 1.20.1 (Forge).
+
+Unreleased 1.12 notes:
 - Fixed a problem on servers
 
 0.0.31-alpha:

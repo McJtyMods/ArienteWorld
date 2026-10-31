@@ -1,0 +1,16 @@
+// A new disposable integrated-client world is required; never use a player save.
+gradle.afterProject { p ->
+    if (p.name == 'ArienteWorld') {
+        p.minecraft.runs.client {
+            mods.arienteworld.source(p.sourceSets.gameTest)
+            workingDirectory p.file('build/verification/spawn-soak')
+            property 'arienteworld.phase2ClientCheck', 'true'
+            property 'arienteworld.spawnObservationTicks', '3600'
+            property 'forge.logging.console.level', 'info'
+            args '--quickPlaySingleplayer', 'SpawnSoak', '--width', '640', '--height', '480'
+        }
+        p.tasks.withType(JavaExec).configureEach {
+            if (name == 'runClient') dependsOn p.tasks.named('gameTestClasses')
+        }
+    }
+}

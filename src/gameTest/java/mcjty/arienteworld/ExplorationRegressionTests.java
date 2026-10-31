@@ -28,6 +28,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -48,6 +49,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -58,6 +61,21 @@ import java.util.UUID;
 @GameTestHolder(ArienteWorld.MODID)
 @PrefixGameTestTemplate(false)
 public class ExplorationRegressionTests {
+
+    @GameTest(template = "empty")
+    public static void entranceReturnSurvivesPlayerClone(GameTestHelper helper) {
+        var original = helper.makeMockPlayer();
+        var replacement = helper.makeMockPlayer();
+        BlockPos source = new BlockPos(-7301, 18, 4215);
+        original.getPersistentData().put("arienteReturn", NbtUtils.writeBlockPos(source));
+        MinecraftForge.EVENT_BUS.post(new PlayerEvent.Clone(replacement, original, true));
+        helper.assertTrue(NbtUtils.readBlockPos(replacement.getPersistentData().getCompound("arienteReturn")).equals(source),
+                "A death/respawn clone must retain this player's entrance return");
+        replacement.getPersistentData().getCompound("arienteReturn").putInt("X", 12);
+        helper.assertTrue(NbtUtils.readBlockPos(original.getPersistentData().getCompound("arienteReturn")).equals(source),
+                "The replacement must receive its own copy of the return point");
+        helper.succeed();
+    }
 
     @GameTest(template = "empty")
     public static void naturallyInitializedSoldiersCarryWeapons(GameTestHelper helper) {
