@@ -478,6 +478,9 @@ public class CityAI implements ICityAI {
         for (Direction facing : OrientationTools.HORIZONTAL_DIRECTION_VALUES) {
             ChunkPos otherCoord = new ChunkPos(center.x + facing.getStepX() * 16,
                     center.z + facing.getStepZ() * 16);
+            if (!CityTools.isCityCenter(level.getSeed(), otherCoord.x, otherCoord.z)) {
+                continue;
+            }
             CityAI otherCity = system.getCityAI(otherCoord);
             if (otherCity != null && otherCity.areChunksLoaded() && !otherCity.isDead(world)) {
                 BlockPos end = isValidBeam(world, center, facing, 1, 40);

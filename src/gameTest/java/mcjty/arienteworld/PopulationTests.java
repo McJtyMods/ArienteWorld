@@ -2,6 +2,7 @@ package mcjty.arienteworld;
 
 import com.mojang.authlib.GameProfile;
 import mcjty.ariente.blocks.utility.WarperTile;
+import mcjty.ariente.config.UtilityConfiguration;
 import mcjty.ariente.entities.EntityArientePearl;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.cities.CityTools;
@@ -146,6 +147,7 @@ public class PopulationTests {
         WarperTile display = new WarperTile(entrance, sourceTile.getBlockState());
         display.handleUpdateTag(sourceTile.getUpdateTag());
         helper.assertTrue(display.getCharges() == 3, "Entrance charge count must reach the client hologram");
+        sourceTile.setCharges(UtilityConfiguration.WARPER_MAX_CHARGES.get());
         ServerLevel ariente = overworld.getServer().getLevel(DimensionRegister.DIMENSION);
         BlockPos arrival = PortalGenerator.getArrival(ariente, entrance);
         BlockPos returnWarper = new BlockPos((arrival.getX() & ~15) + 7, arrival.getY() - 1, (arrival.getZ() & ~15) + 7);

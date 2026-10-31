@@ -268,6 +268,85 @@ Focused validation
   enabled in a player save. Output goes to ../verification relative to that
   isolated working directory. No /tmp script is required by the tracked driver.
 
+PHASE 2 - EXPLORATION, SECURITY AND SURVIVAL WORKFLOW CHECKPOINT (2026-10-31)
+===========================================================================
+Repairs
+- Ariente's Warper now checks the current charge on the SERVER when Warp is
+  invoked. An uncharged entrance or previously opened hologram cannot bypass
+  the pearl requirement. Preserve the original one-time unlock: travel does not
+  consume charges. Ariente arrival warpers still start charged.
+- Reinforcement route selection now rejects chance-disabled neighboring complex
+  centers before creating/querying their CityAI. Uninitialized template AI
+  assumes it is alive, so the old query could invent a reinforcement source in
+  an absent city after phase 1 enabled cityDungeonChance. Independent route beams
+  and stations remain; no new balance or city-content changes were introduced.
+- Natural soldier/master spawn finalization now calls their existing equipment
+  initializer. It previously inherited Mob's implementation, which never calls
+  populateDefaultEquipmentSlots: actual natural soldiers arrived unarmed despite
+  that method existing. City-created soldiers already received sabres separately.
+  Entity reload preserves the saved weapon and does not rerun spawn setup.
+
+Dedicated progression/security evidence
+- ExplorationRegressionTests adds three required tests (56 total), including
+  soldier/master spawn initialization and weapon save/load. Real pearl
+  item use charges a survival player's entrance, refuses additional charges at
+  the limit and preserves charges through block-entity reload and round trips.
+  Shared arrivals retain separate return positions for two players. Blocked
+  entrance headroom falls back to a valid bed; broken entrances plus missing
+  beds fall back to world spawn with collision-free landing space.
+- A fresh generated ship exercises 15 casualty/refill cycles across 1/2/3-player
+  alerts, including doubled high-alert soldier limits, armed reinforcements,
+  shield enablement, persisted players/security/escalation and default timeout
+  expiry. Loot survives block-entity and AI reload without being refilled or
+  rerolled. Door cards cannot unlock storage. Destroying every core yields the
+  actual storage card; using it unlocks authored cubes and lets a survival player
+  withdraw real loot, including validation of any blueprint's Constructor recipe.
+- Defeated city AI stops feeding generators; both fuel types exhaust their
+  remaining dust. This preserves master's delayed depletion, not an immediate
+  shield/power drain. Reinforcement queries no longer save phantom absent-city
+  AI records. These checks force-load ONLY their disposable city fixture; they
+  do not add runtime chunk forcing or change the full-footprint loading rule.
+- AI loops are accelerated and mobs are held still to isolate local wave
+  counters. This proves plan minima/limits inside their counting region, not
+  a global population cap on roaming troops or a chunk-unload/restart soak.
+  Existing combat/equipment/resource/Constructor tests remain part of the same
+  suite; no missing original recipes or new city interiors were invented.
+- All 56 required dedicated GameTests pass in a NEW isolated world under
+  build/phase2-checked-gametest. Log: /tmp/arienteworld-phase2-checked.log.
+  Java 17 workspace builds/reobfuscation pass for both mods. Local build output
+  and /tmp scripts/logs are evidence, not tracked prerequisites.
+
+Native client travel/progression/spawn evidence
+- ExplorationClientChecks passes in a fresh isolated native integrated client.
+  One actual survival ServerPlayer crafts pearls through the registered recipe,
+  throws a locator at a generated entrance, charges it through real pearl item
+  use, travels to the generated arrival and later returns to the SAME entrance.
+  Both dimension transitions reach the client with collision-free server landings.
+- The same player captures a fresh generated ship, uses its actual last-core
+  card to unlock storage and withdraws an authored blueprint. A supplied bench,
+  sabre blueprint and ingredients exercise the real Constructor double-click;
+  the crafted sabre damages a real zombie through Player.attack. The returned
+  client retains both city loot and the equipped weapon.
+- Three 1,200-game-tick observation windows cover normal, hard and normal again
+  after 100 peaceful ticks, at night in an unmodified city-biome district apart
+  from the player's single glass observation block. Actual NATURAL entity joins
+  recorded 2 / 3 / 5 new armed soldiers; peaceful cleared nearby hostiles and
+  spawning resumed. Maximum observed monster count was 5, below the vanilla
+  cap. No natural master happened to spawn; dedicated tests cover both types'
+  equipment setup. This does not test cap saturation or establish density/balance.
+- This is a scripted mechanical workflow, not an unassisted playthrough. It
+  supplies crafting inputs/bench/blueprint, moves/heals the player and destroys
+  city cores by script. No spawn chance/light checks or loot weights are boosted.
+  Normal/hard each include casualty removal or peaceful clearing to verify new
+  spawns. AI wave testing above is separate from these natural spawn observations.
+- Reproduce with the optional client-source configuration below and GAME JVM
+  property arienteworld.phase2ClientCheck=true, in a NEW disposable world under
+  an isolated working directory such as build/phase2-client. Never enable this
+  fixture in a player save or alongside another player-moving fixture. It exits
+  on success. Log: /tmp/arienteworld-phase2-client-fixed.log; world:
+  build/phase2-client/saves/Phase2VerificationFixed. No tracked /tmp script is
+  required; the common init-script example below supports the property.
+
 City authoring and administrative tools (phase 3, implemented 2026-10-30)
 - /arienteworld (alias /arworld) now includes editmode, savecity, syncchunk,
   variantcreate/get/set/list/switch, info, pacify and citycard. Root permission
@@ -310,22 +389,21 @@ City authoring and administrative tools (phase 3, implemented 2026-10-30)
   armor, tooltip and transfer pixels plus native held-key piloting are exercised.
 
 World integration still requiring validation
-- Complete fresh-world progression: encounter an entrance, locate it with a
-  pearl, charge/travel/return, obtain city resources/blueprints/cards, fight
-  guards, use captured technology and explore the large districts.
-  Ariente has restored ore drops/smelting, mob resource loot and crafting/JEI.
-  Those data repairs and equipment movement have focused regression checks; a
-  complete fresh survival playthrough is still unverified.
-- Validate AI across large/partially loaded footprints, unload/reload, alerts,
-  waves, key drops/access, generator depletion and machine/security persistence.
-- Exercise natural spawning for sustained periods and check caps, difficulty,
-  density and equipment instead of assuming table definitions prove balance.
+- An unassisted fresh survival playthrough still needs human validation of
+  navigation, combat difficulty, resource/blueprint rarity and captured equipment
+  balance. Phase 2 checks mechanisms with supplied inputs and scripted movement;
+  it does not certify the time/difficulty of the complete player journey.
+- Validate AI across large/partially loaded footprints and actual chunk unload/
+  reload/server restart. Phase 2 covers repeated loaded-city waves, alert expiry,
+  key access, generator depletion and NBT persistence, not a long-running soak.
+- Longer natural-spawn density/balance observations and multiple players remain
+  phase-4 work; short native observations cannot establish every biome's balance.
 - Travel long station/intercity/local routes with passengers and check corners,
   elevators, chunk transitions, AI transport and multiple players. Short cart
   tests do not certify a complete transport system.
-- Multiplayer portal destinations, per-player return points, reconnects, safe
-  arrival, charge consumption and interaction with different bed/spawn states
-  need full play testing beyond the existing round-trip fixtures.
+- Real multiplayer portal concurrency/reconnects need broader play testing.
+  Phase 2 tests independent per-player return positions, bed/spawn fallbacks and
+  the original non-consuming charge threshold with server-side fixtures.
 - Perform a full server datagen/resource audit. Active world data is currently
   authored directly; a complete successful datagen run has not been certified.
 - Standalone dependency publication/wiring and final versions/releases remain
@@ -371,7 +449,7 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   Both mods load in an integrated client. Latest renderer fixes also passed
   client checks in vanilla Fabulous and Embeddium/Oculus Fancy (no shader-pack
   compatibility claim). These builds do not prove all gameplay features work.
-- Latest dedicated run: all 53 required Forge GameTests passed. Source files:
+- Latest dedicated run: all 56 required Forge GameTests passed. Source files:
   src/gameTest/java/mcjty/arienteworld/
     PortSmokeTests: dimension loading, companion/Ariente/HoloGui integration.
     CityGenerationTests: palettes/grid, cables/facades, all eight plans, authored
@@ -383,6 +461,10 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
       infrastructure/routes and a passenger travelling along generated beams.
     PopulationTests: fresh forest logs/plants/ores, spawn tables/categories,
       soil protection, entrances, pearl flight/use and portal round-trip/fallbacks.
+    ExplorationRegressionTests: server charge threshold, actual pearl charging,
+      independent returns/bed fallback, repeated alert waves/expiry/reload,
+      last-core card use, loot withdrawal, defeated-generator depletion and
+      natural soldier/master weapon initialization/reload.
     RenderingRegressionTests: slopes/beam shapes, panes, doors/transforms,
       authored single ship doors and generation of the visual fixture.
     MachineInteractionTests: storage display, tank/generator synchronization,
@@ -570,11 +652,12 @@ Phase 1 - Finish world controls and identify real generation omissions (implemen
   original terrain/trees/vegetation were audited, concrete omissions repaired and
   modern sampling/placement differences documented above.
 
-Phase 2 - Validate the exploration/progression loop with Ariente's data repairs.
+Phase 2 - Validate the exploration/progression loop with Ariente's data repairs (automated checkpoint).
   Verify city loot/cards, sustained spawning/alerts and entrance/arrival/return
   behavior while Ariente restores resource drops, processing and recipes.
-  Exit: a fresh survival player can reach cities, obtain meaningful resources
-  and security access, use captured/crafted equipment and return safely.
+  Exit checked through survival fixtures: charge/travel/return, generated city
+  loot and storage access, resource/Constructor/equipment workflows. Native and
+  dedicated evidence and the remaining playthrough/balance limits are above.
 
 Phase 3 - Restore authoring tools and complete city/transport workflows (implemented; focused validation).
   Port edit/save/variant/sync/admin commands against active assets; exercise large
