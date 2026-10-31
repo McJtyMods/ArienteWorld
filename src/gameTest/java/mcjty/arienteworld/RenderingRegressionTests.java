@@ -167,42 +167,45 @@ public class RenderingRegressionTests {
         FakePlayer player = new FakePlayer(level, new GameProfile(UUID.randomUUID(), "door-test"));
         player.moveTo(pos.getX() + .5, pos.getY() + 1, pos.getZ() + 2);
         helper.assertTrue(level.addFreshEntity(player), "The door fixture must register its own nearby player");
-        try {
-            for (Direction facing : Direction.Plane.HORIZONTAL) {
-                level.removeBlock(pos, false);
-                level.setBlock(pos, Registration.DOOR_MARKER.get().defaultBlockState()
-                        .setValue(BlockStateProperties.HORIZONTAL_FACING, facing), 3);
-                level.setBlock(pos.above(), Registration.INVISIBLE_DOOR.get().defaultBlockState()
-                        .setValue(BlockStateProperties.HORIZONTAL_FACING, facing.getClockWise()), 2);
-                level.setBlock(pos.above(4), Blocks.STONE.defaultBlockState(), 2);
-                DoorMarkerTile door = (DoorMarkerTile) level.getBlockEntity(pos);
-                door.tickServer();
-                helper.assertTrue(door.isOpen(), "A nearby player must open an unlocked door: facing=" + facing
-                        + ", locked=" + door.isLocked() + ", player=" + player.position() + ", removed=" + player.isRemoved());
-                for (int y = 1; y <= 3; y++) {
-                    var state = level.getBlockState(pos.above(y));
-                    helper.assertTrue(state.is(Registration.INVISIBLE_DOOR.get())
-                            && state.getValue(BlockStateProperties.HORIZONTAL_FACING) == facing, "All door segments must inherit marker orientation");
-                    helper.assertTrue(InvisibleDoorTile.getCollisionShape(state, level, pos.above(y)).isEmpty(), "Open doors must allow passage");
+        // Fresh chunks need a tick before the entity section is visible to proximity queries.
+        helper.runAfterDelay(2, () -> {
+            try {
+                for (Direction facing : Direction.Plane.HORIZONTAL) {
+                    level.removeBlock(pos, false);
+                    level.setBlock(pos, Registration.DOOR_MARKER.get().defaultBlockState()
+                            .setValue(BlockStateProperties.HORIZONTAL_FACING, facing), 3);
+                    level.setBlock(pos.above(), Registration.INVISIBLE_DOOR.get().defaultBlockState()
+                            .setValue(BlockStateProperties.HORIZONTAL_FACING, facing.getClockWise()), 2);
+                    level.setBlock(pos.above(4), Blocks.STONE.defaultBlockState(), 2);
+                    DoorMarkerTile door = (DoorMarkerTile) level.getBlockEntity(pos);
+                    door.tickServer();
+                    helper.assertTrue(door.isOpen(), "A nearby player must open an unlocked door: facing=" + facing
+                            + ", locked=" + door.isLocked() + ", player=" + player.position() + ", removed=" + player.isRemoved());
+                    for (int y = 1; y <= 3; y++) {
+                        var state = level.getBlockState(pos.above(y));
+                        helper.assertTrue(state.is(Registration.INVISIBLE_DOOR.get())
+                                && state.getValue(BlockStateProperties.HORIZONTAL_FACING) == facing, "All door segments must inherit marker orientation");
+                        helper.assertTrue(InvisibleDoorTile.getCollisionShape(state, level, pos.above(y)).isEmpty(), "Open doors must allow passage");
+                    }
+                    DoorMarkerTile display = new DoorMarkerTile(pos, door.getBlockState());
+                    display.handleUpdateTag(door.getUpdateTag());
+                    helper.assertTrue(display.isOpen(), "Initial chunk data must synchronize the automatic opening animation");
+                    door.setLocked(true);
+                    display.onDataPacket(null, door.getUpdatePacket());
+                    helper.assertTrue(!display.isOpen() && display.isLocked(), "Closing/locking must update the client");
+                    helper.assertTrue(!InvisibleDoorTile.getCollisionShape(level.getBlockState(pos.above()), level, pos.above()).isEmpty(), "Locked doors must stop passage");
+                    door.setLocked(false);
+                    player.moveTo(pos.getX() + 20, pos.getY() + 1, pos.getZ() + 20);
+                    door.tickServer();
+                    helper.assertTrue(!door.isOpen(), "Doors must close when the detection area is empty");
+                    player.moveTo(pos.getX() + .5, pos.getY() + 1, pos.getZ() + 2);
                 }
-                DoorMarkerTile display = new DoorMarkerTile(pos, door.getBlockState());
-                display.handleUpdateTag(door.getUpdateTag());
-                helper.assertTrue(display.isOpen(), "Initial chunk data must synchronize the automatic opening animation");
-                door.setLocked(true);
-                display.onDataPacket(null, door.getUpdatePacket());
-                helper.assertTrue(!display.isOpen() && display.isLocked(), "Closing/locking must update the client");
-                helper.assertTrue(!InvisibleDoorTile.getCollisionShape(level.getBlockState(pos.above()), level, pos.above()).isEmpty(), "Locked doors must stop passage");
-                door.setLocked(false);
-                player.moveTo(pos.getX() + 20, pos.getY() + 1, pos.getZ() + 20);
-                door.tickServer();
-                helper.assertTrue(!door.isOpen(), "Doors must close when the detection area is empty");
-                player.moveTo(pos.getX() + .5, pos.getY() + 1, pos.getZ() + 2);
+            } finally {
+                player.discard();
             }
-        } finally {
-            player.discard();
-        }
-        createVisualFixture(level);
-        helper.succeed();
+            createVisualFixture(level);
+            helper.succeed();
+        });
     }
 
     private static void createVisualFixture(ServerLevel level) {

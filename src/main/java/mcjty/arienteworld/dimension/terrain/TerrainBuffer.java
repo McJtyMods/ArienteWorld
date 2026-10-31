@@ -48,17 +48,38 @@ public class TerrainBuffer {
 
     public void surface(int x, int z, Random random, double noise) {
         BlockState marble = LegacyBlockStates.read("ariente:marble");
-        BlockState filler = LegacyBlockStates.read("ariente:marble@color=gray");
+        BlockState top = Blocks.GRASS_BLOCK.defaultBlockState();
+        BlockState filler = Blocks.DIRT.defaultBlockState();
         int remaining = -1;
         int thickness = (int) (noise / 3 + 3 + random.nextDouble() * .25);
-        for (int y = 255; y >= 2; y--) {
+        for (int y = 255; y >= 0; y--) {
             BlockState state = getBlockState(x, y, z);
-            if (state.isAir()) {
+            if (y <= random.nextInt(5)) {
+                setBlockState(x, y, z, Blocks.BEDROCK.defaultBlockState());
+            } else if (state.isAir()) {
                 remaining = -1;
             } else if (state.is(marble.getBlock())) {
                 if (remaining == -1) {
+                    if (thickness <= 0) {
+                        top = Blocks.AIR.defaultBlockState();
+                        filler = marble;
+                    } else if (y >= 59 && y <= 64) {
+                        top = Blocks.GRASS_BLOCK.defaultBlockState();
+                        filler = Blocks.DIRT.defaultBlockState();
+                    }
+                    if (y < 63 && top.isAir()) {
+                        top = Blocks.WATER.defaultBlockState();
+                    }
                     remaining = thickness;
-                    setBlockState(x, y, z, y >= 62 ? Blocks.GRASS_BLOCK.defaultBlockState() : filler);
+                    if (y >= 62) {
+                        setBlockState(x, y, z, top);
+                    } else if (y < 56 - thickness) {
+                        top = Blocks.AIR.defaultBlockState();
+                        filler = marble;
+                        setBlockState(x, y, z, Blocks.GRAVEL.defaultBlockState());
+                    } else {
+                        setBlockState(x, y, z, filler);
+                    }
                 } else if (remaining > 0) {
                     remaining--;
                     setBlockState(x, y, z, filler);

@@ -8,6 +8,8 @@ import mcjty.arienteworld.dimension.ArienteChunkGenerator;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import mcjty.arienteworld.dimension.CityFeature;
+import mcjty.arienteworld.dimension.FlowerHeightPlacement;
+import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import mcjty.arienteworld.blocks.DummyBlock;
 import mcjty.arienteworld.blocks.plants.BlockArientePlant;
@@ -43,6 +45,9 @@ public class Registration {
     public static final RegistryObject<OverworldDungeonFeature> ENTRANCE = FEATURES.register("overworld_dungeon", OverworldDungeonFeature::new);
     public static final RegistryObject<CityFeature> CITY = FEATURES.register("city", CityFeature::new);
 
+    public static final DeferredRegister<PlacementModifierType<?>> PLACEMENTS = DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, MODID);
+    public static final RegistryObject<PlacementModifierType<FlowerHeightPlacement>> FLOWER_HEIGHT = PLACEMENTS.register("flower_height", () -> () -> FlowerHeightPlacement.CODEC);
+
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, MODID);
@@ -63,6 +68,7 @@ public class Registration {
         GENERATORS.register(FMLJavaModLoadingContext.get().getModEventBus());
         BIOME_SOURCES.register(FMLJavaModLoadingContext.get().getModEventBus());
         FEATURES.register(FMLJavaModLoadingContext.get().getModEventBus());
+        PLACEMENTS.register(FMLJavaModLoadingContext.get().getModEventBus());
         TABS.register(FMLJavaModLoadingContext.get().getModEventBus());
         BLOCKS.register(FMLJavaModLoadingContext.get().getModEventBus());
         ITEMS.register(FMLJavaModLoadingContext.get().getModEventBus());

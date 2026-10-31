@@ -12,6 +12,7 @@ import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityPlan;
 import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.dimension.DimensionRegister;
+import mcjty.arienteworld.dimension.PortalGenerator;
 import mcjty.arienteworld.dimension.ArienteLandscapeCity;
 import java.util.stream.Stream;
 import java.util.ArrayList;
@@ -92,6 +93,7 @@ public class ModCommands {
         for (int x = cx - 128; x <= cx + 128; x += 2) {
             for (int z = cz - 128; z <= cz + 128; z += 2) {
                 if (ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), x, z)
+                        && !PortalGenerator.isPortalChunk(x, z)
                         && !CityTools.isDungeonChunk(level.getSeed(), x, z)) {
                     candidates.add(new ChunkPos(x, z));
                 }
@@ -113,6 +115,8 @@ public class ModCommands {
                 for (int dx = -1; dx <= 1 && interior; dx++) {
                     for (int dz = -1; dz <= 1; dz++) {
                         if (!ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), candidate.x + dx, candidate.z + dz)
+                                || PortalGenerator.isPortalChunk(candidate.x + dx, candidate.z + dz)
+                                || CityTools.isDungeonChunk(level.getSeed(), candidate.x + dx, candidate.z + dz)
                                 || generator.getBaseColumn(x + dx * 16, z + dz * 16, level, random).getBlock(80).isAir()) {
                             interior = false;
                             break;
@@ -137,6 +141,27 @@ public class ModCommands {
                 .withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, command))), false);
     }
 
+    @Nullable
+    public static ChunkPos findStation(ServerLevel level, BlockPos start) {
+        ChunkPos origin = CityTools.getNearestDungeonCenter(start.getX() >> 4, start.getZ() >> 4);
+        ChunkPos nearest = null;
+        double distance = Double.MAX_VALUE;
+        for (int x = -8; x <= 8; x++) {
+            for (int z = -8; z <= 8; z++) {
+                ChunkPos candidate = new ChunkPos(origin.x + x * 16, origin.z + z * 16);
+                if (CityTools.getStationPart(level.getSeed(), candidate.x, candidate.z) == null) {
+                    continue;
+                }
+                double d = start.distToCenterSqr(candidate.getMiddleBlockX(), start.getY(), candidate.getMiddleBlockZ());
+                if (d < distance) {
+                    nearest = candidate;
+                    distance = d;
+                }
+            }
+        }
+        return nearest;
+    }
+
     private static int findCity(CommandSourceStack source, @Nullable String planName) {
         ServerLevel level = source.getServer().getLevel(DimensionRegister.DIMENSION);
         if (level == null) {
@@ -153,9 +178,12 @@ public class ModCommands {
             return 1;
         }
         if ("station".equals(planName)) {
-            ChunkPos center = CityTools.getNearestDungeonCenter((int) Math.floor(source.getPosition().x) >> 4,
-                    (int) Math.floor(source.getPosition().z) >> 4);
-            reportLocation(source, "Station grid (Y=30)", new BlockPos(center.getMiddleBlockX(), 33, center.getMiddleBlockZ()));
+            ChunkPos center = findStation(level, BlockPos.containing(source.getPosition()));
+            if (center == null) {
+                source.sendFailure(Component.literal("No station within 2048 blocks"));
+                return 0;
+            }
+            reportLocation(source, "Station (Y=30)", new BlockPos(center.getMiddleBlockX(), 33, center.getMiddleBlockZ()));
             return 1;
         }
         if (planName != null && (AssetRegistries.CITYPLANS.get(planName) == null || !AssetRegistries.CITYPLANS.get(planName).isCity())) {
@@ -170,6 +198,9 @@ public class ModCommands {
         for (int x = -8; x <= 8; x++) {
             for (int z = -8; z <= 8; z++) {
                 City city = CityTools.getCity(level.getSeed(), new ChunkPos(origin.x + x * 16, origin.z + z * 16));
+                if (!CityTools.isCityCenter(level.getSeed(), city.getCenter().x, city.getCenter().z)) {
+                    continue;
+                }
                 if (planName != null && !city.getPlan().getName().equals(planName)) {
                     continue;
                 }

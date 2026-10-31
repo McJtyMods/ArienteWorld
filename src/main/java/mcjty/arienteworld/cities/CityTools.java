@@ -1,5 +1,6 @@
 package mcjty.arienteworld.cities;
 
+import mcjty.arienteworld.config.WorldgenConfiguration;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -21,6 +22,17 @@ public class CityTools {
         return new ChunkPos((chunkX & ~15) + 8, (chunkZ & ~15) + 8);
     }
 
+    public static boolean isCityCenter(long seed, int chunkX, int chunkZ) {
+        if ((chunkX & 15) != 8 || (chunkZ & 15) != 8) {
+            return false;
+        }
+        // Keep presence independent of the plan/name streams and of chunk generation order.
+        Random random = new Random(seed + chunkX * 776531419L + chunkZ * 198491317L);
+        random.nextFloat();
+        random.nextFloat();
+        return random.nextFloat() < WorldgenConfiguration.CITY_DUNGEON_CHANCE.get();
+    }
+
     public static boolean isDungeonChunk(long seed, int chunkX, int chunkZ) {
         City city = getCity(seed, getNearestDungeonCenter(chunkX, chunkZ));
         return !getBuildingParts(seed, city, chunkX, chunkZ).isEmpty();
@@ -38,6 +50,10 @@ public class CityTools {
 
     @Nullable
     public static BuildingPart getStationPart(long seed, int chunkX, int chunkZ) {
+        if (isDungeonChunk(seed, chunkX, chunkZ)
+                && getCity(seed, getNearestDungeonCenter(chunkX, chunkZ)).getPlan().isUnderground()) {
+            return null;
+        }
         CityPlan plan = AssetRegistries.CITYPLANS.get("station");
         CityIndex index = getDungeonIndex(chunkX, chunkZ, getNearestDungeonCenter(chunkX, chunkZ), plan);
         if (index == null) {
@@ -102,6 +118,9 @@ public class CityTools {
     }
 
     public static List<BuildingPart> getBuildingParts(long seed, City city, int chunkX, int chunkZ) {
+        if (!isCityCenter(seed, city.getCenter().x, city.getCenter().z)) {
+            return List.of();
+        }
         CityPlan plan = city.getPlan();
         CityIndex index = getDungeonIndex(chunkX, chunkZ, city.getCenter(), plan);
         List<BuildingPart> parts = new ArrayList<>();

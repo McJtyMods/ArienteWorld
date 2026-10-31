@@ -1,0 +1,18 @@
+{
+  "feature": "arienteworld:plants",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 20
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "arienteworld:flower_height"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

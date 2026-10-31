@@ -9,8 +9,7 @@
       "type": "minecraft:in_square"
     },
     {
-      "type": "minecraft:heightmap",
-      "heightmap": "WORLD_SURFACE_WG"
+      "type": "arienteworld:flower_height"
     },
     {
       "type": "minecraft:biome"

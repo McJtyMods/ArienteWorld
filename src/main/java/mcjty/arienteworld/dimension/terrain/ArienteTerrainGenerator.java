@@ -233,8 +233,10 @@ public class ArienteTerrainGenerator {
 
         for (int i = 0; i < 16; ++i) {
             for (int j = 0; j < 16; ++j) {
-                BiomeProfile biome = biomesIn[j + i * 16];
-                primer.surface(i, j, this.rand, this.depthBuffer[j + i * 16]);
+                BiomeProfile biome = biomesIn[i + j * 16];
+                if (biome != BiomeProfile.ROUGH) {
+                    primer.surface(i, j, this.rand, this.depthBuffer[j + i * 16]);
+                }
             }
         }
     }

@@ -14,7 +14,10 @@ public class WorldgenConfiguration {
         SERVER_BUILDER.comment("World generation settings").push(CATEGORY_WORLDGEN);
 
         CITY_DUNGEON_CHANCE = SERVER_BUILDER
-                .comment("The chance that a city dungeon spot will actually have a city dungeon")
+                .comment("The chance that each seeded city grid spot has a dungeon complex (0 disables complexes, 1 fills every spot).",
+                        "Landscape city districts, stations, intercity routes and arrival portals are independent.",
+                        "Applies to newly generated worlds; change before creating the world.")
+                .worldRestart()
                 .defineInRange("cityDungeonChance", .7, 0, 1);
         OVERWORLD_DUNGEON_CHANCE = SERVER_BUILDER
                 .comment("The chance that a chunk in the overworld will have an Ariente dungeon")

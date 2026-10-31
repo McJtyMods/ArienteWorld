@@ -6,6 +6,7 @@ import mcjty.ariente.entities.levitator.FluxLevitatorEntity;
 import mcjty.arienteworld.dimension.ArienteChunkGenerator;
 import mcjty.arienteworld.dimension.ArienteLandscapeCity;
 import mcjty.arienteworld.dimension.DimensionRegister;
+import mcjty.arienteworld.dimension.PortalGenerator;
 import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.cities.Transform;
 import net.minecraft.core.Direction;
@@ -58,6 +59,9 @@ public class WorldGenerationTests {
             BlockPos target = ModCommands.findDistrict(level, BlockPos.ZERO, underground);
             helper.assertTrue(target != null, "Original terrain must contain " + (underground ? "underground" : "surface") + " districts");
             ChunkPos cp = new ChunkPos(target);
+            helper.assertTrue(!PortalGenerator.isPortalChunk(cp.x, cp.z)
+                            && !CityTools.isDungeonChunk(level.getSeed(), cp.x, cp.z),
+                    "District search must skip plots replaced by portals or complexes");
             for (int z = 1; z >= -1; z--) {
                 for (int x = 1; x >= -1; x--) {
                     level.getChunk(cp.x + x, cp.z + z);
@@ -65,7 +69,8 @@ public class WorldGenerationTests {
             }
             helper.assertTrue(ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), cp.x, cp.z), "District must use city biome layout");
             helper.assertTrue(level.getBlockState(new BlockPos(target.getX(), 63, target.getZ())).is(
-                    LegacyBlockStates.read("ariente:marble@color=black").getBlock()), "District must have its black-marble foundation");
+                    LegacyBlockStates.read("ariente:marble@color=black").getBlock()), "District must have its black-marble foundation at " + target
+                    + ": " + level.getBlockState(new BlockPos(target.getX(), 63, target.getZ())));
             if (underground) {
                 helper.assertTrue(level.getBlockState(new BlockPos(target.getX(), 73, target.getZ())).isAir(),
                         "Underground district must carve room for streets beneath terrain");

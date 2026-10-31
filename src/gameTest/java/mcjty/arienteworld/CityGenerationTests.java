@@ -120,7 +120,7 @@ public class CityGenerationTests {
         // Keep the generated fixtures away from the ordinary smoke-test chunks.
         for (int i = 0; i < 1000; i++) {
             City city = CityTools.getCity(seed, new ChunkPos(1032 + i * 16, fixtureZ));
-            if (city.getPlan() == plan) {
+            if (city.getPlan() == plan && CityTools.isCityCenter(seed, city.getCenter().x, city.getCenter().z)) {
                 return city;
             }
         }

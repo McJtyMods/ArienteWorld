@@ -51,7 +51,10 @@ public class ArienteWorldImplementation implements IArienteWorld {
     @Nullable
     @Override
     public ChunkPos getNearestCityCenter(ChunkPos center) {
-        return CityTools.getNearestDungeonCenter(center.x, center.z);
+        var server = ServerLifecycleHooks.getCurrentServer();
+        ServerLevel level = server == null ? null : server.getLevel(getDimension());
+        ChunkPos candidate = CityTools.getNearestDungeonCenter(center.x, center.z);
+        return level != null && CityTools.isCityCenter(level.getSeed(), candidate.x, candidate.z) ? candidate : null;
     }
 
     @Nullable

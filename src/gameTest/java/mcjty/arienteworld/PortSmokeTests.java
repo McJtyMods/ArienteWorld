@@ -2,6 +2,7 @@ package mcjty.arienteworld;
 
 import mcjty.ariente.Ariente;
 import mcjty.ariente.compat.arienteworld.ArienteWorldCompat;
+import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.BlockPos;
@@ -12,6 +13,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
+
+import java.util.Objects;
 
 @GameTestHolder(ArienteWorld.MODID)
 @PrefixGameTestTemplate(false)
@@ -26,8 +29,9 @@ public class PortSmokeTests {
         helper.assertTrue(surface > dimension.getMinBuildHeight(), "Basic dimension must generate terrain");
         helper.assertTrue(Ariente.guiHandler != null, "HoloGui integration must initialize");
         helper.assertTrue(ArienteWorldCompat.getArienteWorld() != null, "Companion integration must initialize");
-        helper.assertTrue(ArienteWorldCompat.getArienteWorld().getNearestCityCenter(new ChunkPos(0, 0)).equals(new ChunkPos(8, 8)),
-                "City lookup must use the original sixteen-chunk grid");
+        ChunkPos expected = CityTools.isCityCenter(dimension.getSeed(), 8, 8) ? new ChunkPos(8, 8) : null;
+        helper.assertTrue(Objects.equals(ArienteWorldCompat.getArienteWorld().getNearestCityCenter(new ChunkPos(0, 0)), expected),
+                "City lookup must respect configured presence on the original sixteen-chunk grid");
         BlockPos testPos = new BlockPos(8, surface + 2, 8);
         dimension.setBlockAndUpdate(testPos, Registration.GLOWLOG.get().defaultBlockState());
         helper.assertTrue(dimension.getBlockState(testPos).getBlock() == Registration.GLOWLOG.get(),

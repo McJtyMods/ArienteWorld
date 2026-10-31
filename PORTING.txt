@@ -137,17 +137,136 @@ Population and travel
 CONFIRMED REMAINING WORK AND WHY
 ================================
 Generation controls and parity
-- config/WorldgenConfiguration.CITY_DUNGEON_CHANCE (cityDungeonChance, default
-  0.7) is declared but not read by active complex selection. The setting was
-  missed when the generator was restored. Wire it consistently into generation
-  AND search/API lookup so commands/portals do not disagree with placement.
-  The separate Overworld entrance chance (default 0.002) IS used.
-- Compare original terrain landmarks, district layouts and tree/vegetation shapes
-  against master/reference images. Native tree implementations and quart biome
-  sampling intentionally replaced obsolete APIs; exact parity remains unverified.
-  Preserve deterministic/chunk-local behavior while correcting actual omissions.
-  Do not label all vegetation/ores/terrain as unported: their active replacements
-  already exist. Full seed identity is not an established completion criterion.
+- Phase 1 is implemented with focused generation/search/API and native-tree
+  checks; see the audit below. cityDungeonChance now controls complex presence.
+  Remaining seed/boundary/tree-placement differences are explicit adaptations,
+  not evidence that an entire terrain or vegetation system is still absent.
+  Full seed identity is not an established completion criterion.
+
+PHASE 1 - WORLD CONTROLS AND GENERATION PARITY AUDIT (2026-10-31)
+================================================================
+Implemented controls and search agreement
+- cityDungeonChance (default 0.7) now selects complex presence once per seeded
+  sixteen-chunk grid center. 0 disables all complexes; 1 enables every candidate.
+  Increasing the chance preserves the previously selected subset. Presence has
+  its own random stream, so plan/name/variant choices are not reshuffled.
+- CityTools.isCityCenter is the common presence rule. getBuildingParts and
+  isDungeonChunk honor it; city generation, terrain blending, landscape-city
+  overlap and station shafts therefore agree. getCity remains a deterministic
+  TEMPLATE query even at an absent center; getNearestDungeonCenter remains the
+  geometric grid helper needed by independent station/authoring workflows.
+- The public getNearestCityCenter API returns null when the caller's grid region
+  has no complex (and without an active server). It does not search other grids.
+  findcity searches only present complexes; named-plan search obeys the same rule.
+  Presence/search queries do not generate or force-load chunks.
+- Landscape districts, intercity routes, station grid and arrival portals are
+  not disabled by cityDungeonChance. Existing underground complexes still occupy
+  their station slots, as in master; findcity station now finds an actual remaining
+  station rather than advertising an occupied slot. Edit mode also distinguishes
+  an underground complex from a nonexistent station at the same height.
+- District search excludes portal plots and complex footprints. Underground
+  interior checks apply these exclusions to the surrounding plots too. This
+  repairs a real false district result found when testing the restored surfaces.
+- The separate Overworld entrance chance remains 0.002 and unchanged. The new
+  presence setting is marked worldRestart; choose it BEFORE creating a NEW world.
+  No existing-chunk rewriting or migration was added. Master actually left this
+  chance gate commented out; enabling the documented option completes an original
+  unfinished control, rather than recovering a lost released implementation.
+
+Comparison against original master 8718c37b64d082e3b65bc98cf889216e69c1fe50
+and ariente_screenshots/ariente_world{1,2} reference images
+- Terrain: ArienteTerrainGenerator/IslandsTerrainGenerator retain the original
+  marble/noise/island algorithms, six height profiles and water level 63. Repaired
+  the surface pass: ordinary grass now has dirt beneath it, deep seabeds retain
+  gravel, and rough biomes skip grass/dirt surfacing as their original override
+  did. Corrected the transposed biome lookup in the modern surface pass.
+  Bedrock remains at the base, with the original normal-biome surface variation.
+- Landmarks: all four original implementations are active: blue-marble spheres,
+  black/dark-blue/gray spikes, blue-glass/water bubbles and blue-glass/flux-glow
+  bubbles. Their original shape random streams, materials and radius/height
+  ranges are retained. Original per-biome strengths are present: spheres in
+  plains/hills/ocean/rough at .7/.5/.7/.3, spikes in rough at 4, and both bubble
+  types in ocean at 1. They were not missing just because archives also exist.
+- Landscape city geometry: the active ArienteLandscapeCity is the original
+  nine-park/thirteen-building and coordinate-seeded local-route algorithm adapted
+  to CityChunk writes. Y=65 plots, covered streets, walls, transforms and local
+  beam part selection remain. The sprawling reference image is this system,
+  distinct from the eight sparse authored complex plans. No new cube interiors,
+  bosses or special plan-rarity changes were introduced.
+- Tree catalog: the original 10-way weighted selector remains 1 giant, 2 glow,
+  2 small blue, 1 tall blue, 1 tall dark, 1 variant and 2 small dark. Repaired the
+  variant's wrong one-block fancy trunk/dark foliage: it now uses the native
+  dark-oak two-by-two branching/canopy equivalent with BLUE leaves and the
+  original 6+random(3)+random(2) height distribution.
+- Giant trees: replaced the plain giant trunk with native mega-jungle branching,
+  restored trunk vines, the original three-layer broad crown, and the original
+  10+random(3)+random(20) height distribution. All four soil roots are checked
+  for both two-by-two variants before placement, preserving authored marble floors.
+  Small/tall/glow materials, 4..6 and 6..8 height ranges and blob canopies remain.
+- Vegetation: restored the missing hill flower patches and the forest's nominal
+  20 flower-patch attempts (plains/hills use 5). The original 2:2:6 bush/dark-grass/
+  small-flower weights and 64 attempts per patch remain. Forest tree attempts
+  remain 15 plus 10% chance of one extra; plains retain their occasional tree.
+  Restored the original random patch-start height from Y=0 to surface+32 through
+  FlowerHeightPlacement. Using only surface height with 20 patches had produced
+  flower carpets; failed below/above-ground attempts are part of the original
+  distribution. These are attempt counts, not identical final density across APIs.
+
+Deliberate/current adaptations and limits
+- Quart biome sampling replaces the old final Voronoi layer. Native horizontal
+  scattering, random-patch/tree placement and random consumption change exact
+  positions; the original flower vertical range is restored.
+  Landmarks currently use the feature center's quart biome strength instead of
+  averaging the old block-biome array; boundary densities can consequently differ.
+- Surface complex height uses nine terrain samples and a minimum above sea level;
+  floating complexes clear current terrain with a minimum Y=100, while master used
+  fixed Y=100. Authored underground complexes still start at Y=40. These existing
+  modern terrain/clearance adaptations were retained, not called exact parity.
+- Native tree growth/foliage/vine algorithms retain the identified original forms
+  but are not bit-for-bit copies. Giant native vines can decorate branches and
+  use different attachment positions. Soil validation intentionally protects all
+  four roots rather than allowing authored floors to become dirt.
+- The original image has an unknown seed/camera/time. It is a geometry/theme
+  reference, not proof of seed-for-seed or pixel identity. No terrain-generation
+  compatibility with earlier development saves is required.
+
+Focused validation
+- WorldControlTests checks 0/1/intermediate probabilities, negative grid positions,
+  monotonic selection, seed/order isolation, unchanged plan/name streams, real
+  Brigadier searches/API results and no search-driven chunk loading. Fresh chunks
+  verify actual AI-core presence/absence, stations, route beams and arrival portals.
+- Surface regression checks grass/dirt, rough-biome exemption, coordinate indexing
+  and deep seabed gravel. The flower modifier is decoded through its real registry
+  codec and checked for both above- and below-ground starts. Actual configured/
+  placed tree growth checks two-by-two
+  trunks, blue foliage, branches/vines and rejection of partial/invalid soil.
+- Existing all-plan generation fixtures now select PRESENT candidates rather than
+  accidentally requesting disabled templates. All eight plans remain covered in
+  shuffled chunk order. District tests check real generated foundations/clearance.
+- The door fixture now waits for the freshly loaded chunk's entity section before
+  proximity queries; the previous immediate fake-player query could fail in new
+  worlds. Door gameplay implementation was unchanged.
+- Java 17 build/reobfuscation and all 53 required dedicated GameTests pass in a
+  NEW isolated world under build/phase1-verified-gametest. The latest log is
+  /tmp/arienteworld-phase1-verified.log; build output and temporary scripts are
+  local evidence, not durable prerequisites. Player progression, sustained
+  spawning/AI and broad multiplayer remain phases 2..4 rather than claims made
+  by this worldgen audit.
+
+- The opt-in WorldGenerationClientChecks driver passes in an isolated native
+  client, using fresh chunks. Forest/rough terrain and surface/covered districts
+  were visually inspected. Screenshots: build/verification/world-phase1-{forest,
+  rough,surface,underground}.png. The final log is
+  /tmp/arienteworld-phase1-client-final.log. This checks current geometry/theme,
+  not pixel identity with an unknown original seed or shader compatibility.
+- To repeat the visual check, include the gameTest source set in the focused
+  client as described below and pass arienteworld.phase1VisualCheck=true to the
+  GAME JVM. Load a NEW disposable singleplayer world in an isolated working
+  directory such as build/phase1-client. The driver sets spectator mode, visits
+  four generated scenes and exits after screenshots. Keep its window unpaused;
+  acknowledge Minecraft's experimental-world notice if shown. It must never be
+  enabled in a player save. Output goes to ../verification relative to that
+  isolated working directory. No /tmp script is required by the tracked driver.
 
 City authoring and administrative tools (phase 3, implemented 2026-10-30)
 - /arienteworld (alias /arworld) now includes editmode, savecity, syncchunk,
@@ -238,7 +357,7 @@ explicit source root is supplied. Resource/build paths are checkout-relative.
   config/{AIConfiguration,LootConfiguration,WorldgenConfiguration}.
 - Population/portals: src/main/resources/data/arienteworld/worldgen/ and forge/
   biome-modifier data, oregen/{OverworldDungeonFeature,OverworldDungeonGen},
-  dimension/PortalGenerator, blocks/plants/BlockArientePlant.
+  dimension/{PortalGenerator,FlowerHeightPlacement}, blocks/plants/BlockArientePlant.
 - Sky: client/ArienteDimensionEffects. Commands: commands/ModCommands.
 - Original city plans/parts/palettes: src/main/resources/assets/arienteworld/citydata/.
   Archived code: src/legacy/java/mcjty/arienteworld/{commands,dimension,biomes,
@@ -252,11 +371,14 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   Both mods load in an integrated client. Latest renderer fixes also passed
   client checks in vanilla Fabulous and Embeddium/Oculus Fancy (no shader-pack
   compatibility claim). These builds do not prove all gameplay features work.
-- Latest dedicated run: all 45 required Forge GameTests passed. Source files:
+- Latest dedicated run: all 53 required Forge GameTests passed. Source files:
   src/gameTest/java/mcjty/arienteworld/
     PortSmokeTests: dimension loading, companion/Ariente/HoloGui integration.
     CityGenerationTests: palettes/grid, cables/facades, all eight plans, authored
       equipment and AI initialization, security save/load and alert/shield checks.
+    WorldControlTests: seeded chance/search/API agreement, fresh placement at
+      chance 0/1, independent infrastructure, native surface/tree/soil parity and
+      the original flower vertical range.
     WorldGenerationTests: terrain/biome determinism, landscape districts, station
       infrastructure/routes and a passenger travelling along generated beams.
     PopulationTests: fresh forest logs/plants/ores, spawn tables/categories,
@@ -439,13 +561,14 @@ Do not mistake an individual complex for the separate landscape-city system.
 
 FOUR-PHASE COMPLETION PLAN
 ==========================
-Phase 1 - Finish world controls and identify real generation omissions.
+Phase 1 - Finish world controls and identify real generation omissions (implemented; focused validation).
   Connect cityDungeonChance consistently, compare active terrain/district/tree
   features with master and reference images, and correct verified omissions
   without adding old-world migration. Keep Ariente's immediate armor fixes in
   its repository; do not treat broken equipment as broken dimension generation.
-  Exit: generation, find commands and API placement predicates agree, and actual
-  parity differences are documented rather than inferred from legacy filenames.
+  Exit achieved: generation, find commands and API placement predicates agree;
+  original terrain/trees/vegetation were audited, concrete omissions repaired and
+  modern sampling/placement differences documented above.
 
 Phase 2 - Validate the exploration/progression loop with Ariente's data repairs.
   Verify city loot/cards, sustained spawning/alerts and entrance/arrival/return

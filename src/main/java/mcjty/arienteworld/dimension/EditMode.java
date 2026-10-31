@@ -315,7 +315,8 @@ public class EditMode {
         }
         City city = CityTools.getCity(level.getSeed(), center);
         Session session;
-        boolean station = CityTools.isStationChunk(chunk.x, chunk.z) && player.getY() >= 30 && player.getY() < 48;
+        boolean station = CityTools.isStationChunk(chunk.x, chunk.z) && player.getY() >= 30 && player.getY() < 48
+                && CityTools.getStationPart(level.getSeed(), chunk.x, chunk.z) != null;
         if (station || CityTools.isDungeonChunk(level.getSeed(), chunk.x, chunk.z)) {
             CityPlan plan = station ? AssetRegistries.CITYPLANS.get("station") : city.getPlan();
             session = new Session(level, center, station ? null : city, plan, plan.getPalette());
