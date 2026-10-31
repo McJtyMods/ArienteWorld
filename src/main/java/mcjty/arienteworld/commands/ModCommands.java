@@ -51,6 +51,7 @@ public class ModCommands {
                                 .executes(context -> findCity(context.getSource(), StringArgumentType.getString(context, "name"))))));
         dispatcher.register(Commands.literal(ArienteWorld.MODID).requires(source -> source.hasPermission(2))
                 .then(Commands.literal("findentrance").executes(context -> findEntrance(context.getSource()))));
+        EditorCommands.register(root);
         dispatcher.register(Commands.literal("arworld").requires(source -> source.hasPermission(2)).redirect(root));
     }
 

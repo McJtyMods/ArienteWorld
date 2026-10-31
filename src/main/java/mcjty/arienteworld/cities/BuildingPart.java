@@ -247,6 +247,8 @@ public class BuildingPart implements IAsset {
                 o.add("float", new JsonPrimitive((Float) v));
             } else if (v instanceof Boolean) {
                 o.add("boolean", new JsonPrimitive((Boolean) v));
+            } else if (v instanceof Character) {
+                o.add("char", new JsonPrimitive((Character) v));
             } else if (v instanceof String) {
                 o.add("string", new JsonPrimitive((String) v));
             }
@@ -271,7 +273,9 @@ public class BuildingPart implements IAsset {
                     value.add("float", new JsonPrimitive((Float) v));
                 } else if (v instanceof Boolean) {
                     value.add("boolean", new JsonPrimitive((Boolean) v));
-                } else if (v instanceof String) {
+                } else if (v instanceof Character) {
+                o.add("char", new JsonPrimitive((Character) v));
+            } else if (v instanceof String) {
                     value.add("string", new JsonPrimitive((String) v));
                 }
                 values.add(value);

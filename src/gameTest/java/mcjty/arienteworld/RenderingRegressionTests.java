@@ -1,5 +1,6 @@
 package mcjty.arienteworld;
 
+import com.mojang.authlib.GameProfile;
 import mcjty.ariente.blocks.utility.door.DoorMarkerTile;
 import mcjty.ariente.blocks.utility.door.InvisibleDoorTile;
 import mcjty.ariente.blocks.generators.NegariteGeneratorTile;
@@ -27,9 +28,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
+
+import java.util.UUID;
 
 @GameTestHolder(ArienteWorld.MODID)
 @PrefixGameTestTemplate(false)
@@ -162,11 +164,12 @@ public class RenderingRegressionTests {
         ServerLevel level = helper.getLevel().getServer().getLevel(DimensionRegister.DIMENSION);
         BlockPos pos = new BlockPos(90008, 240, 90008);
         level.getChunkAt(pos);
-        FakePlayer player = FakePlayerFactory.getMinecraft(level);
+        FakePlayer player = new FakePlayer(level, new GameProfile(UUID.randomUUID(), "door-test"));
         player.moveTo(pos.getX() + .5, pos.getY() + 1, pos.getZ() + 2);
-        level.addFreshEntity(player);
+        helper.assertTrue(level.addFreshEntity(player), "The door fixture must register its own nearby player");
         try {
             for (Direction facing : Direction.Plane.HORIZONTAL) {
+                level.removeBlock(pos, false);
                 level.setBlock(pos, Registration.DOOR_MARKER.get().defaultBlockState()
                         .setValue(BlockStateProperties.HORIZONTAL_FACING, facing), 3);
                 level.setBlock(pos.above(), Registration.INVISIBLE_DOOR.get().defaultBlockState()
@@ -174,7 +177,8 @@ public class RenderingRegressionTests {
                 level.setBlock(pos.above(4), Blocks.STONE.defaultBlockState(), 2);
                 DoorMarkerTile door = (DoorMarkerTile) level.getBlockEntity(pos);
                 door.tickServer();
-                helper.assertTrue(door.isOpen(), "A nearby player must open an unlocked door");
+                helper.assertTrue(door.isOpen(), "A nearby player must open an unlocked door: facing=" + facing
+                        + ", locked=" + door.isLocked() + ", player=" + player.position() + ", removed=" + player.isRemoved());
                 for (int y = 1; y <= 3; y++) {
                     var state = level.getBlockState(pos.above(y));
                     helper.assertTrue(state.is(Registration.INVISIBLE_DOOR.get())

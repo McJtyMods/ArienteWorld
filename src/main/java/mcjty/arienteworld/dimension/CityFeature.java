@@ -258,7 +258,7 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                         if (blockEntity instanceof ICityEquipment equipment) {
                             Map<String, Object> settings = new HashMap<>(data);
                             BlockState mimic = null;
-                            if (data.get("mimic") instanceof String id) {
+                            if (!(data.get("mimicState") instanceof String) && data.get("mimic") instanceof String id) {
                                 int meta = (Integer) data.getOrDefault("meta", 0);
                                 if (id.matches("ariente:(marble|marble_smooth|marble_pilar|marble_bricks|marble_slab|double_marble_slab)")) {
                                     mimic = LegacyBlockStates.read(id + "@color=" + MarbleColor.VALUES[meta].getSerializedName());

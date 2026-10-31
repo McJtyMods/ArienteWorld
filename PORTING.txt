@@ -1,12 +1,12 @@
 ARIENTEWORLD - FORGE 1.20.1 PORT HANDOFF
-Updated: 2026-10-30
+Updated: 2026-10-31
 
 STATUS AND SCOPE
 ================
 Buildable development port with active Ariente terrain, surface/underground
 cities, dungeon complexes, transport networks, vegetation, ores, natural spawns
 and portals. This is NOT a complete gameplay port or a release candidate. Exact
-original terrain/tree-shape parity, authoring tools and full gameplay validation
+original terrain/tree-shape parity and full gameplay validation
 remain unfinished. Builds and focused tests are not proof of full parity.
 
 This file owns world generation, authored structures, city AI/security/loot,
@@ -149,17 +149,46 @@ Generation controls and parity
   Do not label all vegetation/ores/terrain as unported: their active replacements
   already exist. Full seed identity is not an established completion criterion.
 
-City authoring and administrative tools
-- EditMode and EditModeClient remain archived, with related commands:
-  CommandEditMode, CommandSaveCity, CommandSyncChunk, CommandVariantCreate,
-  CommandVariantGet/Set/List/Switch, CommandInfo, CommandPacify and CommandCityCard.
-  Only exploration/search commands were migrated; the authoring workflow was
-  deferred while restoring runtime generation.
-- Restore the relevant command suite using Brigadier, current client/server
-  networking and the active part/palette/variant schema. Compare master as well
-  as intermediate legacy files; do not copy obsolete APIs or activate the whole
-  legacy source tree. Verify save/export/import, synchronized previews, security
-  cards and variant edits against the current structure loader.
+City authoring and administrative tools (phase 3, implemented 2026-10-30)
+- /arienteworld (alias /arworld) now includes editmode, savecity, syncchunk,
+  variantcreate/get/set/list/switch, info, pacify and citycard. Root permission
+  level 2 is enforced. Editing also requires creative mode in the Ariente
+  dimension. Native block update packets synchronize the world preview; the old
+  global EditModeClient flag and archived command implementations are unused.
+- editmode restores the current city/station templates, or normalizes a landscape
+  city plot to its untransformed part. Use a disposable authoring world: entering
+  edit mode deliberately restores blocks/equipment inside the template bounds.
+  It does not void surrounding chunks. City AI ticking/core rewards pause for
+  that session's city; only one editor can use a city/station region at a time.
+- Each session owns copies of the plan, palette, parts and variant selections.
+  Runtime registries/generation are not changed while editing. Stand INSIDE a
+  part and use syncchunk after editing to copy that part to its other occurrences.
+  Conflicting copies cause save/variant changes to fail with an actionable error.
+  Variant switches capture current parts before restoring another selection.
+- savecity writes a complete JSON asset array under
+  config/ariente/exports/<plan-or-part>.json using a temporary file and replacement.
+  Export contains the plan (where applicable), all referenced variants/parts,
+  full native state properties, two-character palette cells, part metadata and
+  ICityEquipment/spawner settings. Facades preserve their full native state.
+  This exports template settings, not arbitrary live inventories or city keys.
+- editmode reload parses/validates the session's export and restores it into the
+  edit area. editmode off ends the session. Sessions end on logout/server stop;
+  save before leaving. To use an export for fresh generation, install its array
+  entries in config/ariente/userassets.json and restart; preserve any other user
+  entries. Generated terrain is not rewritten by installing a new template.
+- variantcreate <name> <count> accepts 1..16 choices; variantset <name> assigns
+  the current part palette; variantswitch <name> <index> is zero based. Original
+  assets remain the source for unedited variants. No new cube/boss content added.
+- pacify clears the current city's alert. citycard supplies its storage access
+  key after the complete city has initialized. Neither is arbitrary player key
+  programming; both remain operator tools.
+- EditorRegressionTests exercise full state/equipment/facade/spawner/metadata
+  capture and JSON restore, real permission/alias commands, station variants,
+  sync, export and reload. SystemRegressionTests covers cooperating Ariente
+  automation, wireless controls, power-gated elevators and basic Flux Ship flight.
+- SystemRenderingChecks passed in vanilla Fabulous and Embeddium 0.3.31/Oculus
+  1.8.0 Fancy, shaders off, before/after resource reload. Ship, blueprint, facade,
+  armor, tooltip and transfer pixels plus native held-key piloting are exercised.
 
 World integration still requiring validation
 - Complete fresh-world progression: encounter an entrance, locate it with a
@@ -223,7 +252,7 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   Both mods load in an integrated client. Latest renderer fixes also passed
   client checks in vanilla Fabulous and Embeddium/Oculus Fancy (no shader-pack
   compatibility claim). These builds do not prove all gameplay features work.
-- Latest dedicated run: all 36 required Forge GameTests passed. Source files:
+- Latest dedicated run: all 45 required Forge GameTests passed. Source files:
   src/gameTest/java/mcjty/arienteworld/
     PortSmokeTests: dimension loading, companion/Ariente/HoloGui integration.
     CityGenerationTests: palettes/grid, cables/facades, all eight plans, authored
@@ -293,6 +322,32 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   dedicated suite. Do not claim all checks were repeated after each change.
   Ariente equipment/progression changes reran the dedicated suite and focused clients;
   refer to its handoff for the exact checks and remaining equipment limits.
+
+ARIENTE PHASE-4 INTEGRATION CHECKPOINT (2026-10-31)
+=================================================
+Ariente's handoff owns the complete evidence, repeatable commands and remaining
+release gates. Its full datagen/resource/jar checks pass; all 48 dedicated
+GameTests pass, including IntegrationRegressionTests for real paired generators
+across six chunk boundaries, network repair/exhaustion, repeated suit autofeed
+and a cabin route crossing ten chunk boundaries with entity-NBT reload. These
+accelerate ticks and keep chunks loaded; they do not prove a long wall-clock
+soak, real chunk unload/reload, world restart or intercity AI transport.
+MultiplayerFixture and client/MultiplayerClientChecks add opt-in, disposable
+server/two-client checks for actual hotkey packets, player-isolated equipment,
+reconnect and death/respawn. Both clients pass; the observer also verifies all
+146 Ariente item models and 9,467 block-state models before/after reload. Server
+is loopback-only with allow-flight=false. This does not certify multiplayer
+portals, city AI, sustained spawning or combat balance.
+The saved-world door fixture now creates its own fake player and resets each
+marker, so previous fixture locks cannot make reruns fail. No door gameplay
+behavior was changed. Tests and fixtures stay outside release jars.
+Ariente/HoloGui now use 1.20 version labels; this companion's dependency minima
+and lowercase Maven artifact ID/reobfuscation dependency are aligned. Its OWN
+historical version/changelog and full datagen/release preparation remain a
+separate phase-4 task. Default public HoloGui Maven resolution still requires
+publication; Ariente standalone build passes against a local staging artifact.
+The no-companion native client also passes actual JEI, fresh Overworld ore
+generation and dungeon blueprint loot checks through Ariente's tracked runs.
 
 BUILDING, RUNNING AND REPRODUCING CHECKS
 ======================================
@@ -398,7 +453,7 @@ Phase 2 - Validate the exploration/progression loop with Ariente's data repairs.
   Exit: a fresh survival player can reach cities, obtain meaningful resources
   and security access, use captured/crafted equipment and return safely.
 
-Phase 3 - Restore authoring tools and complete city/transport workflows.
+Phase 3 - Restore authoring tools and complete city/transport workflows (implemented; focused validation).
   Port edit/save/variant/sync/admin commands against active assets; exercise large
   city AI, security, stations and long routes, coordinating Ariente vehicle and
   machine repairs. Keep optional new cube/boss content separate from parity.

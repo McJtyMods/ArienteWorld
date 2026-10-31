@@ -12,6 +12,7 @@ import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.cities.Loot;
 import mcjty.arienteworld.config.AIConfiguration;
 import mcjty.arienteworld.setup.Registration;
+import mcjty.arienteworld.dimension.EditMode;
 import mcjty.arienteworld.dimension.CityFeature;
 import mcjty.lib.tileentity.GenericTileEntity;
 import mcjty.lib.varia.OrientationTools;
@@ -141,6 +142,9 @@ public class CityAI implements ICityAI {
 
     @Override
     public void breakAICore(Level world, BlockPos pos) {
+        if (EditMode.isEditing(world, center)) {
+            return;
+        }
         setup(world);
         if (initialized && !hasValidCoreExcept(world, pos)) {
             // There are no other valid AI cores. Spawn an item for the player
@@ -158,6 +162,9 @@ public class CityAI implements ICityAI {
     // Return true if we potentially have to save the city system state
     @Override
     public boolean tick(BlockEntity tile) {
+        if (EditMode.isEditing(tile.getLevel(), center)) {
+            return false;
+        }
         if (!areChunksLoaded()) {
             return false;
         }

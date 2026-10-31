@@ -61,6 +61,7 @@ dependencies {
 publishing {
     publications {
         mavenJava(MavenPublication) {
+            artifactId = archivesBaseName
             from components.java
         }
     }
@@ -79,6 +80,11 @@ sourceSets {
         runtimeClasspath += sourceSets.main.output
     }
 }
+
+tasks.withType(AbstractPublishToMaven).configureEach {
+    dependsOn 'reobfJar'
+}
+
 configurations {
     gameTestImplementation.extendsFrom implementation
     gameTestCompileOnly.extendsFrom compileOnly
