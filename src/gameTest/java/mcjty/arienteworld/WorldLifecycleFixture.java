@@ -350,11 +350,12 @@ public class WorldLifecycleFixture {
                     ai.highAlertMode(watcher);
                     CityAISystem.getCityAISystem(level).saveSystem();
                 }
-                int soldiers = level.getEntitiesOfClass(LivingEntity.class, bounds(), entity -> entity instanceof ISoldier).size();
+                int soldiers = level.getEntitiesOfClass(LivingEntity.class, bounds(),
+                        entity -> entity instanceof ISoldier soldier && soldier.isReinforcementFor(city.getCenter())).size();
                 int drones = level.getEntitiesOfClass(LivingEntity.class, bounds(), entity -> entity instanceof IDrone).size();
                 maximumSoldiers = Math.max(maximumSoldiers, soldiers);
                 maximumDrones = Math.max(maximumDrones, drones);
-                require(soldiers <= Math.max(data.tag.getInt("initialSoldiers"), city.getPlan().getSoldiersWaveMax1() * 2)
+                require(soldiers <= city.getPlan().getSoldiersWaveMax1() * 2
                         && drones <= city.getPlan().getDronesWaveMax1(), "Stationary local reinforcements must remain bounded");
                 if ((ticks - since) % 1200 == 0) {
                     ArienteWorld.setup.getLogger().info("WORLD AI SOAK: {} native ticks, peak soldiers/drones={}/{}, fuel refills={}/{}", ticks - since, maximumSoldiers, maximumDrones, negativeRefills, positiveRefills);

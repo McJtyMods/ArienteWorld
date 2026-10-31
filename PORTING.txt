@@ -14,10 +14,57 @@ This file owns world generation, authored structures, city AI/security/loot,
 spawning, entrance/arrival generation, world commands and editing tools.
 ../Ariente/PORTING.txt owns equipment, machines, resource processing, recipe/JEI
 work, vehicle implementations, rendering, shared HoloGui and packaging details.
-Read BOTH files when continuing. This companion owns ore placement; Ariente
+Read BOTH files when continuing. This companion owns dimension ore placement; Ariente
 now supplies ore drops/processing, colored recipes, optional Overworld progression
 and Constructor JEI. Both equipment and progression have focused
 checks; full survival progression is not yet certified.
+
+SOLDIER/SKY AND STANDALONE FOLLOW-UP (2026-10-31)
+================================================
+- Mobile soldiers remain ALERT reinforcements, not unconditional initial spawns.
+  Authored guards/sentinels/master posts still initialize as before. EntityInfo
+  now counts living ISoldier reinforcements belonging to this city; fixed guards,
+  authored masters, natural fighters and foreign-city troops cannot suppress
+  mobile waves. Spawned wave/levitator soldiers use the appended
+  SOLDIER_REINFORCEMENT behavior, preserving saved guard/fighter ordinals 0/1.
+  Soldier role and city ownership persist through normal entity NBT.
+- The alert regression first leaves authored defenders alive, adds more guards
+  than the wave maximum plus a foreign reinforcement, and verifies a bounded
+  local mobile wave. It also verifies role/ownership NBT, then runs the existing
+  15 casualty/refill cycles, multiplayer scaling, expiry and capture checks.
+  The lifecycle fixture now measures local mobile troops separately from guards;
+  the older phase-4 timed-soak numbers below describe that earlier run.
+- Restored original additive SRC_ALPHA/ONE sun/moon blending. The original RGB
+  textures use black for empty space; ordinary alpha blending exposed the square
+  background. Use vanilla POSITION_TEX shader/format and per-draw shader alpha,
+  restore shader/blend state afterward. Original sky images are unchanged.
+- New optional arienteworld.skyCheck game-JVM property enables SkyRenderingChecks
+  in a disposable integrated client world with the gameTest source set loaded.
+  It positions a spectator at X/Z=64008.5/Y=280, looks up and checks sun at 6000
+  and full moon at 18000, repeats after resource reload and exits on success.
+  It sets the OVERWORLD clock because other dimensions' DerivedLevelData setters
+  are no-ops. Images go in ../sky-images relative to the client working directory.
+  Default runClient does not enable this fixture. For Embeddium/Oculus checks,
+  include the exact workspace runtime pair (0.3.31/1.8.0), shaders off.
+- Ariente supplies the new ordinary Blueprint Storage crafting entry point and
+  eight datapack-driven optional Overworld ore distributions, including deepslate.
+  Its DEFAULT/YES/NO gates are read at placement time, not registry decode. The
+  companion's own dimension distributions remain separate; see Ariente's handoff
+  and ARIENTE_GUIDE.md for file paths/defaults and the crafting recipe.
+- Fresh dedicated suite: all 60 required GameTests pass (previous phase-4 run had
+  58). Includes a decoded custom ore placement whose output, deep-only target,
+  height and late config switch are exercised. Companion resource audit remains
+  189 resources / 141 JSON+metadata, zero errors.
+- Native sky checks pass with vanilla and Embeddium 0.3.31 / Oculus 1.8.0,
+  shaders OFF: sun and moon before/after resource reload, zero near-black pixels
+  in each capture and visible celestial highlights. Visually inspected original
+  glow against the purple sky. Evidence: build/verification/sky-images/
+  {vanilla,oculus}-{sun,moon}[-reload].png. The Ariente-only native progression
+  client also passes DEFAULT ores in natural deep terrain, default dungeon loot,
+  ordinary bootstrap crafting, a real loot-blueprint craft and JEI.
+- Final Java 17 workspace builds of Ariente, ArienteWorld and ModHoloGui pass
+  after all native clients stop. Both resource/release-jar audits pass, including
+  reobfuscated bytecode, packaged resource freshness and test-source exclusion.
 
 WORKSPACE, HISTORY AND USER REQUIREMENTS
 =======================================
@@ -448,7 +495,7 @@ VERIFICATION ALREADY PERFORMED - KEEP THE LIMITS VISIBLE
   Both mods load in an integrated client. Latest renderer fixes also passed
   client checks in vanilla Fabulous and Embeddium/Oculus Fancy (no shader-pack
   compatibility claim). These builds do not prove all gameplay features work.
-- Latest dedicated run: all 58 required Forge GameTests passed. Source files:
+- Latest dedicated run: all 60 required Forge GameTests passed. Source files:
   src/gameTest/java/mcjty/arienteworld/
     PortSmokeTests: dimension loading, companion/Ariente/HoloGui integration.
     CityGenerationTests: palettes/grid, cables/facades, all eight plans, authored

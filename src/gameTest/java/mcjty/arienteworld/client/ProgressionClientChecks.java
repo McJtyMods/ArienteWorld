@@ -1,6 +1,10 @@
 package mcjty.arienteworld.client;
 
 import mcjty.ariente.Ariente;
+import mcjty.ariente.api.MarbleColor;
+import mcjty.ariente.blocks.decorative.DecorativeBlockModule;
+import mcjty.ariente.blocks.utility.BlueprintStorageTile;
+import mcjty.ariente.blocks.utility.ConstructorTile;
 import mcjty.ariente.compat.jei.JeiConstructorRecipeCategory;
 import mcjty.ariente.config.WorldgenConfiguration;
 import mcjty.ariente.items.BlueprintItem;
@@ -16,6 +20,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.TransientCraftingContainer;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -94,15 +103,19 @@ public class ProgressionClientChecks implements IModPlugin {
                 if (!companion) {
                     var level = mc.getSingleplayerServer().getLevel(Level.OVERWORLD);
                     Set<String> ores = new HashSet<>();
+                    Set<String> deepOres = new HashSet<>();
                     BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
                     for (int cx = 4000; cx < 4008; cx++) {
                         var chunk = level.getChunk(cx, 4000);
                         for (int x = 0; x < 16; x++) {
                             for (int z = 0; z < 16; z++) {
-                                for (int y = 6; y < 80; y++) {
+                                for (int y = -56; y < 88; y++) {
                                     String id = ForgeRegistries.BLOCKS.getKey(chunk.getBlockState(pos.set(cx * 16 + x, y, 64000 + z)).getBlock()).toString();
                                     if (id.startsWith("ariente:")) {
                                         ores.add(id);
+                                        if (y < 0) {
+                                            deepOres.add(id);
+                                        }
                                     }
                                 }
                             }
@@ -110,15 +123,21 @@ public class ProgressionClientChecks implements IModPlugin {
                     }
                     for (String name : List.of("lithiumore", "manganeseore", "platinumore", "silverore", "siliconore", "negarite", "posirite")) {
                         require(ores.contains("ariente:" + name), "Fresh Overworld chunks must contain " + name);
+                        require(deepOres.contains("ariente:" + name), "Fresh deepslate must contain " + name);
                     }
                     var table = level.getServer().getLootData().getLootTable(new ResourceLocation("minecraft", "chests/simple_dungeon"));
                     var params = new LootParams.Builder(level).withParameter(LootContextParams.ORIGIN, Vec3.ZERO).create(LootContextParamSets.CHEST);
-                    boolean blueprint = false;
+                    ItemStack blueprint = ItemStack.EMPTY;
                     for (int i = 0; i < 128; i++) {
-                        blueprint |= table.getRandomItems(params).stream().anyMatch(s -> s.is(Registration.BLUEPRINT.get()));
+                        for (var stack : table.getRandomItems(params)) {
+                            if (stack.is(Registration.BLUEPRINT.get())) {
+                                blueprint = stack.copy();
+                            }
+                        }
                     }
-                    require(blueprint, "Default dungeon loot must provide valid blueprints without the companion");
-                    Ariente.setup.getLogger().info("STANDALONE PROGRESSION CHECK PASSED: seven ores in fresh natural chunks and default dungeon blueprints, without ArienteWorld");
+                    require(!blueprint.isEmpty(), "Default dungeon loot must provide valid blueprints without the companion");
+                    verifyCraftingBootstrap(mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID()), blueprint);
+                    Ariente.setup.getLogger().info("STANDALONE PROGRESSION CHECK PASSED: seven ores in fresh chunks including deepslate, default dungeon blueprints, ordinary Constructor/Storage crafting and a loot-blueprint craft without ArienteWorld");
                 }
                 serverChecked = true;
             });
@@ -135,6 +154,50 @@ public class ProgressionClientChecks implements IModPlugin {
             Ariente.setup.getLogger().info("CONSTRUCTOR JEI CLIENT CHECKS PASSED: catalog, both catalysts, layouts, blueprint subtypes and real recipe screen");
             mc.stop();
         }
+    }
+
+    private static void verifyCraftingBootstrap(ServerPlayer player, ItemStack blueprint) {
+        var level = player.serverLevel();
+        var storage = craft(player, new ItemStack[]{
+                new ItemStack(Registration.INGOT_SILVER.get()), new ItemStack(Blocks.GLASS_PANE), new ItemStack(Registration.INGOT_SILVER.get()),
+                new ItemStack(Registration.DUST_SILICON.get()), new ItemStack(Blocks.CHEST), new ItemStack(Registration.DUST_SILICON.get()),
+                new ItemStack(DecorativeBlockModule.MARBLE.get(MarbleColor.WHITE).get()),
+                new ItemStack(DecorativeBlockModule.MARBLE.get(MarbleColor.BLACK).get()),
+                new ItemStack(DecorativeBlockModule.MARBLE.get(MarbleColor.BLUE).get())});
+        var constructor = craft(player, new ItemStack[]{
+                new ItemStack(Items.IRON_INGOT), new ItemStack(Items.IRON_INGOT), new ItemStack(Items.IRON_INGOT),
+                new ItemStack(Items.IRON_INGOT), new ItemStack(Registration.INGOT_PLATINUM.get()), new ItemStack(Items.IRON_INGOT),
+                new ItemStack(Registration.INGOT_SILVER.get()), new ItemStack(Registration.INGOT_SILVER.get()), new ItemStack(Registration.INGOT_SILVER.get())});
+        require(storage.is(Registration.BLUEPRINT_STORAGE.get().asItem()) && constructor.is(Registration.CONSTRUCTOR.get().asItem()),
+                "Ordinary crafting must provide both bootstrap machines without blueprints");
+        BlockPos pos = new BlockPos(64000, 200, 64000);
+        level.setBlockAndUpdate(pos, Registration.CONSTRUCTOR.get().defaultBlockState());
+        level.setBlockAndUpdate(pos.above(), Registration.BLUEPRINT_STORAGE.get().defaultBlockState());
+        var library = (BlueprintStorageTile) level.getBlockEntity(pos.above());
+        library.getItems().setStackInSlot(0, blueprint);
+        var recipe = BlueprintRecipeRegistry.findRecipe(BlueprintItem.getDestination(blueprint));
+        require(recipe != null, "A default dungeon blueprint must resolve to a Constructor recipe");
+        player.getInventory().clearContent();
+        for (var ingredient : recipe.getIngredientList()) {
+            require(player.getInventory().add(ingredient.copy()), "Recipe ingredients must fit the test player's inventory");
+        }
+        var machine = (ConstructorTile) level.getBlockEntity(pos);
+        var slots = machine.createGui("", Ariente.guiHandler.getComponentRegistry()).findChild("outputslots").orElseThrow();
+        slots.hit(player, null, 2, 6);
+        slots.hit(player, null, 2, 6);
+        var result = recipe.getDestination();
+        require(player.getInventory().countItem(result.getItem()) == result.getCount(),
+                "The dungeon blueprint must craft its complete batch through the actual Constructor control");
+        require(library.getItems().getStackInSlot(0).getCount() == 1, "Crafting must retain the dungeon blueprint");
+    }
+
+    private static ItemStack craft(ServerPlayer player, ItemStack[] ingredients) {
+        var grid = new TransientCraftingContainer(player.inventoryMenu, 3, 3);
+        for (int slot = 0; slot < ingredients.length; slot++) {
+            grid.setItem(slot, ingredients[slot]);
+        }
+        var level = player.serverLevel();
+        return level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, grid, level).orElseThrow().assemble(grid, level.registryAccess());
     }
 
     private static void require(boolean condition, String message) {

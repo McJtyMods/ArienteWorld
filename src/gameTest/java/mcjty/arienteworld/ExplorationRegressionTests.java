@@ -1,6 +1,9 @@
 package mcjty.arienteworld;
 
 import com.mojang.authlib.GameProfile;
+import mcjty.ariente.Ariente;
+import mcjty.ariente.api.SoldierBehaviourType;
+import mcjty.ariente.entities.soldier.SoldierEntity;
 import mcjty.ariente.api.IDrone;
 import mcjty.ariente.api.ISoldier;
 import mcjty.ariente.blocks.aicore.AICoreTile;
@@ -243,6 +246,7 @@ public class ExplorationRegressionTests {
             return stacks;
         }).toList();
         try {
+            verifyGuardsDoNotSuppressReinforcements(helper, level, city, ai, tickingCore, bounds);
             for (int count = 1; count <= 3; count++) {
                 players.add(player(level, tickingCore.getBlockPos().above(80 + count * 3)));
                 ai.pacify(level);
@@ -372,6 +376,50 @@ public class ExplorationRegressionTests {
             players.forEach(FakePlayer::discard);
         }
         helper.succeed();
+    }
+
+    private static void verifyGuardsDoNotSuppressReinforcements(GameTestHelper helper, ServerLevel level, City city,
+                                                               CityAI ai, AICoreTile core, AABB bounds) {
+        CompoundTag state = new CompoundTag();
+        ai.writeToNBT(state);
+        BlockPos spawn = NbtUtils.readBlockPos(state.getList("soldierPositions", Tag.TAG_COMPOUND).getCompound(0));
+        List<LivingEntity> defenders = level.getEntitiesOfClass(LivingEntity.class, bounds, entity -> entity instanceof ISoldier);
+        List<LivingEntity> extra = new ArrayList<>();
+        FakePlayer observer = player(level, core.getBlockPos().above(80));
+        try {
+            // More fixed defenders than the wave maximum reproduced the old zero-fighter result.
+            for (int i = 0; i <= city.getPlan().getSoldiersWaveMax1(); i++) {
+                var guard = Ariente.arienteSystem.createSoldier(level, spawn, Direction.NORTH, city.getCenter(), SoldierBehaviourType.SOLDIER_GUARD, false);
+                guard.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Registration.ENERGY_SABRE.get()));
+                extra.add(guard);
+            }
+            extra.add(Ariente.arienteSystem.createSoldier(level, spawn, Direction.NORTH,
+                    new ChunkPos(city.getCenter().x + 16, city.getCenter().z), SoldierBehaviourType.SOLDIER_REINFORCEMENT, false));
+            ai.alertCity(observer);
+            for (int step = 0; step < 20; step++) {
+                ai.tick(core);
+                level.getEntitiesOfClass(Mob.class, bounds).forEach(mob -> mob.setNoAi(true));
+            }
+            List<LivingEntity> mobile = level.getEntitiesOfClass(LivingEntity.class, bounds,
+                    entity -> entity instanceof ISoldier soldier && soldier.isReinforcementFor(city.getCenter()));
+            helper.assertTrue(mobile.size() >= city.getPlan().getSoldiersMinimum1() && mobile.size() <= city.getPlan().getSoldiersWaveMax1(),
+                    "An alerted dungeon must deploy its own mobile soldiers while guards, master posts and foreign troops remain present");
+            helper.assertTrue(defenders.stream().noneMatch(LivingEntity::isRemoved), "Wave generation must leave authored defenders alive");
+            SoldierEntity soldier = (SoldierEntity) mobile.get(0);
+            CompoundTag saved = soldier.saveWithoutId(new CompoundTag());
+            SoldierEntity restored = (SoldierEntity) soldier.getType().create(level);
+            restored.load(saved);
+            helper.assertTrue(restored.isReinforcementFor(city.getCenter())
+                            && !restored.isReinforcementFor(new ChunkPos(city.getCenter().x + 16, city.getCenter().z)),
+                    "Mobile role and city ownership must survive entity NBT reload");
+            helper.assertTrue(SoldierBehaviourType.SOLDIER_GUARD.ordinal() == 0 && SoldierBehaviourType.SOLDIER_FIGHTER.ordinal() == 1,
+                    "Adding the reinforcement role must preserve existing saved behavior ordinals");
+        } finally {
+            ai.pacify(level);
+            ai.tick(core);
+            observer.discard();
+            extra.forEach(LivingEntity::discard);
+        }
     }
 
     private static FakePlayer player(ServerLevel level, BlockPos pos) {

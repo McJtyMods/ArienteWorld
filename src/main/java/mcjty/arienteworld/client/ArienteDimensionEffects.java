@@ -1,5 +1,6 @@
 package mcjty.arienteworld.client;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -80,6 +81,7 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
         RenderSystem.defaultBlendFunc();
         FogRenderer.setupNoFog();
         try {
+            RenderSystem.setShaderColor(1, 1, 1, 1);
             // Preserve the original provider's purple tint, including at night.
             Vec3 sky = level.getSkyColor(camera.getPosition(), partialTick);
             float red = 1;
@@ -120,12 +122,15 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
             }
             Tesselator.getInstance().end();
 
-            RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderColor(1, 1, 1, 1);
             poses.pushPose();
             poses.mulPose(Axis.YP.rotationDegrees(-90));
             poses.mulPose(Axis.XP.rotationDegrees(level.getTimeOfDay(partialTick) * 360));
             renderStars(poses, level.getStarBrightness(partialTick));
+            // The original RGB celestial textures use black for empty space.
+            RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
+                    GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
             RenderSystem.setShaderTexture(0, SUN);
             quad(poses.last().pose(), 30, 100, new float[]{0, 0, 1, 0, 1, 1, 0, 1}, 1);
             int phase = level.getMoonPhase();
@@ -139,6 +144,7 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
             RenderSystem.depthMask(true);
             RenderSystem.enableCull();
             RenderSystem.disableBlend();
+            RenderSystem.defaultBlendFunc();
             setupFog.run();
         }
         return true;
@@ -164,12 +170,13 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
     }
 
     private static void quad(Matrix4f matrix, float size, float y, float[] uv, float alpha) {
+        RenderSystem.setShaderColor(1, 1, 1, alpha);
         BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        buffer.vertex(matrix, -size, y, -size).uv(uv[0], uv[1]).color(1, 1, 1, alpha).endVertex();
-        buffer.vertex(matrix, -size, y, size).uv(uv[2], uv[3]).color(1, 1, 1, alpha).endVertex();
-        buffer.vertex(matrix, size, y, size).uv(uv[4], uv[5]).color(1, 1, 1, alpha).endVertex();
-        buffer.vertex(matrix, size, y, -size).uv(uv[6], uv[7]).color(1, 1, 1, alpha).endVertex();
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        buffer.vertex(matrix, -size, y, -size).uv(uv[0], uv[1]).endVertex();
+        buffer.vertex(matrix, -size, y, size).uv(uv[2], uv[3]).endVertex();
+        buffer.vertex(matrix, size, y, size).uv(uv[4], uv[5]).endVertex();
+        buffer.vertex(matrix, size, y, -size).uv(uv[6], uv[7]).endVertex();
         Tesselator.getInstance().end();
     }
 }

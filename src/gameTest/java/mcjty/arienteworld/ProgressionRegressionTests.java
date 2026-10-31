@@ -1,9 +1,13 @@
 package mcjty.arienteworld;
 
 import mcjty.ariente.Ariente;
+import mcjty.ariente.api.MarbleColor;
+import mcjty.ariente.blocks.decorative.DecorativeBlockModule;
 import mcjty.ariente.config.Config;
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
 import net.minecraftforge.fml.config.ConfigTracker;
 import net.minecraftforge.fml.config.ModConfig;
 import mcjty.ariente.blocks.utility.AutoConstructorTile;
@@ -23,14 +27,17 @@ import mcjty.ariente.recipes.ConstructorCrafting;
 import mcjty.ariente.recipes.ConstructorRecipe;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.cities.AssetRegistries;
+import mcjty.arienteworld.dimension.DimensionRegister;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -39,11 +46,13 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.FurnaceBlockEntity;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.items.IItemHandlerModifiable;
@@ -245,21 +254,27 @@ public class ProgressionRegressionTests {
             var level = helper.getLevel();
             var old = WorldgenConfiguration.OVERWORLD_OREGEN.get();
             BlockPos origin = new BlockPos(121600, 0, 121600);
-            var placed = level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE).get(new ResourceLocation("ariente", "overworld_ores"));
-            helper.assertTrue(placed != null, "Ore feature data must be registered and loaded");
-            for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-8, 0, -8), origin.offset(24, 80, 24))) {
-                level.setBlock(pos, Blocks.STONE.defaultBlockState(), 2);
+            var registry = level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE);
+            var features = List.of("marble", "lithium", "manganese", "platinum", "silicon", "silver", "negarite", "posirite")
+                    .stream().map(name -> registry.get(new ResourceLocation("ariente", "overworld_" + name))).toList();
+            helper.assertTrue(features.stream().allMatch(feature -> feature != null), "Every ore must have its own loaded datapack feature");
+            for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-8, -56, -8), origin.offset(24, 88, 24))) {
+                level.setBlock(pos, (pos.getY() < 0 ? Blocks.DEEPSLATE : Blocks.STONE).defaultBlockState(), 2);
             }
             try {
                 WorldgenConfiguration.OVERWORLD_OREGEN.set(YesNoDefault.DEFAULT);
-                helper.assertTrue(!placed.place(level, level.getChunkSource().getGenerator(), RandomSource.create(123), origin),
-                        "DEFAULT must suppress Overworld generation when the companion is installed");
+                for (var placed : features) {
+                    helper.assertTrue(!placed.placeWithBiomeCheck(level, level.getChunkSource().getGenerator(), RandomSource.create(123), origin),
+                            "DEFAULT must suppress every ore when the companion is installed");
+                }
                 WorldgenConfiguration.OVERWORLD_OREGEN.set(YesNoDefault.YES);
                 for (int i = 0; i < 8; i++) {
-                    helper.assertTrue(placed.place(level, level.getChunkSource().getGenerator(), RandomSource.create(123 + i), origin), "YES must enable generation");
+                    for (int ore = 0; ore < features.size(); ore++) {
+                        features.get(ore).placeWithBiomeCheck(level, level.getChunkSource().getGenerator(), RandomSource.create(123 + 31L * i + ore), origin);
+                    }
                 }
                 Set<Block> found = new HashSet<>();
-                for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-8, 0, -8), origin.offset(24, 80, 24))) {
+                for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-8, -56, -8), origin.offset(24, 88, 24))) {
                     found.add(level.getBlockState(pos).getBlock());
                 }
                 for (Block ore : List.of(Registration.ORE_LITHIUM.get(), Registration.ORE_MANGANESE.get(), Registration.ORE_PLATINUM.get(),
@@ -267,12 +282,85 @@ public class ProgressionRegressionTests {
                     helper.assertTrue(found.contains(ore), "Enabled native ore feature must place " + ore);
                 }
                 WorldgenConfiguration.OVERWORLD_OREGEN.set(YesNoDefault.NO);
-                helper.assertTrue(!placed.place(level, level.getChunkSource().getGenerator(), RandomSource.create(123), origin), "NO must disable generation at placement time");
+                for (var placed : features) {
+                    helper.assertTrue(!placed.placeWithBiomeCheck(level, level.getChunkSource().getGenerator(), RandomSource.create(123), origin),
+                            "NO must disable every ore at placement time");
+                }
             } finally {
                 WorldgenConfiguration.OVERWORLD_OREGEN.set(old);
             }
             helper.succeed();
         }
+    }
+
+    @GameTest(template = "empty")
+    public static void standaloneCraftingHasABlueprintStorageEntryPoint(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var grid = new TransientCraftingContainer(FakePlayerFactory.getMinecraft(level).inventoryMenu, 3, 3);
+        ItemStack[] ingredients = {
+                new ItemStack(Registration.INGOT_SILVER.get()), new ItemStack(Blocks.GLASS_PANE), new ItemStack(Registration.INGOT_SILVER.get()),
+                new ItemStack(Registration.DUST_SILICON.get()), new ItemStack(Blocks.CHEST), new ItemStack(Registration.DUST_SILICON.get()),
+                new ItemStack(DecorativeBlockModule.MARBLE.get(MarbleColor.WHITE).get()),
+                new ItemStack(DecorativeBlockModule.MARBLE.get(MarbleColor.BLACK).get()),
+                new ItemStack(DecorativeBlockModule.MARBLE.get(MarbleColor.BLUE).get())
+        };
+        for (int slot = 0; slot < ingredients.length; slot++) {
+            grid.setItem(slot, ingredients[slot]);
+        }
+        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, grid, level).orElseThrow();
+        helper.assertTrue(recipe.assemble(grid, level.registryAccess()).is(Registration.BLUEPRINT_STORAGE.get().asItem()),
+                "The first Blueprint Storage must be craftable from Overworld materials and mixed marble colors, without a blueprint");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void datapackOreTargetsAndDepthReadConfigOnlyAtPlacement(GameTestHelper helper) {
+        try (var scope = new TestServerConfig()) {
+            var level = helper.getLevel();
+            var previous = WorldgenConfiguration.OVERWORLD_OREGEN.get();
+            try {
+                WorldgenConfiguration.OVERWORLD_OREGEN.set(YesNoDefault.NO);
+                var ops = RegistryOps.create(JsonOps.INSTANCE, level.registryAccess());
+                var json = JsonParser.parseString("""
+                        {"feature":{"type":"ariente:overworld_ores","config":{
+                          "size":24,"discard_chance_on_air_exposure":0,
+                          "targets":[{"target":{"predicate_type":"minecraft:tag_match","tag":"minecraft:deepslate_ore_replaceables"},
+                                      "state":{"Name":"minecraft:diamond_block"}}]}},
+                         "placement":[{"type":"minecraft:count","count":1},
+                          {"type":"minecraft:height_range","height":{"type":"minecraft:uniform",
+                            "min_inclusive":{"absolute":-40},"max_inclusive":{"absolute":-40}}}]}
+                        """);
+                var placed = PlacedFeature.DIRECT_CODEC.parse(ops, json).getOrThrow(false, message -> {
+                    throw new AssertionError(message);
+                });
+                BlockPos origin = new BlockPos(123200, -40, 123200);
+                for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-16, -8, -8), origin.offset(24, 8, 24))) {
+                    level.setBlock(pos, (pos.getX() < origin.getX() ? Blocks.STONE : Blocks.DEEPSLATE).defaultBlockState(), 2);
+                }
+                helper.assertTrue(!placed.place(level, level.getChunkSource().getGenerator(), RandomSource.create(42), origin.east(8)),
+                        "A decoded datapack feature must still obey NO when actually placed");
+                WorldgenConfiguration.OVERWORLD_OREGEN.set(YesNoDefault.YES);
+                helper.assertTrue(!placed.place(level, level.getChunkSource().getGenerator(), RandomSource.create(42), origin.west(8)),
+                        "Datapack deepslate-only targets must reject stone");
+                helper.assertTrue(placed.place(level, level.getChunkSource().getGenerator(), RandomSource.create(42), origin.east(8)),
+                        "The same decoded feature must obey a later YES and use its custom below-zero target");
+                int found = 0;
+                for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-16, -8, -8), origin.offset(24, 8, 24))) {
+                    if (level.getBlockState(pos).is(Blocks.DIAMOND_BLOCK)) {
+                        helper.assertTrue(pos.getX() >= origin.getX() && pos.getY() < 0,
+                                "Custom output must be confined to its datapack target and deep height");
+                        found++;
+                    }
+                }
+                helper.assertTrue(found > 0, "Datapack output must not be hardcoded to an Ariente ore");
+                var ariente = level.getServer().getLevel(DimensionRegister.DIMENSION);
+                helper.assertTrue(!placed.place(ariente, ariente.getChunkSource().getGenerator(), RandomSource.create(42), origin),
+                        "YES must keep the standalone feature restricted to the Overworld");
+            } finally {
+                WorldgenConfiguration.OVERWORLD_OREGEN.set(previous);
+            }
+        }
+        helper.succeed();
     }
 
     @GameTest(template = "empty")

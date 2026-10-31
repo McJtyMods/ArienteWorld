@@ -301,7 +301,7 @@ public class CityAI implements ICityAI {
             AABB boundingbox = getSoldierBoundingbox();
             world.getEntitiesOfClass(LivingEntity.class, new AABB(ctr).inflate(dimX, 200, dimZ),
                     entity -> {
-                        if (entity instanceof ISoldier) {
+                        if (entity instanceof ISoldier soldier && entity.isAlive() && soldier.isReinforcementFor(center)) {
                             if (boundingbox != null) {
                                 if (boundingbox.contains(entity.position())) {
                                     soldiers.incrementAndGet();
@@ -410,7 +410,7 @@ public class CityAI implements ICityAI {
                     world.addFreshEntity(entity);
                     this.levitator = entity.getId();
 
-                    LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, path.direction, center, SoldierBehaviourType.SOLDIER_FIGHTER, false);
+                    LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, path.direction, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT, false);
                     soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));
                     soldier.startRiding(entity);
                 }
@@ -665,7 +665,7 @@ public class CityAI implements ICityAI {
 
 
         Direction facing = soldierPositions.get(pos);
-        LivingEntity entity = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER,
+        LivingEntity entity = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT,
                 random.nextDouble() < plan.getMasterChance());
         entity.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));    // @todo need a lasergun
 
