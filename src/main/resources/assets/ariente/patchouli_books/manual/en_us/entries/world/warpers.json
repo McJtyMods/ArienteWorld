@@ -1,0 +1,32 @@
+{
+  "name": "Pearls & Warpers",
+  "icon": "ariente:warper",
+  "category": "ariente:arienteworld",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:crafting",
+      "recipe": "ariente:ariente_pearl",
+      "text": "Surround an Ender Pearl with Nether Quartz to make an Ariente Pearl. Bring more than the entrance needs: locator throws can be lost."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Find an entrance",
+      "text": "Use a Pearl in the air in the Overworld. It flies toward a nearby intact underground entrance, rather than an alien city.$(br2)Follow its direction and search underground. If no entrance is found, travel to a different area and try again. A thrown Pearl may drop for recovery; watch where it lands."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Charge and travel",
+      "text": "Right-click the Warper with Pearls. The usual requirement is $(thing)10 charges$(). Open its hologram and press Warp when ready.$(br2)Warper charge is separate from flux power. Cable generators do not charge it. Once charged, ordinary trips do not spend that charge."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Plan your return",
+      "text": "The arrival building has a charged return Warper. Record its location and keep a safe path back.$(br2)The return trip tries your remembered entrance first. If that landing is unusable, it falls back to a safe respawn location or world spawn.$(br2)Avoid breaking either Warper while you rely on the route."
+    }
+  ],
+  "extra_recipe_mappings": {
+    "ariente:ariente_pearl": 0,
+    "ariente:warper": 0
+  }
+}

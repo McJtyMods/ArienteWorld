@@ -1,0 +1,21 @@
+{
+  "name": "Conquering a Complex",
+  "icon": "ariente:aicore",
+  "category": "ariente:arienteworld",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Find every AI Core",
+      "text": "Destroy $(thing)all$() AI Cores in an authored complex to defeat its city AI. The last core rewards a Key Card with that city’s storage access.$(br2)Keep fighting carefully: surviving defenders remain, and the surrounding area can still spawn enemies. A defeated AI is not a promise that every room is safe."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Claim the rewards",
+      "text": "Use the storage card on matching Storage Cubes to reach their supplies. Keep blueprints, fuel and modules.$(br2)Captured generators need your fuel once their remaining dust runs out. A defeated city no longer replenishes it.$(br2)Secure your return route before moving a large haul."
+    }
+  ],
+  "extra_recipe_mappings": {
+    "ariente:aicore": 0
+  }
+}

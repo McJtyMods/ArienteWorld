@@ -58,6 +58,7 @@ dependencies {
     jei()
     top()
     mcjtylib()
+    patchouli()
     if (findProject(':ModHoloGui') != null) {
         implementation(project(':ModHoloGui')) { transitive = false }
     } else {

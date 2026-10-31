@@ -1,0 +1,18 @@
+{
+  "name": "Prepare an Expedition",
+  "icon": "ariente:ariente_pearl",
+  "category": "ariente:arienteworld",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Pack for the journey",
+      "text": "Bring a pickaxe, food, armor, weapons, blocks and free inventory space. Make extra Ariente Pearls for locating and charging an entrance.$(br2)Your first goals are a safe return route, useful minerals and populated blueprints. Mark the arrival Warper’s position before venturing out."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "A rewarding route",
+      "text": "$(li)Find an Overworld entrance with a Pearl.$(li)Charge its Warper and travel.$(li)Scout smaller complexes first.$(li)Collect blueprints and materials.$(li)Use your Constructor to build a workshop.$(li)Improve equipment before tackling larger cities.$(br2)Use the Ariente chapter for machine setup and equipment controls."
+    }
+  ]
+}

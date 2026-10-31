@@ -1,0 +1,21 @@
+{
+  "name": "Alerts & City Shields",
+  "icon": "ariente:alarm",
+  "category": "ariente:arienteworld",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "When the alarm sounds",
+      "text": "A city on alert can send reinforcements and activate its forcefield generators. An Alarm panel shows Safe, Alert or Dead.$(br2)Further sightings keep the alert alive. Breaking contact and retreating gives it time to settle. A quiet floating complex may have no active outer shield until an alert begins."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Crossing a shield",
+      "text": "Active shield panels damage intruders and intercept projectiles. A matching city forcefield-immunity card in your inventory protects you from that shield’s contact damage.$(br2)Door and storage cards grant different permissions. Do not test a shield by walking into it with an unverified card.$(br2)Damaged panels may leave temporary openings."
+    }
+  ],
+  "extra_recipe_mappings": {
+    "ariente:alarm": 0
+  }
+}

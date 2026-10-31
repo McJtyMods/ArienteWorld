@@ -1,0 +1,18 @@
+{
+  "name": "Know the Defenders",
+  "icon": "ariente:energy_sabre",
+  "category": "ariente:arienteworld",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Watch the sky",
+      "text": "Soldiers defend complexes on foot. Combat Drones attack from the air. Sentinel Drones watch for intruders and can raise the city’s alert.$(br2)Keep cover between yourself and observers. A working Scramble helmet module helps avoid sentinel detection, but fighting defenders can still raise an alert."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Master Soldiers",
+      "text": "Master Soldiers are tough, regenerate health, and resist fire and magic. Bring a reliable weapon and a retreat plan.$(br2)An Enhanced Energy Sabre with a working Inhibit module suppresses their regeneration and strips beneficial effects. Fire alone will not solve this fight.$(br2)Check your modules and both fuel supplies before engaging."
+    }
+  ]
+}

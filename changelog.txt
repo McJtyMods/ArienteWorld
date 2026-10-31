@@ -1,9 +1,7 @@
 1.20-0.0.31-alpha:
+- Added an ArienteWorld chapter to the Ariente Tablet, covering expeditions, cities and their defenses.
 - Ported to Minecraft 1.20.1 (Forge).
 - Alerted dungeons deploy mobile soldier reinforcements independently of their fixed defenders and neighboring troops.
-
-Unreleased 1.12 notes:
-- Fixed a problem on servers
 
 0.0.31-alpha:
 - Fixed a client-side problem on servers

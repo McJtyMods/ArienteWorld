@@ -1,0 +1,18 @@
+{
+  "name": "Mining on Ariente",
+  "icon": "ariente:lithiumore",
+  "category": "ariente:arienteworld",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Deep resources",
+      "text": "Typical ore heights:$(li)Negarite and Posirite: Y 6–29.$(li)Lithium: Y 8–19.$(li)Silver: Y 10–19.$(li)Manganese: Y 20–49.$(br2)Veins can extend beyond these heights. Take a stone pickaxe or better, plenty of light, and a safe way out."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Higher deposits",
+      "text": "$(li)Silicon: Y 30–59.$(li)Platinum: Y 30–79.$(li)Lapis and Glowstone: Y 10–29.$(br2)White and blue marble deposits are common from Y 16–69; black marble from Y 10–39.$(br2)Process ores back at your workshop. Save both fuel dusts, even when only one seems scarce."
+    }
+  ]
+}

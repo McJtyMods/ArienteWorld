@@ -1,0 +1,18 @@
+{
+  "name": "Blueprints & Access Cards",
+  "icon": "ariente:blueprint",
+  "category": "ariente:arienteworld",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Bring discoveries home",
+      "text": "Blueprints unlock patterns without being consumed. Store them beside a Constructor to make equipment back at base.$(br2)Some upgrades are found directly as loot. Check Storage Cubes and keep room for unfamiliar modules.$(br2)Build a fuel supply and improve your gear before tackling the largest complexes."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Sort your key cards",
+      "text": "Soldiers can drop city cards, but permissions vary. Keep door access, storage access and forcefield immunity cards until you have checked them.$(br2)A city name identifies the destination, not every permission.$(br2)The card from the final AI Core is your storage-access reward. Use the Ariente chapter’s Key Cards entry if a lock rejects you."
+    }
+  ]
+}
