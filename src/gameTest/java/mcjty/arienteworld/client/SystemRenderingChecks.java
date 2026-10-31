@@ -16,6 +16,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import mcjty.ariente.client.ArienteSpriteUploader;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.ariente.entities.fluxship.FluxShipRender;
+import mcjty.ariente.entities.soldier.SoldierRender;
 import mcjty.ariente.items.BlueprintItem;
 import mcjty.ariente.items.BlueprintRenderer;
 import mcjty.ariente.setup.Registration;
@@ -65,10 +66,23 @@ public class SystemRenderingChecks {
     @SubscribeEvent
     public static void tick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getInstance();
-        if (!Boolean.getBoolean("ariente.systemRenderCheck") || event.phase != TickEvent.Phase.END || mc.level == null) {
+        boolean soldierOnly = Boolean.getBoolean("ariente.soldierRenderCheck");
+        if ((!Boolean.getBoolean("ariente.systemRenderCheck") && !soldierOnly) || event.phase != TickEvent.Phase.END || mc.level == null) {
             return;
         }
         ticks++;
+        if (soldierOnly) {
+            if (runs == 1 && ticks == 120) {
+                mc.reloadResourcePacks().thenRun(() -> {
+                    reloadTick = ticks;
+                    reloadReady = true;
+                });
+            }
+            if (runs == 2 && ticks > 200) {
+                mc.stop();
+            }
+            return;
+        }
         if (ticks == 5 && mc.getSingleplayerServer() != null) {
             var server = mc.getSingleplayerServer();
             var uuid = mc.player.getUUID();
@@ -124,11 +138,18 @@ public class SystemRenderingChecks {
 
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
-        if (!Boolean.getBoolean("ariente.systemRenderCheck") || event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL
-                || ticks < 80 || !flightChecked || runs >= 2 || runs == 1 && (!reloadReady || ticks < reloadTick + 30)) {
+        boolean soldierOnly = Boolean.getBoolean("ariente.soldierRenderCheck");
+        if ((!Boolean.getBoolean("ariente.systemRenderCheck") && !soldierOnly) || event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL
+                || ticks < 80 || !soldierOnly && !flightChecked || runs >= 2 || runs == 1 && (!reloadReady || ticks < reloadTick + 30)) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
+        if (soldierOnly) {
+            renderSoldiers(mc);
+            runs++;
+            ArienteWorld.setup.getLogger().info("SOLDIER RENDER CHECK PASSED: sword transforms, both hands, idle/attack poses and armor; pass=" + runs);
+            return;
+        }
         var model = mc.getModelManager().getModel(FluxShipRender.MODEL);
         var quads = new ArrayList<>(model.getQuads(null, null, RandomSource.create(1)));
         for (Direction side : Direction.values()) {
@@ -187,18 +208,7 @@ public class SystemRenderingChecks {
             require(bright(image) > 100, "Facade items must render their selected block state");
             save(image, "facade-" + runs);
         }
-        try (NativeImage bare = soldier(false); NativeImage armored = soldier(true)) {
-            int changed = 0;
-            for (int y = 0; y < bare.getHeight(); y++) {
-                for (int x = 0; x < bare.getWidth(); x++) {
-                    if (bare.getPixelRGBA(x, y) != armored.getPixelRGBA(x, y)) {
-                        changed++;
-                    }
-                }
-            }
-            require(changed > 100, "A soldier's equipped armor must affect rendered pixels");
-            save(armored, "soldier-armor-" + runs);
-        }
+        renderSoldiers(mc);
         try (NativeImage image = picture(7, (pose, buffers) -> require(transfer.render(pose, type -> buffers.getBuffer(HoloGuiRenderTools.guiRenderType(type))), "Transfer animation must still be in flight"))) {
             require(bright(image) > 5, "Transfer animation must emit visible item pixels into the supplied buffer");
             save(image, "transfer-" + runs);
@@ -211,22 +221,59 @@ public class SystemRenderingChecks {
         ArienteWorld.setup.getLogger().info("SYSTEM RENDER CHECK PASSED: ship, blueprints, tooltips, atlas and config screen; pass=" + runs);
     }
 
+    private static void renderSoldiers(Minecraft mc) {
+        for (var weapon : new ItemStack[]{new ItemStack(Registration.ENERGY_SABRE.get()), new ItemStack(Registration.ENHANCED_ENERGY_SABRE.get())}) {
+            var weaponModel = mc.getItemRenderer().getModel(weapon, mc.level, null, 0);
+            require(Math.abs(weaponModel.getTransforms().getTransform(ItemDisplayContext.THIRD_PERSON_RIGHT_HAND).rotation.z()) > 1,
+                    "Sabres must use the held-sword transform");
+        }
+        for (boolean leftHanded : new boolean[]{false, true}) {
+            for (boolean aggressive : new boolean[]{false, true}) {
+                try (NativeImage image = soldier(false, leftHanded, aggressive)) {
+                    save(image, "soldier-sabre-" + (leftHanded ? "left-" : "right-") + (aggressive ? "attack-" : "idle-") + runs);
+                }
+            }
+        }
+        try (NativeImage bare = soldier(false, false, false); NativeImage armored = soldier(true, false, false)) {
+            int changed = 0;
+            for (int y = 0; y < bare.getHeight(); y++) {
+                for (int x = 0; x < bare.getWidth(); x++) {
+                    if (bare.getPixelRGBA(x, y) != armored.getPixelRGBA(x, y)) {
+                        changed++;
+                    }
+                }
+            }
+            require(changed > 100, "A soldier's equipped armor must affect rendered pixels");
+            save(armored, "soldier-armor-" + runs);
+        }
+    }
+
     private static TransferRender createTransfer() {
         return new TransferRender(new AutoFieldRenderInfo.TransferPath(PartPos.create(new BlockPos(-5, 0, 0), PartSlot.UP_NW),
                 PartPos.create(new BlockPos(5, 0, 0), PartSlot.UP_NW)),
                 new AutoFieldRenderInfo.Transfer(new ItemStack(Blocks.DIAMOND_BLOCK), 0), BlockPos.ZERO);
     }
 
-    private static NativeImage soldier(boolean armored) {
+    private static NativeImage soldier(boolean armored, boolean leftHanded, boolean aggressive) {
         Minecraft mc = Minecraft.getInstance();
         var soldier = Registration.ENTITY_SOLDIER.get().create(mc.level);
+        soldier.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Registration.ENERGY_SABRE.get()));
+        soldier.setLeftHanded(leftHanded);
+        soldier.setAggressive(aggressive);
         if (armored) {
             soldier.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Registration.POWERSUIT_HEAD.get()));
             soldier.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Registration.POWERSUIT_CHEST.get()));
             soldier.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Registration.POWERSUIT_LEGS.get()));
             soldier.setItemSlot(EquipmentSlot.FEET, new ItemStack(Registration.POWERSUIT_FEET.get()));
         }
-        return picture(1.3F, (pose, buffers) -> {
+        SoldierRender renderer = (SoldierRender) mc.getEntityRenderDispatcher().getRenderer(soldier);
+        var model = renderer.getModel();
+        model.setupAnim(soldier, 0, 0, 0, 0, 0);
+        var weaponArm = leftHanded ? model.leftArm : model.rightArm;
+        var freeArm = leftHanded ? model.rightArm : model.leftArm;
+        require(freeArm.xRot > -.6F && (aggressive ? weaponArm.xRot < -1 : weaponArm.xRot > -1),
+                "Soldiers must hold a sword in their dominant hand without the zombie's two raised arms");
+        return picture(1.8F, (pose, buffers) -> {
             pose.translate(0, -.9, 0);
             pose.mulPose(Axis.YP.rotationDegrees(20));
             mc.getEntityRenderDispatcher().getRenderer(soldier).render(soldier, 180, 0, pose, buffers, LightTexture.FULL_BRIGHT);

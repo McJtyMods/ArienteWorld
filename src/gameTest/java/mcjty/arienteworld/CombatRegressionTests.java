@@ -3,13 +3,17 @@ package mcjty.arienteworld;
 import com.mojang.authlib.GameProfile;
 import mcjty.ariente.entities.LaserEntity;
 import mcjty.ariente.entities.drone.DroneEntity;
+import mcjty.ariente.entities.soldier.EntityAISoldierAttack;
+import mcjty.ariente.entities.soldier.SoldierEntity;
 import mcjty.ariente.setup.Registration;
 import net.minecraft.world.Difficulty;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -18,11 +22,60 @@ import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
+import java.util.List;
 import java.util.UUID;
 
 @GameTestHolder(ArienteWorld.MODID)
 @PrefixGameTestTemplate(false)
 public class CombatRegressionTests {
+
+    @GameTest(template = "empty")
+    public static void soldierMeleeGoalWorksAfterSpawnAndReload(GameTestHelper helper) {
+        var level = helper.getLevel();
+        level.getServer().setDifficulty(Difficulty.NORMAL, true);
+        BlockPos pos = helper.absolutePos(new BlockPos(4, 160, 4));
+        for (BlockPos block : BlockPos.betweenClosed(pos.offset(-2, -1, -2), pos.offset(3, 3, 2))) {
+            level.setBlock(block, (block.getY() < pos.getY() ? Blocks.STONE : Blocks.AIR).defaultBlockState(), 2);
+        }
+        for (var type : List.of(Registration.ENTITY_SOLDIER.get(), Registration.ENTITY_MASTER_SOLDIER.get())) {
+            SoldierEntity soldier = type.spawn(level, pos, MobSpawnType.NATURAL);
+            helper.assertTrue(soldier != null, "Soldier must spawn for the melee check");
+            try {
+                verifySoldierMelee(helper, soldier, pos);
+                CompoundTag saved = new CompoundTag();
+                soldier.saveWithoutId(saved);
+                SoldierEntity restored = type.create(level);
+                try {
+                    restored.load(saved);
+                    verifySoldierMelee(helper, restored, pos);
+                } finally {
+                    restored.discard();
+                }
+            } finally {
+                soldier.discard();
+            }
+        }
+        helper.succeed();
+    }
+
+    private static void verifySoldierMelee(GameTestHelper helper, SoldierEntity soldier, BlockPos pos) {
+        var player = helper.makeMockSurvivalPlayer();
+        player.moveTo(pos.getX() + 1.5, pos.getY(), pos.getZ() + .5);
+        soldier.moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + .5);
+        soldier.setTarget(player);
+        EntityAISoldierAttack attack = new EntityAISoldierAttack(soldier, soldier, 1.0D, false);
+        try {
+            float health = player.getHealth();
+            attack.start();
+            attack.tick();
+            helper.assertTrue(player.getHealth() < health,
+                    "The soldier's melee goal must damage a player without missing combat attributes: " + soldier.getType());
+        } finally {
+            attack.stop();
+            soldier.setTarget(null);
+            player.discard();
+        }
+    }
 
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void combatDroneShootsVisiblePlayers(GameTestHelper helper) {

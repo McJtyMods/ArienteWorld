@@ -4,6 +4,19 @@ Minecraft **1.20.1 / Forge** companion to Ariente, adding an alien dimension,
 cities and progression to obtain its technology. Requires matching Ariente,
 HoloGui and McJtyLib; The One Probe is optional.
 
+Soldiers and occasional master soldiers spawn naturally in city biomes and inside
+all dungeon types, including underground halls and the huge cube, at light levels
+of 11 or lower. Natural patrols use the normal hostile mob cap and spawning distances
+and do not require an alert or the whole dungeon to be loaded. This also applies
+to existing generated dungeons.
+
+Sabre-wielding soldiers can kill unarmored players in one hit on every non-Peaceful
+difficulty. Advanced complexes (`city2_1` and higher) have stronger foot soldiers
+and combat drones whose lasers can kill players in plain netherite with one hit.
+Protection enchantments still mitigate laser damage; foot soldiers remain
+survivable in full unenchanted netherite. City plans can tune these attacks with
+`soldierSabreDamage` and `droneLaserDamage`, measured before armor and enchantments.
+
 See [PORTING.txt](PORTING.txt) for development status, build instructions,
 verification commands and release gates, and the
 [gameplay guide](../Ariente/ARIENTE_GUIDE.md) for the current systems and controls.

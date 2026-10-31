@@ -20,6 +20,8 @@
     "soldiersWaveMax1": 10,
     "soldiersWaveMax2": 20,
     "soldiersWaveMaxN": 30,
+    "soldierSabreDamage": 32.0,
+    "droneLaserDamage": 24.0,
     "masterChance": 0.08,
     "powerArmorChance": 0.3,
     "forcefieldChance": 0.2,

@@ -49,6 +49,8 @@ public class CityPlan implements IAsset {
     private double masterChance = 0.0;
     private double powerArmorChance = 0.0;
     private double forcefieldChance = 0.0;
+    private float soldierSabreDamage = 24.0F;
+    private float droneLaserDamage = 10.0F;
     private int soldiersMinimum1 = 1;
     private int soldiersMinimum2 = 1;
     private int soldiersMinimumN = 2;
@@ -200,6 +202,14 @@ public class CityPlan implements IAsset {
         return forcefieldChance;
     }
 
+    public float getSoldierSabreDamage() {
+        return soldierSabreDamage;
+    }
+
+    public float getDroneLaserDamage() {
+        return droneLaserDamage;
+    }
+
     public Map<String, Integer> getVariants() {
         return variants;
     }
@@ -247,6 +257,8 @@ public class CityPlan implements IAsset {
         masterChance = object.get("masterChance").getAsDouble();
         powerArmorChance = object.get("powerArmorChance").getAsDouble();
         forcefieldChance = object.get("forcefieldChance").getAsDouble();
+        soldierSabreDamage = object.has("soldierSabreDamage") ? object.get("soldierSabreDamage").getAsFloat() : 24.0F;
+        droneLaserDamage = object.has("droneLaserDamage") ? object.get("droneLaserDamage").getAsFloat() : 10.0F;
         if (object.has("underground")) {
             underground = object.get("underground").getAsBoolean();
         } else {
@@ -395,6 +407,8 @@ public class CityPlan implements IAsset {
         object.add("masterChance", new JsonPrimitive(masterChance));
         object.add("powerArmorChance", new JsonPrimitive(powerArmorChance));
         object.add("forcefieldChance", new JsonPrimitive(forcefieldChance));
+        object.addProperty("soldierSabreDamage", soldierSabreDamage);
+        object.addProperty("droneLaserDamage", droneLaserDamage);
         object.add("underground", new JsonPrimitive(underground));
         object.add("floating", new JsonPrimitive(floating));
 

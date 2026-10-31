@@ -20,6 +20,8 @@
     "soldiersWaveMaxN": 25,
     "powerArmorChance": 0.2,
     "forcefieldChance": 0.1,
+    "soldierSabreDamage": 32.0,
+    "droneLaserDamage": 24.0,
     "masterChance": 0.05,
     "variants": [
       {

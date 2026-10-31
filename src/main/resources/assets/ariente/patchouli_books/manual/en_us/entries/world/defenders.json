@@ -11,6 +11,16 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Natural patrols",
+      "text": "Soldiers and occasional Master Soldiers spawn in city biomes and inside every dungeon type, including underground halls and the huge cube.$(br2)They can spawn at light levels of 11 or lower. Light rooms to 12 or higher to prevent these natural spawns.$(br2)Natural patrols follow normal hostile spawning distances and mob caps. They do not need an alert or the whole dungeon loaded, and can still appear after its AI is defeated."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Prepare for lethal hits",
+      "text": "A soldier with a sabre can kill an unarmored player in one hit, even on Easy. Full netherite can withstand one melee hit, including from stronger foot guards.$(br2)Combat Drones at advanced bases are more dangerous: a single laser hit can kill through unenchanted netherite. Use cover and protective enchantments before alerting them."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Master Soldiers",
       "text": "Master Soldiers are tough, regenerate health, and resist fire and magic. Bring a reliable weapon and a retreat plan.$(br2)An Enhanced Energy Sabre with a working Inhibit module suppresses their regeneration and strips beneficial effects. Fire alone will not solve this fight.$(br2)Check your modules and both fuel supplies before engaging."
     }
