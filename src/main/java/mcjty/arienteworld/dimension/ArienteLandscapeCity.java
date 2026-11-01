@@ -1,7 +1,5 @@
 package mcjty.arienteworld.dimension;
 
-import mcjty.ariente.api.MarbleColor;
-import mcjty.ariente.api.TechType;
 import mcjty.arienteworld.dimension.terrain.ArienteBiomeLayout;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -11,7 +9,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.WorldGenLevel;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
@@ -142,7 +139,6 @@ public class ArienteLandscapeCity {
         info0.containsStrip = false;
         return false;
     }
-
 
     public static boolean isLandscapeCityChunk(long seed, int chunkX, int chunkZ) {
         ArienteBiomeLayout layout = LAYOUTS.getIfPresent(seed);

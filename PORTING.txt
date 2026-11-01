@@ -81,10 +81,10 @@ WORKSPACE, HISTORY AND USER REQUIREMENTS
   The branch named 1.16 actually targeted 1.15.2 / Forge 31.2.36 and contained
   disabled/unfinished worldgen migrations. No changes were made to 1.16.
   Compare master using git show/diff; do not switch this dirty working tree.
-- src/legacy/java contains intermediate historical implementations OUTSIDE the
-  compiled source set. Many were replaced by active modern implementations.
-  Archived source is reference material, not proof that a feature is absent or
-  active. Check src/main/java and current data before making either claim.
+- Historical intermediate implementations are available from the origin/1.16
+  baseline above with git show <revision>:src/main/java/<path>. Use original
+  master for feature comparisons; check src/main/java and current data for
+  implemented behavior.
 - The user creates NEW WORLDS for every check. Old-chunk migration and previous
   development-save compatibility are not required. Fix generation directly;
   ordinary save/load correctness for current worlds still matters.
@@ -484,8 +484,7 @@ explicit source root is supplied. Resource/build paths are checkout-relative.
   dimension/{PortalGenerator,FlowerHeightPlacement}, blocks/plants/BlockArientePlant.
 - Sky: client/ArienteDimensionEffects. Commands: commands/ModCommands.
 - Original city plans/parts/palettes: src/main/resources/assets/arienteworld/citydata/.
-  Archived code: src/legacy/java/mcjty/arienteworld/{commands,dimension,biomes,
-  oregen,ai,...}; original master remains the feature reference.
+  Original master remains the feature reference (see the history revisions above).
 - Some counterpart implementations are Ariente's WarperTile, EntityArientePearl,
   DroneEntity, SentinelDroneEntity, FluxLevitatorEntity and FluxElevatorEntity.
 

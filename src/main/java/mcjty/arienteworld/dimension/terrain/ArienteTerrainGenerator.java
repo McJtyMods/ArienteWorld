@@ -5,7 +5,6 @@ import net.minecraft.world.level.block.Blocks;
 
 import java.util.Random;
 
-
 public class ArienteTerrainGenerator {
     private Random rand;
 
@@ -26,7 +25,6 @@ public class ArienteTerrainGenerator {
     private NoiseGeneratorOctaves noiseGen6;
 
     private final float[] parabolicField;
-    private double[] stoneNoise = new double[256];
 
     private BlockState baseBlock;
     private boolean amplified;
@@ -59,10 +57,7 @@ public class ArienteTerrainGenerator {
         NoiseGeneratorOctaves noiseGen5 = new NoiseGeneratorOctaves(rand, 10);
         this.noiseGen6 = new NoiseGeneratorOctaves(rand, 16);
         NoiseGeneratorOctaves mobSpawnerNoise = new NoiseGeneratorOctaves(rand, 8);
-
-
     }
-
 
     private void generateHeightmap(int chunkX4, int chunkY4, int chunkZ4, BiomeProfile[] biomesForGeneration) {
         this.noiseData4 = this.noiseGen6.generateNoiseOctaves(this.noiseData4, chunkX4, chunkZ4, 5, 5, 200.0D, 200.0D, 0.5D);
@@ -157,7 +152,6 @@ public class ArienteTerrainGenerator {
             }
         }
     }
-
 
     public void generate(int chunkX, int chunkZ, TerrainBuffer primer, BiomeProfile[] biomesForGeneration) {
         generateHeightmap(chunkX * 4, 0, chunkZ * 4, biomesForGeneration);

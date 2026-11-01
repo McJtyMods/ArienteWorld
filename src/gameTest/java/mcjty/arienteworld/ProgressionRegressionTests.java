@@ -16,7 +16,6 @@ import mcjty.ariente.blocks.utility.BlueprintStorageTile;
 import mcjty.ariente.config.WorldgenConfiguration;
 import mcjty.ariente.config.YesNoDefault;
 import mcjty.ariente.items.BlueprintItem;
-import mcjty.ariente.oregen.WorldGen;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.util.RandomSource;
 import mcjty.ariente.power.IPowerBlob;

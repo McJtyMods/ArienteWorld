@@ -1,6 +1,5 @@
 package mcjty.arienteworld;
 
-
 import mcjty.ariente.api.IArienteWorld;
 import mcjty.arienteworld.apiimpl.ArienteWorldImplementation;
 import mcjty.arienteworld.config.Config;
@@ -19,7 +18,6 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-
 @Mod(ArienteWorld.MODID)
 public class ArienteWorld {
     public static final String MODID = "arienteworld";
@@ -32,9 +30,6 @@ public class ArienteWorld {
     public static IHoloGuiHandler guiHandler;
 
     public ArienteWorld() {
-        // This has to be done VERY early
-//        FluidRegistry.enableUniversalBucket();
-
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_CONFIG);
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Config.SERVER_CONFIG);
         Registration.register();

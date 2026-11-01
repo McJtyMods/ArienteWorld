@@ -19,7 +19,6 @@ public class Config {
     public static ForgeConfigSpec SERVER_CONFIG;
     public static ForgeConfigSpec CLIENT_CONFIG;
 
-
     public static String[] ASSETS = new String[] {
             "/assets/arienteworld/citydata/city0_0.json",
             "/assets/arienteworld/citydata/city0_1.json",
@@ -35,14 +34,4 @@ public class Config {
             "$ariente/userassets.json"
     };
 
-    public static int SHIELD_PANEL_LIFE = 100;
-
-    // @todo 1.15
-//    public static Configuration mainConfig;
-
-//    public static void postInit() {
-//        if (mainConfig.hasChanged()) {
-//            mainConfig.save();
-//        }
-//    }
 }

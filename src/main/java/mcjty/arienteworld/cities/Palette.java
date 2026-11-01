@@ -39,7 +39,6 @@ public class Palette implements IAsset {
         for (PaletteIndex character : characters) {
             if (!paletteUsage.contains(character)) {
                 System.out.println("Possibly remove character = " + character);
-//                palette.remove(character);
             }
         }
     }
@@ -73,14 +72,6 @@ public class Palette implements IAsset {
             } else {
                 throw new RuntimeException("Illegal palette!");
             }
-        }
-    }
-
-    private void getOrientation(Map<String, Integer> or, JsonObject torchObj, String orientation) {
-        if (torchObj.has(orientation)) {
-            or.put(orientation, torchObj.get(orientation).getAsInt());
-        } else {
-            or.put(orientation, 0);
         }
     }
 

@@ -318,7 +318,6 @@ public class CityAI implements ICityAI {
             countDrone = drones.intValue();
             countSentinel = sentinels.intValue();
         }
-
     }
 
     private void handleAI(Level world) {
@@ -386,7 +385,6 @@ public class CityAI implements ICityAI {
                         // Too many already
                         return;
                     }
-
 
                     BlockPos pos = path.start;
                     BlockState state = world.getBlockState(pos);
@@ -660,7 +658,6 @@ public class CityAI implements ICityAI {
             }
         } while (avoidNearby > 0);
 
-
         Direction facing = soldierPositions.get(pos);
         LivingEntity entity = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT,
                 random.nextDouble() < plan.getMasterChance());
@@ -682,7 +679,6 @@ public class CityAI implements ICityAI {
         return helmet;
     }
 
-
     private ItemStack createNiceBoots() {
         ItemStack helmet = new ItemStack(POWERSUIT_FEET.get());
         CompoundTag compound = new CompoundTag();
@@ -691,7 +687,6 @@ public class CityAI implements ICityAI {
         helmet.setTag(compound);
         return helmet;
     }
-
 
     private ItemStack createNiceChestplate(CityPlan plan) {
         ItemStack helmet = new ItemStack(POWERSUIT_CHEST.get());
@@ -707,7 +702,6 @@ public class CityAI implements ICityAI {
         return helmet;
     }
 
-
     private ItemStack createNiceLegs() {
         ItemStack helmet = new ItemStack(POWERSUIT_LEGS.get());
         CompoundTag compound = new CompoundTag();
@@ -716,7 +710,6 @@ public class CityAI implements ICityAI {
         helmet.setTag(compound);
         return helmet;
     }
-
 
     private void spawnDrone(Level world, int height) {
         // Too few drones. Spawn a new one
@@ -745,7 +738,6 @@ public class CityAI implements ICityAI {
                 CityPlan plan = city.getPlan();
                 int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x, center.z);
                 for (int i = 0; i < settings.getNumSentinels(); i++) {
-//                    System.out.println("revive: i = " + i);
                     createSentinel(world, i, droneHeight);
                 }
             }

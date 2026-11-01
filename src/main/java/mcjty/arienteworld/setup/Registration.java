@@ -14,7 +14,6 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import mcjty.arienteworld.blocks.DummyBlock;
 import mcjty.arienteworld.blocks.plants.BlockArientePlant;
 import mcjty.lib.blocks.BaseBlock;
-import mcjty.lib.blocks.RotationType;
 import mcjty.lib.builder.BlockBuilder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -74,7 +73,6 @@ public class Registration {
         ITEMS.register(FMLJavaModLoadingContext.get().getModEventBus());
         SOUNDS.register(FMLJavaModLoadingContext.get().getModEventBus());
     }
-
 
     public static final RegistryObject<BaseBlock> GUARD_DUMMY = BLOCKS.register("guard_dummy", () -> new DummyBlock(new BlockBuilder()));
     public static final RegistryObject<Item> GUARD_DUMMY_ITEM = ITEMS.register("guard_dummy", () -> new BlockItem(GUARD_DUMMY.get(), createStandardProperties()));

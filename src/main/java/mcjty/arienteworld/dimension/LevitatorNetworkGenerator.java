@@ -1,8 +1,6 @@
 package mcjty.arienteworld.dimension;
 
 import mcjty.ariente.api.EnumFacingUpDown;
-import mcjty.ariente.api.MarbleColor;
-import mcjty.ariente.api.TechType;
 import mcjty.ariente.blocks.utility.ElevatorTile;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import static mcjty.ariente.setup.Registration.*;
@@ -15,8 +13,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 
 import static mcjty.ariente.api.EnumFacingUpDown.FACING;
-import static mcjty.ariente.api.MarbleColor.COLOR;
-import static mcjty.ariente.api.TechType.TYPE;
 
 public class LevitatorNetworkGenerator {
 
@@ -61,7 +57,6 @@ public class LevitatorNetworkGenerator {
             initialized = true;
         }
     }
-
 
     public static void generate(int chunkX, int chunkZ, CityChunk primer, ChunkGenerator generator) {
         if (CityTools.isDungeonChunk(primer.getLevel().getSeed(), chunkX, chunkZ)) {

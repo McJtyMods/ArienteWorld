@@ -1,7 +1,5 @@
 package mcjty.arienteworld.dimension.terrain;
 
-
-
 import java.util.Random;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Blocks;
@@ -25,9 +23,6 @@ public class IslandsTerrainGenerator {
     double[] pnr;
     double[] ar;
     double[] br;
-    // temporary variables used during event handling
-    private int chunkX = 0;
-    private int chunkZ = 0;
 
     public void setup(long seed) {
         this.rand = new Random(seed);

@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import mcjty.lib.varia.Logging;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.BlockPos;
 
@@ -23,9 +22,6 @@ public class BuildingPart implements IAsset {
     // Dimension (should be less then 16x16)
     private int xSize;
     private int zSize;
-
-    // Optimized version of this part which is organized in xSize*ySize vertical strings
-    private PalettedSlice[] vslices = null;
 
     private Map<BlockPos, Map<String, Object>> teInfo = new HashMap<>();
     private Map<String, Object> metadata = new HashMap<>();
@@ -86,45 +82,6 @@ public class BuildingPart implements IAsset {
         BuildingPart copy = new BuildingPart(newName, xSize, zSize, copySlices, teInfo);
         copy.metadata.putAll(metadata);
         return copy;
-    }
-
-    /**
-     * Vertical slices, organized by z*xSize+x
-     */
-    public PalettedSlice[] getVslices() {
-        if (vslices == null) {
-            vslices = new PalettedSlice[xSize * zSize];
-            for (int x = 0 ; x < xSize ; x++) {
-                for (int z = 0 ; z < zSize ; z++) {
-                    PalettedSlice vs = new PalettedSlice();
-                    boolean empty = true;
-                    for (int y = 0; y < slices.length; y++) {
-                        PaletteIndex c = null;
-                        try {
-                            c = getC(x, y, z);
-                        } catch (Exception e) {
-                            Logging.logError("Internal error", e);
-                        }
-                        vs.getSlice().add(c);
-                    }
-                    // @todo: allow empty slices for other types of parts?
-//                    if (empty) {
-//                        vslices[z*xSize+x] = null;
-//                    } else {
-                        vslices[z*xSize+x] = vs;
-//                    }
-                }
-            }
-        }
-        return vslices;
-    }
-
-    public PalettedSlice getVSlice(int x, int z) {
-        return getVslices()[z*xSize + x];
-    }
-
-    public void clearVSlices() {
-        vslices = null;
     }
 
     @Override

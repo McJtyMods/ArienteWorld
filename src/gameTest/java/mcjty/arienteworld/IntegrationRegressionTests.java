@@ -9,7 +9,6 @@ import mcjty.ariente.cables.GenericCableBlock;
 import mcjty.ariente.config.UtilityConfiguration;
 import mcjty.ariente.entities.levitator.FluxLevitatorEntity;
 import mcjty.ariente.items.armor.PowerSuitEffects;
-import mcjty.ariente.items.modules.ModuleSupport;
 import mcjty.ariente.power.IPowerBlob;
 import mcjty.ariente.power.PowerReceiverSupport;
 import mcjty.ariente.power.PowerSenderSupport;
