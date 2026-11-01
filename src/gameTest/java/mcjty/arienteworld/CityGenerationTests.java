@@ -32,6 +32,12 @@ import mcjty.arienteworld.dimension.DimensionRegister;
 import mcjty.arienteworld.dimension.CityFeature;
 import mcjty.arienteworld.dimension.DungeonInteriors;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -265,14 +271,35 @@ public class CityGenerationTests {
                     "Cube caches must contain four guaranteed end-game rewards");
         }
         ArienteWorld.setup.getLogger().info("City {} has {} authored storage cubes and {} loot stacks", plan.getName(), storageCount, lootStacks);
-        if (plan.getName().equals("city0_1")) {
+        if (plan.getName().equals("city0_1") || plan.getName().equals("city5_1")) {
             for (AICoreTile aiCore : cores) {
                 level.destroyBlock(aiCore.getBlockPos(), false);
             }
             helper.assertTrue(ai.isDead(level), "Destroying all generated cores must defeat the city AI");
-            boolean card = level.getEntitiesOfClass(ItemEntity.class, new AABB(core.getBlockPos()).inflate(160)).stream()
-                    .anyMatch(item -> KeyCardItem.hasSecurityTag(item.getItem(), ai.getStorageKeyId()));
-            helper.assertTrue(card, "Defeating generated city cores must drop its storage-access card");
+            ItemStack card = level.getEntitiesOfClass(ItemEntity.class, new AABB(core.getBlockPos()).inflate(160)).stream()
+                    .map(ItemEntity::getItem).filter(stack -> KeyCardItem.hasSecurityTag(stack, ai.getStorageKeyId()))
+                    .findFirst().orElseThrow(() -> new AssertionError("Defeating generated city cores must drop its storage-access card"));
+            FakePlayer collector = new FakePlayer(level, new GameProfile(UUID.randomUUID(), "cube-loot-test"));
+            for (ChunkPos chunk : chunks) {
+                for (BlockEntity tile : level.getChunk(chunk.x, chunk.z).getBlockEntities().values()) {
+                    if (tile instanceof StorageTile storage) {
+                        helper.assertTrue(storage.isLocked(), "Storage must still require its keycard after defeating the AI");
+                        collector.setItemInHand(InteractionHand.MAIN_HAND, card.copy());
+                        var facing = storage.getBlockState().getValue(BlockStateProperties.FACING);
+                        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(storage.getBlockPos()), facing, storage.getBlockPos(), false);
+                        card.getItem().onItemUseFirst(collector.getMainHandItem(), new UseOnContext(collector, InteractionHand.MAIN_HAND, hit));
+                        helper.assertTrue(!storage.isLocked(), "The final core's card must unlock every generated cube through normal item use");
+                        for (int slot = 0; slot < StorageTile.STACKS; slot++) {
+                            int count = storage.getTotalStack(slot).getCount();
+                            if (count > 0) {
+                                storage.giveToPlayer(slot, collector);
+                                helper.assertTrue(storage.getTotalStack(slot).getCount() == count - 1, "Unlocked loot must be obtainable");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
         ArienteWorld.setup.getLogger().info("Verified city {} at {}, {} ({} blocks)", plan.getName(),
                 city.getCenter().getMiddleBlockX(), city.getCenter().getMiddleBlockZ(), blocks);

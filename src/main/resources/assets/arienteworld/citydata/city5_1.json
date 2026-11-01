@@ -27634,6 +27634,18 @@
       {
         "char": "!v",
         "block": "ariente:door_marker@facing=west"
+      },
+      {
+        "char": "!w",
+        "block": "ariente:storage@facing=north"
+      },
+      {
+        "char": "!x",
+        "block": "ariente:storage@facing=east"
+      },
+      {
+        "char": "!y",
+        "block": "ariente:storage@facing=west"
       }
     ]
   }

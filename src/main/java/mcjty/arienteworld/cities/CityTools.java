@@ -30,7 +30,12 @@ public class CityTools {
         Random random = new Random(seed + chunkX * 776531419L + chunkZ * 198491317L);
         random.nextFloat();
         random.nextFloat();
-        return random.nextFloat() < WorldgenConfiguration.CITY_DUNGEON_CHANCE.get();
+        if (random.nextFloat() >= WorldgenConfiguration.CITY_DUNGEON_CHANCE.get()) {
+            return false;
+        }
+        // Keep half of the huge cube sites without moving or rerolling other complexes.
+        return !getCity(seed, new ChunkPos(chunkX, chunkZ)).getPlan().getName().equals("city5_1")
+                || random.nextBoolean();
     }
 
     public static boolean isDungeonChunk(long seed, int chunkX, int chunkZ) {

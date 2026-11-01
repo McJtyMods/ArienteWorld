@@ -13,6 +13,7 @@ import java.util.Map;
 import mcjty.arienteworld.cities.PaletteIndex;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.Palette;
 import mcjty.arienteworld.dimension.ArienteLandscapeCity;
@@ -68,6 +69,75 @@ public class DungeonExpansionTests {
                 }
             }
         }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void cubeStorageIsRecessedAndReachable(GameTestHelper helper) {
+        Palette palette = AssetRegistries.PALETTES.get("city5_1");
+        int caches = 0;
+        var facings = new HashSet<Direction>();
+        for (int seed = 0; seed < 16; seed++) {
+            for (int[] chunk : new int[][]{{5, 5}, {10, 10}, {6, 6}, {6, 7}, {7, 6}, {7, 7}}) {
+                BuildingPart part = DungeonInteriors.vary(AssetRegistries.PARTS.get("c5_e1"), palette, seed, chunk[0], chunk[1]);
+                for (int y = 1; y < part.getSliceCount() - 1; y++) {
+                    for (int x = 0; x < 16; x++) {
+                        for (int z = 0; z < 16; z++) {
+                            var state = palette.getPalette().get(part.getC(x, y, z));
+                            if (!state.is(Registration.STORAGE.get())) {
+                                continue;
+                            }
+                            caches++;
+                            Direction facing = state.getValue(BlockStateProperties.FACING);
+                            facings.add(facing);
+                            BlockPos cache = new BlockPos(x, y, z);
+                            for (Direction side : Direction.values()) {
+                                if (side == facing) {
+                                    continue;
+                                }
+                                BlockPos frame = cache.relative(side);
+                                helper.assertTrue(palette.getPalette().get(part.getC(frame.getX(), frame.getY(), frame.getZ()))
+                                                .isCollisionShapeFullBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO),
+                                        "Storage must have a solid back, sill, header and side frame: " + cache);
+                            }
+                            if (chunk[0] >= 6 && chunk[0] <= 7 && chunk[1] >= 6 && chunk[1] <= 7) {
+                                BlockPos backing = cache.relative(facing.getOpposite());
+                                for (int h = y + 2; h <= 30; h++) {
+                                    helper.assertTrue(palette.getPalette().get(part.getC(backing.getX(), h, backing.getZ()))
+                                                    .isCollisionShapeFullBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO),
+                                            "Arena cache backing must join a structural rib up to the ceiling");
+                                }
+                            }
+                            // Flood the walking plane from the central route to the cube's exposed face.
+                            int feet = y - 1;
+                            var reached = new HashSet<BlockPos>();
+                            var queue = new ArrayDeque<BlockPos>();
+                            BlockPos start = new BlockPos(8, feet, 8);
+                            reached.add(start);
+                            queue.add(start);
+                            while (!queue.isEmpty()) {
+                                BlockPos pos = queue.removeFirst();
+                                for (Direction step : Direction.Plane.HORIZONTAL) {
+                                    BlockPos next = pos.relative(step);
+                                    if (next.getX() >= 0 && next.getX() < 16 && next.getZ() >= 0 && next.getZ() < 16
+                                            && palette.getPalette().get(part.getC(next.getX(), feet, next.getZ())).isAir()
+                                            && palette.getPalette().get(part.getC(next.getX(), feet + 1, next.getZ())).isAir()
+                                            && reached.add(next)) {
+                                        queue.add(next);
+                                    }
+                                }
+                            }
+                            BlockPos standing = cache.below().relative(facing);
+                            helper.assertTrue(reached.contains(standing), "Storage controls must be reachable from the main route");
+                            helper.assertTrue(palette.getPalette().get(part.getC(standing.getX(), feet - 1, standing.getZ()))
+                                            .isCollisionShapeFullBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO),
+                                    "Storage needs a solid floor in front of its controls");
+                        }
+                    }
+                }
+            }
+        }
+        helper.assertTrue(caches > 64 && facings.size() == 4, "Check arena caches, room caches and every control orientation");
         helper.succeed();
     }
 

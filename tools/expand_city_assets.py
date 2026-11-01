@@ -21,6 +21,8 @@ MATERIALS = ['minecraft:air', 'ariente:marble_smooth@color=black',
              'ariente:blacktech@type=darkblue_blue', 'ariente:blacktech@type=darkblue_red',
              'ariente:blacktech@type=var1_anim', 'ariente:blacktech@type=red_var1_anim',
              'ariente:door_marker@facing=north', 'ariente:door_marker@facing=west']
+CUBE_MATERIALS = ['ariente:storage@facing=north', 'ariente:storage@facing=east',
+                  'ariente:storage@facing=west']
 
 
 def key(index):
@@ -35,6 +37,9 @@ def main():
         palette = next(a for a in data if a['type'] == 'palette')
         palette['palette'] = [p for p in palette['palette'] if not p['char'].startswith('!')]
         palette['palette'] += [{'char': key(i), 'block': block} for i, block in enumerate(MATERIALS)]
+        if path.stem == 'city5_1':
+            palette['palette'] += [{'char': key(len(MATERIALS) + i), 'block': block}
+                                  for i, block in enumerate(CUBE_MATERIALS)]
         if path.stem == 'landscapecities':
             data = [a for a in data if not (a['type'] == 'part' and
                     ((a['name'].startswith('building') and int(a['name'][8:]) > 13) or

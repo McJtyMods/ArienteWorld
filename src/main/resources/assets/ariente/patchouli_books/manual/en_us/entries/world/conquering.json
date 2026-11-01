@@ -12,7 +12,7 @@
     {
       "type": "patchouli:text",
       "title": "Claim the rewards",
-      "text": "Use the storage card on matching Storage Cubes to reach their supplies. Keep blueprints, fuel and modules.$(br2)Captured generators need your fuel once their remaining dust runs out. A defeated city no longer replenishes it.$(br2)Secure your return route before moving a large haul."
+      "text": "Hold the final core's storage card and right-click each matching Storage Cube to unlock it, then put the card away to use the cube. This also works on the huge surface cube's wall caches; soldier cards may only grant door access.$(br2)Keep blueprints, fuel and modules. Captured generators need your fuel once their remaining dust runs out.$(br2)Secure your return route before moving a large haul."
     }
   ],
   "extra_recipe_mappings": {

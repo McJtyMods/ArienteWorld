@@ -86,7 +86,17 @@ public final class DungeonInteriors {
                 }
             }
         }
-        set(part, dx == 0 ? 2 : 13, 1, dz == 0 ? 2 : 13, 5);
+        int wall = dx == 0 ? 1 : 14;
+        int center = dz == 0 ? 3 : 11;
+        int normal = dx == 0 ? 1 : -1;
+        // Continue the cache backing up an existing arena rib to the ceiling.
+        for (int side = center - 1; side <= center + 1; side++) {
+            for (int y = 1; y <= 30; y++) {
+                wallBlock(part, false, wall - normal, side, y,
+                        y == 8 || y == 22 ? 3 : side == center ? 7 : 1);
+            }
+        }
+        storageBay(part, 0, false, wall, center, normal);
     }
 
     private static void rooms(BuildingPart part, Random random, boolean elevator) {
@@ -130,9 +140,12 @@ public final class DungeonInteriors {
                     }
                 }
             }
-            // Occasional caches sit in bays off the corridor, never in the shaft.
+            // Recess caches into a bay wall, with their controls facing the room.
             if (random.nextInt(6) == 0) {
-                set(part, 5, deck + 1, 5, 5);
+                boolean alongX = random.nextBoolean();
+                boolean lowWall = random.nextBoolean();
+                storageBay(part, deck, alongX, lowWall ? west : east,
+                        random.nextBoolean() ? 2 : 13, lowWall ? 1 : -1);
             }
         }
         if (!elevator) {
@@ -150,6 +163,23 @@ public final class DungeonInteriors {
             set(part, 0, deck + 1, 5, 9);
         }
 
+    }
+
+    /** A backed, framed wall recess with standing room in front of the storage controls. */
+    private static void storageBay(BuildingPart part, int deck, boolean alongX, int wall, int center, int normal) {
+        for (int side = center - 1; side <= center + 1; side++) {
+            for (int h = 1; h <= 3; h++) {
+                wallBlock(part, alongX, wall - normal, side, deck + h, 1);
+                wallBlock(part, alongX, wall, side, deck + h, h == 3 ? 3 : 10);
+            }
+        }
+        int storage = alongX ? (normal > 0 ? 5 : 32) : (normal > 0 ? 33 : 34);
+        wallBlock(part, alongX, wall, center, deck + 2, storage);
+        for (int distance = 1; distance <= 2; distance++) {
+            for (int h = 1; h <= 3; h++) {
+                wallBlock(part, alongX, wall + normal * distance, center, deck + h, 0);
+            }
+        }
     }
 
     /** Framed wall inserts stay outside the central corridors and below the ceiling. */

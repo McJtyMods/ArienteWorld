@@ -68,9 +68,11 @@ public class WorldControlTests {
                     "Station search must remain available when complexes are disabled");
             helper.assertTrue(level.getChunkSource().getLoadedChunksCount() == loaded, "Search must not load chunks");
             WorldgenConfiguration.CITY_DUNGEON_CHANCE.set(1.0);
-            helper.assertTrue(CityTools.isDungeonChunk(seed, center.x, center.z)
-                            && center.equals(ArienteWorld.arienteWorldImplementation.getNearestCityCenter(center)),
-                    "Chance one must enable every canonical complex center");
+            boolean presentAtCenter = CityTools.isCityCenter(seed, center.x, center.z);
+            helper.assertTrue((presentAtCenter || original.getPlan().getName().equals("city5_1"))
+                            && (presentAtCenter ? center.equals(ArienteWorld.arienteWorldImplementation.getNearestCityCenter(center))
+                            : ArienteWorld.arienteWorldImplementation.getNearestCityCenter(center) == null),
+                    "Chance one must enable all ordinary centers and retain the huge cube's additional rarity");
             City underground = null;
             for (int x = -8; x <= 8 && underground == null; x++) {
                 for (int z = -8; z <= 8; z++) {
@@ -117,6 +119,41 @@ public class WorldControlTests {
             City repeated = CityTools.getCity(seed, center);
             helper.assertTrue(original.getPlan() == repeated.getPlan() && original.getName().equals(repeated.getName()),
                     "Presence changes must not reshuffle selected plans or names");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 600)
+    public static void hugeCubeFrequencyIsHalved(GameTestHelper helper) {
+        try (TestConfig ignored = new TestConfig()) {
+            for (double chance : new double[]{.35, .7, 1}) {
+                WorldgenConfiguration.CITY_DUNGEON_CHANCE.set(chance);
+                int candidates = 0;
+                int cubes = 0;
+                for (long seed : new long[]{123, -17, 91823}) {
+                    for (int dx = -32; dx < 32; dx++) {
+                        for (int dz = -32; dz < 32; dz++) {
+                            int x = dx * 16 + 8;
+                            int z = dz * 16 + 8;
+                            Random original = new Random(seed + x * 776531419L + z * 198491317L);
+                            original.nextFloat();
+                            original.nextFloat();
+                            boolean previouslyPresent = original.nextFloat() < chance;
+                            boolean present = CityTools.isCityCenter(seed, x, z);
+                            if (CityTools.getCity(seed, new ChunkPos(x, z)).getPlan().getName().equals("city5_1")) {
+                                candidates += previouslyPresent ? 1 : 0;
+                                cubes += present ? 1 : 0;
+                                helper.assertTrue(!present || previouslyPresent, "Cube rarity must only remove existing sites");
+                            } else {
+                                helper.assertTrue(present == previouslyPresent, "Other dungeon types must keep their original frequency and sites");
+                            }
+                        }
+                    }
+                }
+                helper.assertTrue(candidates > 300 && cubes > candidates * .45 && cubes < candidates * .55,
+                        "Huge cube count must be half of the previous count: " + cubes + "/" + candidates);
+                ArienteWorld.setup.getLogger().info("Huge cube frequency at chance {}: {} / {} original sites", chance, cubes, candidates);
+            }
         }
         helper.succeed();
     }

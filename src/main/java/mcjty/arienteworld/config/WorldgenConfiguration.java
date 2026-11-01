@@ -14,7 +14,8 @@ public class WorldgenConfiguration {
         SERVER_BUILDER.comment("World generation settings").push(CATEGORY_WORLDGEN);
 
         CITY_DUNGEON_CHANCE = SERVER_BUILDER
-                .comment("The chance that each seeded city grid spot has a dungeon complex (0 disables complexes, 1 fills every spot).",
+                .comment("The chance that each seeded city grid spot has a dungeon complex (0 disables complexes, 1 enables every candidate).",
+                        "Huge cube complexes additionally keep only half of their candidate sites.",
                         "Landscape city districts, stations, intercity routes and arrival portals are independent.",
                         "Applies to newly generated worlds; change before creating the world.")
                 .worldRestart()
