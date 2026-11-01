@@ -61,3 +61,48 @@ retrofitted; partially explored structures can meet their older sections.
 To regenerate the additive city assets, run `python3 tools/expand_city_assets.py`.
 Use a fresh world to review entrances, elevator stops, city skyline silhouettes,
 underground flux-cart clearance and loot balance in Minecraft.
+
+## Tutorial save
+
+`tools/create_tutorial.py` authors a separate Forge 1.20.1 world named **Tutorial**.
+It uses a void Overworld, a 144×144 city platform aligned around city-center
+chunk (8, 8), and a flat 48×48 teaching plaza in chunks (7–9, 7–9). Numbered
+signs and a lectern guide explain power, automation, both constructors, storage,
+forcefields, keycard doors, wireless controls, an elevator, flux vehicles and the
+Warper. The city AI Core is explicitly identified as a dimension-specific exhibit;
+its city behavior runs in Ariente, which the charged Warper can reach.
+
+With Java 17 selected through `JAVA_HOME`, run from this checkout:
+
+```sh
+python3 tools/create_tutorial.py
+python3 tools/create_tutorial.py --verify --saves ../workspace/run/saves
+```
+
+The first command builds under `build/tutorial/server`. The second restarts that
+world, checks persistence and installs it in the development client's saves list.
+Use `--directory` for another authoring directory or `--saves` for another client.
+Existing worlds are never overwritten. All 31 registered block-entity types are
+represented, including multipart nodes; the authoring run checks real power,
+recirculating items, crafted circuits, shield panels and wireless signals before
+saving. Fuel barrels and return hoppers keep the live exhibits running. Copy the
+save before experimenting. The authoring sources are excluded from release jars.
+
+For screenshots, copy the completed save to
+`build/tutorial/client/saves/Tutorial` and run from the multiworkspace root:
+
+```sh
+./gradlew -I ArienteWorld/tools/tutorial.gradle -Pariente_runs -Ptutorial_preview :ArienteWorld:runClient
+```
+
+The preview uses its own copy and writes city and plaza images under
+`build/tutorial/screenshots`.
+
+To check the automation field renderer at close range, put a disposable copy of
+Tutorial under `build/verification/autofield-vanilla/saves/Tutorial` and run
+`./gradlew -I ArienteWorld/tools/autofield_rendering.gradle -Pariente_runs :ArienteWorld:runClient`
+from the workspace root. This checks all 48 outline vertices, real world frames
+and a resource reload. Add `-Pautofield_render_mods` for Embeddium/Oculus and
+`-Pautofield_check_directory=<directory>` for a separate client profile. Shader
+packs can be enabled in that profile's Oculus configuration. Screenshots go in
+its `screenshots` directory. Player saves are not changed by this check.

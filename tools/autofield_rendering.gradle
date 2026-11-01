@@ -1,0 +1,25 @@
+// Load a disposable copy of Tutorial and exercise its outline at close range.
+// Add -Pautofield_render_mods to include Embeddium and Oculus without changing normal dependencies.
+gradle.afterProject { p ->
+    if (p.name == 'ArienteWorld') {
+        p.sourceSets.gameTest.java.setIncludes(['mcjty/arienteworld/client/AutoFieldRenderingChecks.java'])
+        p.sourceSets.gameTest.output.classesDirs.setFrom(p.layout.buildDirectory.dir('verification/autofield-classes'))
+        p.tasks.named('compileGameTestJava') {
+            destinationDirectory.set(p.layout.buildDirectory.dir('verification/autofield-classes'))
+        }
+        if (p.hasProperty('autofield_render_mods')) {
+            p.dependencies.add('runtimeOnly', p.fg.deobf('curse.maven:embeddium-908741:5681725'))
+            p.dependencies.add('runtimeOnly', p.fg.deobf('curse.maven:oculus-581495:6020952'))
+        }
+        p.minecraft.runs.client {
+            mods.arienteworld.source(p.sourceSets.gameTest)
+            workingDirectory p.file(p.findProperty('autofield_check_directory') ?: 'build/verification/autofield-vanilla')
+            property 'ariente.autoFieldRenderCheck', 'true'
+            property 'forge.logging.console.level', 'info'
+            args '--quickPlaySingleplayer', 'Tutorial', '--width', '1280', '--height', '800'
+        }
+        p.tasks.withType(JavaExec).configureEach {
+            if (name == 'runClient') dependsOn p.tasks.named('gameTestClasses')
+        }
+    }
+}

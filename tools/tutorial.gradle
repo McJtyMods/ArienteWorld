@@ -1,0 +1,37 @@
+// Opt-in map authoring. No tutorial code is included in the released mod.
+gradle.afterProject { p ->
+    if (p.name == 'ArienteWorld') {
+        p.sourceSets {
+            tutorial {
+                compileClasspath += p.sourceSets.main.output
+                runtimeClasspath += p.sourceSets.main.output
+            }
+        }
+        p.configurations {
+            tutorialImplementation.extendsFrom implementation
+            tutorialCompileOnly.extendsFrom compileOnly
+            tutorialRuntimeOnly.extendsFrom runtimeOnly
+        }
+        p.minecraft.runs.server {
+            mods.arienteworld.source(p.sourceSets.tutorial)
+            workingDirectory p.file(p.findProperty('tutorial_directory') ?: 'build/tutorial/server')
+            property 'ariente.tutorial', 'true'
+            property 'ariente.tutorial.verify', (p.findProperty('tutorial_verify') ?: 'false').toString()
+            property 'forge.logging.console.level', 'info'
+            args '--nogui'
+        }
+        if (p.hasProperty('tutorial_preview')) {
+            p.minecraft.runs.client {
+                mods.arienteworld.source(p.sourceSets.tutorial)
+                workingDirectory p.file('build/tutorial/client')
+                property 'ariente.tutorial.preview', 'true'
+                args '--quickPlaySingleplayer', 'Tutorial', '--width', '1280', '--height', '800'
+            }
+        }
+        p.tasks.withType(JavaExec).configureEach {
+            if (name == 'runServer' || (name == 'runClient' && p.hasProperty('tutorial_preview'))) {
+                dependsOn p.tasks.named('tutorialClasses')
+            }
+        }
+    }
+}

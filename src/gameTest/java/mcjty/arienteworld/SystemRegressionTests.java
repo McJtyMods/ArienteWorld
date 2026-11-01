@@ -44,6 +44,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.FakePlayerFactory;
@@ -259,7 +260,8 @@ public class SystemRegressionTests {
         var level = helper.getLevel();
         BlockPos origin = helper.absolutePos(BlockPos.ZERO).above(100);
         level.setBlockAndUpdate(origin, Registration.WIRELESS_BUTTON.get().defaultBlockState());
-        level.setBlockAndUpdate(origin.east(2), Registration.SIGNAL_RECEIVER.get().defaultBlockState());
+        level.setBlockAndUpdate(origin.east(2), Registration.SIGNAL_RECEIVER.get().defaultBlockState()
+                .setValue(BlockStateProperties.FACING, Direction.NORTH));
         level.setBlockAndUpdate(origin.east(4), Registration.WIRELESS_LOCK.get().defaultBlockState());
         var button = (WirelessButtonTile) level.getBlockEntity(origin);
         var receiver = (SignalReceiverTile) level.getBlockEntity(origin.east(2));
@@ -273,11 +275,19 @@ public class SystemRegressionTests {
         lock.tickServer();
         helper.assertTrue(receiver.getPowerOutput() == 15 && receiver.getBlockState().getValue(BlockProperties.POWER) && !lock.isLocked(),
                 "Button signals must reach receiver output, native visuals and lock state");
+        helper.assertTrue(level.getSignal(receiver.getBlockPos(), Direction.NORTH) == 15
+                        && level.getDirectSignal(receiver.getBlockPos(), Direction.NORTH) == 15
+                        && level.getBestNeighborSignal(receiver.getBlockPos().south()) == 15,
+                "A wireless receiver must emit physical redstone toward its attached block");
+        helper.assertTrue(level.getSignal(receiver.getBlockPos(), Direction.SOUTH) == 0,
+                "A receiver must not emit toward its exposed face");
         button.setLocked(false);
         receiver.tickServer();
         lock.tickServer();
         helper.assertTrue(receiver.getPowerOutput() == 0 && !receiver.getBlockState().getValue(BlockProperties.POWER)
                 && lock.getBlockState().getValue(BlockProperties.LOCKED), "Clearing a channel must update receiver and lock visuals");
+        helper.assertTrue(level.getBestNeighborSignal(receiver.getBlockPos().south()) == 0,
+                "Clearing a wireless channel must also clear physical redstone output");
         button.setChannel(channel + 100);
         helper.assertTrue(RedstoneChannels.getChannels(level).getChannel(channel + 100).getValue() == 0, "Channel reassignment must publish the current button value");
         level.setBlockAndUpdate(origin.south(2), Registration.SIGNAL_TRANSMITTER.get().defaultBlockState());
