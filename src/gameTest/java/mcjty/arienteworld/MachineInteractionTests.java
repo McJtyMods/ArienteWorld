@@ -67,23 +67,23 @@ public class MachineInteractionTests {
                 holo.switchGui(ModGuis.GUI_ARMOR);
                 click(player, holo, 3, 3 + i);
                 helper.assertTrue(holo.getGuiId().equals(guis[i]), "Configure must open the selected worn armor piece");
-                click(player, holo, 1.5, 2.3);
+                click(player, holo, 1.5, 2.7);
                 var tag = pieces[i].getOrCreateTag();
                 helper.assertTrue(tag.contains(upgrade.getModuleKey()) && !tag.getBoolean(upgrade.getModuleKey())
                                 && player.getInventory().countItem(Registration.MODULE_ENERGY.get()) == 3,
                         "Clicking the module icon must install one module from inventory, initially disabled");
-                click(player, holo, 2.5, 2.3);
+                click(player, holo, 2.5, 2.7);
                 helper.assertTrue(tag.getBoolean(upgrade.getModuleKey()), "The adjacent checkbox must enable the installed module");
-                click(player, holo, 3.5, 2.3);
+                click(player, holo, 3.5, 2.7);
                 helper.assertTrue(tag.getInt(upgrade.getHotkeyKey()) == 1, "The last button must select a module hotkey");
                 tag.putBoolean(upgrade.getWorkingKey(), true);
-                click(player, holo, 1.5, 2.3);
+                click(player, holo, 1.5, 2.7);
                 helper.assertTrue(!tag.contains(upgrade.getModuleKey()) && !tag.contains(upgrade.getWorkingKey())
                                 && !tag.contains(upgrade.getHotkeyKey()) && player.getInventory().countItem(Registration.MODULE_ENERGY.get()) == 4,
                         "Removing a module must return it and clear its enabled/working/hotkey state");
             }
             player.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.LEATHER_BOOTS));
-            click(player, holo, 1.5, 2.3);
+            click(player, holo, 1.5, 2.7);
             helper.assertTrue(player.getInventory().countItem(Registration.MODULE_ENERGY.get()) == 4
                             && !player.getItemBySlot(EquipmentSlot.FEET).getOrCreateTag().contains(upgrade.getModuleKey()),
                     "A stale armor GUI must not consume modules or modify unrelated equipment");

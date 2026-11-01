@@ -54,6 +54,8 @@ public class EnergyLanceTests {
         Player player = helper.makeMockSurvivalPlayer();
         player.setPos(helper.absoluteVec(new Vec3(1, 3, 1)));
         ItemStack lance = new ItemStack(Registration.ENERGY_LANCE.get());
+        helper.assertTrue(!lance.isDamageableItem() && lance.getMaxDamage() == 0,
+                "The lance must have no durability");
         player.setItemInHand(InteractionHand.MAIN_HAND, lance);
         for (var item : List.of(Items.SHIELD, Items.STONE, Registration.ENERGY_LANCE.get())) {
             player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(item));
@@ -69,11 +71,15 @@ public class EnergyLanceTests {
         player.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
         helper.assertTrue(lance.use(helper.getLevel(), player, InteractionHand.MAIN_HAND).getResult().consumesAction(),
                 "An empty off hand must allow firing");
-        helper.assertTrue(lance.getDamageValue() == 1 && player.getCooldowns().isOnCooldown(lance.getItem()),
-                "A successful survival shot consumes one durability and starts a cooldown");
+        helper.assertTrue(lance.getDamageValue() == 0 && player.getCooldowns().isOnCooldown(lance.getItem()),
+                "A successful survival shot starts a cooldown without damaging the lance");
         helper.assertTrue(lance.use(helper.getLevel(), player, InteractionHand.MAIN_HAND).getResult() == InteractionResult.FAIL
-                        && lance.getDamageValue() == 1,
-                "Repeated use during cooldown must not fire or consume durability");
+                        && lance.getDamageValue() == 0,
+                "Repeated use during cooldown must not fire or damage the lance");
+        player.getCooldowns().removeCooldown(lance.getItem());
+        helper.assertTrue(lance.use(helper.getLevel(), player, InteractionHand.MAIN_HAND).getResult().consumesAction()
+                        && lance.getCount() == 1 && lance.getDamageValue() == 0,
+                "Firing again after cooldown must leave the lance intact");
         helper.getLevel().getEntitiesOfClass(LaserEntity.class, player.getBoundingBox().inflate(3),
                 laser -> laser.getOwner() == player).forEach(LaserEntity::discard);
         helper.succeed();
@@ -249,8 +255,8 @@ public class EnergyLanceTests {
             click(player, holo, 3, 3);
             helper.assertTrue(holo.getGuiId().equals(ModGuis.GUI_ARMOR_SABRE), "The equipment menu must open the lance's weapon configuration");
             for (int i = 0; i < modules.size(); i++) {
-                double x = new double[]{1.5, 1.5, 5.5, 1.5, 5.5}[i];
-                double y = new double[]{2.3, 3.3, 3.3, 4.3, 4.3}[i];
+                double x = i % 2 == 0 ? 1.5 : 5.5;
+                double y = 2.7 + 1.2 * (i / 2);
                 click(player, holo, x, y);
                 click(player, holo, x + 1, y);
                 click(player, holo, x + 2, y);
@@ -281,7 +287,7 @@ public class EnergyLanceTests {
             helper.assertTrue(modules.stream().noneMatch(module -> ModuleSupport.hasWorkingUpgrade(lance, module.getType())),
                     "The configured module hotkey must toggle lance modules off");
             for (int i = 0; i < modules.size(); i++) {
-                click(player, holo, new double[]{1.5, 1.5, 5.5, 1.5, 5.5}[i], new double[]{2.3, 3.3, 3.3, 4.3, 4.3}[i]);
+                click(player, holo, i % 2 == 0 ? 1.5 : 5.5, 2.7 + 1.2 * (i / 2));
             }
             helper.assertTrue(modules.stream().allMatch(module -> player.getInventory().countItem(module) == 1),
                     "Removing modules from the lance must return their inventory items");

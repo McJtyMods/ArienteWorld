@@ -121,7 +121,7 @@ public class HologramRenderingChecks {
                     save(before, "hologram-" + guiId + "-" + angleIndex + ".png");
                     if (checkbox) {
                         float factor = 1 - (1 - scale) * 1.6f;
-                        int[] pixel = project(centered, -.18f * factor, .18f * factor);
+                        int[] pixel = project(centered, -.18f * factor, .14f * factor);
                         int green = 0;
                         for (int y = pixel[1] - 14; y <= pixel[1] + 14; y++) {
                             for (int x = pixel[0] - 14; x <= pixel[0] + 14; x++) {
@@ -135,9 +135,9 @@ public class HologramRenderingChecks {
                             }
                         }
                         require(green > 8, "Enabled checkbox must be visible at " + guiId + "/" + angleIndex + "; green pixels=" + green);
-                        checkDarkIcon(before, centered, -.27f, .18f, "module item");
-                        checkDarkIcon(before, centered, -.08f, .18f, "hotkey number");
-                        checkDarkIcon(before, centered, .13f, .08f, "unavailable module item");
+                        checkDarkIcon(before, centered, -.27f, .14f, "module item");
+                        checkDarkIcon(before, centered, -.08f, .14f, "hotkey number");
+                        checkDarkIcon(before, centered, .13f, .14f, "unavailable module item");
                     } else {
                         float factor = 1 - (1 - scale) * 1.6f;
                         checkIcon(before, centered, -.18f * factor, .16f * factor, "mounted cart arrow", color -> {
@@ -209,7 +209,7 @@ public class HologramRenderingChecks {
                 buffers.endBatch();
                 try (NativeImage image = Screenshot.takeScreenshot(target)) {
                     save(image, "armor-module-" + state + "-" + index + ".png");
-                    int[] center = project(centered, -.27f, .18f);
+                    int[] center = project(centered, -.27f, .14f);
                     for (int y = center[1] - 7; y <= center[1] + 7; y++) {
                         for (int x = center[0] - 7; x <= center[0] + 7; x++) {
                             int color = image.getPixelRGBA(x, y);

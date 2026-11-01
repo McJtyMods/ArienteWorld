@@ -119,9 +119,9 @@ public class LanceModuleClientChecks implements IModPlugin {
                 Vec3 position = player.position();
                 click(player, holo, 3, 3);
                 require(holo.getGuiId().equals(ModGuis.GUI_ARMOR_SABRE), "The 0-key menu must configure the held lance");
-                click(player, holo, 1.5, 2.3);
-                click(player, holo, 2.5, 2.3);
-                click(player, holo, 3.5, 2.3);
+                click(player, holo, 1.5, 2.7);
+                click(player, holo, 2.5, 2.7);
+                click(player, holo, 3.5, 2.7);
                 player.teleportTo(position.x, position.y, position.z);
             });
             stage = 2;

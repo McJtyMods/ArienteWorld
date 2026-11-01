@@ -280,9 +280,16 @@ public class SystemRenderingChecks {
             }
             ItemStack stack = new ItemStack(module);
             String description = module.getInstallationDescription().getString();
-            require(description.startsWith("This module can be installed in ") && description.contains(" to ")
-                            && !description.contains("message.ariente") && !description.contains("enhance it's abilities"),
-                    "Every module needs a translated equipment list and effect: " + description);
+            require(description.startsWith("Fits: ") && !description.contains("message.ariente"),
+                    "Every module needs a translated compatibility hint: " + description);
+            var details = new ArrayList<Component>();
+            module.appendHoverText(stack, mc.level, details, TooltipFlag.Default.NORMAL);
+            String effect = Component.translatable("message.ariente.armormodule.effect." + module.getType().getName()).getString();
+            String manual = Component.translatable("message.ariente.armormodule.manual").getString();
+            require(details.size() == 4 && details.stream().allMatch(line -> mc.font.width(line) <= 240)
+                            && details.stream().map(Component::getString).anyMatch(effect::equals)
+                            && details.stream().map(Component::getString).anyMatch(manual::equals),
+                    "Module tooltips must stay compact and refer to the manual: " + module.getType().getName());
             require(stack.getTooltipLines(mc.player, TooltipFlag.Default.NORMAL).stream().map(Component::getString).anyMatch(description::equals),
                     "The hologram's native item tooltip must include the module description");
             require(jeiRenderer.getTooltip(stack, TooltipFlag.Default.NORMAL).stream().map(Component::getString).anyMatch(description::equals),

@@ -45,9 +45,9 @@ public class ArmorClientChecks {
         if (hologram != null && ++ticks == 100) {
             server.execute(() -> {
                 var player = server.getPlayerList().getPlayer(playerId);
-                click(player, hologram, 1.5, 2.3);
-                click(player, hologram, 2.5, 2.3);
-                click(player, hologram, 3.5, 2.3);
+                click(player, hologram, 1.5, 2.7);
+                click(player, hologram, 2.5, 2.7);
+                click(player, hologram, 3.5, 2.7);
                 player.teleportTo(player.serverLevel(), 90020.5, 241, 90023.5, 180, 0);
             });
         } else if (ticks == 140) {
@@ -59,7 +59,7 @@ public class ArmorClientChecks {
             ArienteWorld.setup.getLogger().info("ARMOR GUI CLIENT CHECK PASSED: installed/enabled module, hotkey and inventory reach client");
         }
         if (ticks == 200 && Boolean.getBoolean("ariente.armorGuiStateCheck")) {
-            server.execute(() -> click(server.getPlayerList().getPlayer(playerId), hologram, 1.5, 2.3));
+            server.execute(() -> click(server.getPlayerList().getPlayer(playerId), hologram, 1.5, 2.7));
         } else if (ticks == 240 && Boolean.getBoolean("ariente.armorGuiStateCheck")) {
             var tag = mc.player.getItemBySlot(EquipmentSlot.CHEST).getOrCreateTag();
             if (tag.contains(ArmorUpgradeType.ENERGY.getModuleKey()) || tag.contains(ArmorUpgradeType.ENERGY.getWorkingKey())
