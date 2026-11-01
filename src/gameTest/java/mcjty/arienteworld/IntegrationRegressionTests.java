@@ -115,13 +115,12 @@ public class IntegrationRegressionTests {
     }
 
     @GameTest(template = "empty")
-    public static void repeatedAutofeedSaveAndPlayerLifecycle(GameTestHelper helper) {
+    public static void sharedHolderSaveAndPlayerLifecycle(GameTestHelper helper) {
         var level = helper.getLevel();
         FakePlayer wearer = new FakePlayer(level, new GameProfile(UUID.randomUUID(), "gear-wearer"));
         FakePlayer other = new FakePlayer(level, new GameProfile(UUID.randomUUID(), "other-player"));
         ItemStack helmet = new ItemStack(Registration.POWERSUIT_HEAD.get());
         helmet.getOrCreateTag().putBoolean(ArmorUpgradeType.NIGHTVISION.getModuleKey(), true);
-        helmet.getTag().putBoolean(ArmorUpgradeType.AUTOFEED.getModuleKey(), true);
         ItemStack holder = new ItemStack(Registration.ENERGY_HOLDER.get());
         holder.getOrCreateTag().putInt("negarite", 3);
         holder.getTag().putInt("posirite", 4);

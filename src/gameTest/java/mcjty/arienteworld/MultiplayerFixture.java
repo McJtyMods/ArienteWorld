@@ -31,7 +31,6 @@ public class MultiplayerFixture {
             ItemStack head = new ItemStack(Registration.POWERSUIT_HEAD.get());
             head.getOrCreateTag().putBoolean(ArmorUpgradeType.NIGHTVISION.getModuleKey(), true);
             head.getTag().putInt(ArmorUpgradeType.NIGHTVISION.getHotkeyKey(), 1);
-            head.getTag().putBoolean(ArmorUpgradeType.AUTOFEED.getModuleKey(), true);
             player.setItemSlot(EquipmentSlot.HEAD, head);
             ItemStack holder = new ItemStack(Registration.ENERGY_HOLDER.get());
             holder.getOrCreateTag().putInt("negarite", 3);

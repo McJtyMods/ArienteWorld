@@ -3,6 +3,7 @@ package mcjty.arienteworld;
 import mcjty.ariente.Ariente;
 import mcjty.ariente.api.SoldierBehaviourType;
 import mcjty.ariente.api.ArmorUpgradeType;
+import mcjty.ariente.items.EnergyHolderItem;
 import mcjty.ariente.blocks.utility.BlueprintStorageTile;
 import mcjty.ariente.blocks.utility.ConstructorTile;
 import mcjty.ariente.entities.LaserEntity;
@@ -229,16 +230,17 @@ public class EnergyLanceTests {
     }
 
     @GameTest(template = "empty")
-    public static void lanceGuiInstallsAllWeaponModulesAndFeedsFuel(GameTestHelper helper) {
+    public static void lanceGuiInstallsAllWeaponModulesUsingHolderFuel(GameTestHelper helper) {
         Player player = helper.makeMockSurvivalPlayer();
         player.setPos(helper.absoluteVec(new Vec3(1, 3, 1)));
         ItemStack lance = new ItemStack(Registration.ENERGY_LANCE.get());
         player.setItemInHand(InteractionHand.MAIN_HAND, lance);
-        var modules = List.of(Registration.MODULE_ENERGY.get(), Registration.MODULE_AUTOFEED.get(),
+        var modules = List.of(Registration.MODULE_ENERGY.get(),
                 Registration.MODULE_POWER.get(), Registration.MODULE_INHIBIT.get(), Registration.MODULE_LOOTING.get(), Registration.MODULE_FIRE.get());
         for (int i = 0; i < modules.size(); i++) {
             player.getInventory().setItem(9 + i, new ItemStack(modules.get(i)));
         }
+        player.getInventory().setItem(17, new ItemStack(Registration.ENERGY_HOLDER.get()));
         player.getInventory().setItem(15, new ItemStack(Registration.DUST_NEGARITE.get(), 2));
         player.getInventory().setItem(16, new ItemStack(Registration.DUST_POSIRITE.get(), 2));
         HoloGuiEntity holo = (HoloGuiEntity) Ariente.guiHandler.openHoloGui(player, ModGuis.GUI_ARMOR, 1);
@@ -247,36 +249,39 @@ public class EnergyLanceTests {
             click(player, holo, 3, 3);
             helper.assertTrue(holo.getGuiId().equals(ModGuis.GUI_ARMOR_SABRE), "The equipment menu must open the lance's weapon configuration");
             for (int i = 0; i < modules.size(); i++) {
-                double x = i % 2 == 0 ? 1.5 : 5.5;
-                double y = 2.3 + i / 2;
+                double x = new double[]{1.5, 1.5, 5.5, 1.5, 5.5}[i];
+                double y = new double[]{2.3, 3.3, 3.3, 4.3, 4.3}[i];
                 click(player, holo, x, y);
                 click(player, holo, x + 1, y);
                 click(player, holo, x + 2, y);
                 helper.assertTrue(lance.getTag().getBoolean(modules.get(i).getType().getModuleKey())
                                 && lance.getTag().getInt(modules.get(i).getType().getHotkeyKey()) == 1
                                 && player.getInventory().countItem(modules.get(i)) == 0,
-                        "Each sabre module must install, enable and accept a hotkey on the lance");
+                        "Each sabre module must install, enable and accept a hotkey on the lance: " + modules.get(i).getType() + ", tag=" + lance.getTag());
             }
-            click(player, holo, 3.5, 6.5);
-            click(player, holo, 3.5, 7.5);
-            helper.assertTrue(lance.getTag().getInt("negarite") == 1 && lance.getTag().getInt("posirite") == 1,
-                    "Weapon configuration fuel arrows must fill the lance");
+            var holderGui = EnergyHolderItem.createGui(player);
+            holderGui.hit(player, null, 5.5, 3.8);
+            holderGui.hit(player, null, 5.5, 6.2);
+            helper.assertTrue(EnergyHolderItem.count(player, "negarite") == 1 && EnergyHolderItem.count(player, "posirite") == 1,
+                    "The holder GUI must supply the weapon’s shared fuel");
             lance.inventoryTick(helper.getLevel(), player, 0, true);
             helper.assertTrue(ModuleSupport.getPowerUsage(lance).getRight() == 130
                             && modules.stream().allMatch(module -> ModuleSupport.hasWorkingUpgrade(lance, module.getType())),
                     "Energy Efficiency must allow all 110 usage of the weapon modules to work");
             helper.assertTrue(Math.abs(EnergyLanceItem.getShotDamage(player) - 32.5F) < .001F,
                     "Power must double the lance's weapon damage bonus, preserving its 30% advantage");
-            lance.getTag().putInt("power", 0);
+            EnergyHolderItem.findActiveHolder(player).getTag().putLong("charge", 0);
+            holderGui.hit(player, null, 5.5, 3.8);
+            holderGui.hit(player, null, 5.5, 6.2);
             lance.inventoryTick(helper.getLevel(), player, 0, true);
             helper.assertTrue(player.getInventory().countItem(Registration.DUST_NEGARITE.get()) == 0
                             && player.getInventory().countItem(Registration.DUST_POSIRITE.get()) == 0,
-                    "Autofeed must refill the held lance using both inventory dusts");
+                    "The holder GUI must refill its reserves using both inventory dusts");
             ModuleSupport.receivedHotkey(player, 1);
             helper.assertTrue(modules.stream().noneMatch(module -> ModuleSupport.hasWorkingUpgrade(lance, module.getType())),
                     "The configured module hotkey must toggle lance modules off");
             for (int i = 0; i < modules.size(); i++) {
-                click(player, holo, i % 2 == 0 ? 1.5 : 5.5, 2.3 + i / 2);
+                click(player, holo, new double[]{1.5, 1.5, 5.5, 1.5, 5.5}[i], new double[]{2.3, 3.3, 3.3, 4.3, 4.3}[i]);
             }
             helper.assertTrue(modules.stream().allMatch(module -> player.getInventory().countItem(module) == 1),
                     "Removing modules from the lance must return their inventory items");
@@ -295,8 +300,10 @@ public class EnergyLanceTests {
         for (ArmorUpgradeType type : List.of(ArmorUpgradeType.ENERGY, ArmorUpgradeType.FIRE, ArmorUpgradeType.INHIBIT, ArmorUpgradeType.LOOTING)) {
             lance.getOrCreateTag().putBoolean(type.getModuleKey(), true);
         }
-        lance.getTag().putInt("negarite", 1);
-        lance.getTag().putInt("posirite", 1);
+        ItemStack holder = new ItemStack(Registration.ENERGY_HOLDER.get());
+        holder.getOrCreateTag().putInt("negarite", 1);
+        holder.getOrCreateTag().putInt("posirite", 1);
+        player.getInventory().setItem(9, holder);
         player.setItemInHand(InteractionHand.MAIN_HAND, lance);
         lance.inventoryTick(helper.getLevel(), player, 0, true);
         LaserEntity shot = LaserEntity.createLanceShot(helper.getLevel(), player, new Vec3(1, 0, 0), EnergyLanceItem.getShotDamage(player));
@@ -355,15 +362,18 @@ public class EnergyLanceTests {
         ItemStack lance = new ItemStack(Registration.ENERGY_LANCE.get());
         lance.getOrCreateTag().putBoolean(ArmorUpgradeType.FIRE.getModuleKey(), true);
         lance.getTag().putBoolean(ArmorUpgradeType.POWER.getModuleKey(), true);
-        lance.getTag().putInt("power", 10);
+        ItemStack holder = new ItemStack(Registration.ENERGY_HOLDER.get());
+        holder.getOrCreateTag().putInt("negarite", 1);
+        holder.getOrCreateTag().putInt("posirite", 1);
+        player.getInventory().setItem(9, holder);
         lance.enchant(Enchantments.MOB_LOOTING, 1);
         player.setItemInHand(InteractionHand.MAIN_HAND, lance);
         lance.inventoryTick(helper.getLevel(), player, 0, true);
         helper.assertTrue(ModuleSupport.hasWorkingUpgrade(lance, ArmorUpgradeType.FIRE), "A usable held lance must activate fueled modules");
         player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.TORCH));
-        int power = lance.getTag().getInt("power");
+        long power = holder.getTag().getLong("charge");
         lance.inventoryTick(helper.getLevel(), player, 0, true);
-        helper.assertTrue(lance.getTag().getInt("power") == power && !ModuleSupport.hasWorkingUpgrade(lance, ArmorUpgradeType.POWER)
+        helper.assertTrue(holder.getTag().getLong("charge") == power && !ModuleSupport.hasWorkingUpgrade(lance, ArmorUpgradeType.POWER)
                         && EnchantmentHelper.getItemEnchantmentLevel(Enchantments.FIRE_ASPECT, lance) == 0
                         && EnchantmentHelper.getItemEnchantmentLevel(Enchantments.MOB_LOOTING, lance) == 1,
                 "An occupied off hand must stop modules, preserve fuel and remove only module-supplied enchantments");
@@ -380,13 +390,7 @@ public class EnergyLanceTests {
     }
 
     private static void click(Player player, HoloGuiEntity holo, double x, double y) {
-        Vec3 normal = holo.getLookAngle();
-        Vec3 right = normal.cross(new Vec3(0, 1, 0));
-        float factor = 1 - (1 - holo.getScale()) * 1.6f;
-        float offset = .8f + (1 - holo.getScale()) * 13.2f;
-        Vec3 target = holo.position().add(right.scale((x + offset) * factor / 10 - .5)).add(0, 1 - (y + offset) * factor / 10, 0);
-        Vec3 eyes = target.subtract(normal);
-        player.moveTo(eyes.x, eyes.y - player.getEyeHeight(), eyes.z, holo.getYRot(), 0);
-        player.attack(holo);
+        // Drive panel actions deterministically here; LanceModuleClientChecks covers ray targeting.
+        holo.getGui(player).hit(player, holo, x, y);
     }
 }

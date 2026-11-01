@@ -61,6 +61,10 @@ public class EquipmentMovementClientChecks {
                 player.setGameMode(GameType.SURVIVAL);
                 server.setFlightAllowed(false);
                 player.getInventory().clearContent();
+                ItemStack holder = new ItemStack(Registration.ENERGY_HOLDER.get());
+                holder.getOrCreateTag().putInt("negarite", 64);
+                holder.getOrCreateTag().putInt("posirite", 64);
+                player.getInventory().setItem(9, holder);
                 ItemStack chest = gear(Registration.POWERSUIT_CHEST.get(), ArmorUpgradeType.FLIGHT, ArmorUpgradeType.HOVER);
                 chest.getTag().putInt(ArmorUpgradeType.FLIGHT.getHotkeyKey(), 1);
                 player.setItemSlot(EquipmentSlot.CHEST, chest);
@@ -132,7 +136,10 @@ public class EquipmentMovementClientChecks {
                 var player = server.getPlayerList().getPlayer(id);
                 player.setItemSlot(EquipmentSlot.FEET, ItemStack.EMPTY);
                 ItemStack chest = gear(Registration.POWERSUIT_CHEST.get(), ArmorUpgradeType.FLIGHT, ArmorUpgradeType.HOVER);
-                chest.getTag().putInt("power", 2);
+                ItemStack holder = new ItemStack(Registration.ENERGY_HOLDER.get());
+                holder.getOrCreateTag().putLong("chargeCapacity", 30000);
+                holder.getOrCreateTag().putLong("charge", 80);
+                player.getInventory().setItem(9, holder);
                 player.setItemSlot(EquipmentSlot.CHEST, chest);
                 player.teleportTo(player.serverLevel(), 90080.5, 250, 90075, 0, 0);
                 player.setDeltaMovement(Vec3.ZERO);
@@ -152,7 +159,7 @@ public class EquipmentMovementClientChecks {
 
     private static ItemStack gear(Item item, ArmorUpgradeType... modules) {
         ItemStack stack = new ItemStack(item);
-        stack.getOrCreateTag().putInt("power", 3000);
+        stack.getOrCreateTag();
         for (ArmorUpgradeType module : modules) {
             stack.getTag().putBoolean(module.getModuleKey(), true);
         }

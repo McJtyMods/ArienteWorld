@@ -1,6 +1,8 @@
 package mcjty.arienteworld;
 
 import mcjty.ariente.api.ArmorUpgradeType;
+import mcjty.ariente.items.EnergyHolderItem;
+import mcjty.ariente.config.UtilityConfiguration;
 import mcjty.ariente.items.armor.PowerSuitEffects;
 import mcjty.ariente.items.modules.ModuleSupport;
 import mcjty.ariente.setup.Registration;
@@ -23,19 +25,19 @@ public class EquipmentRegressionTests {
 
     @GameTest(template = "empty")
     public static void equippedIdentityAndFuelExhaustion(GameTestHelper helper) {
-        Player player = helper.makeMockPlayer();
+        Player player = poweredPlayer(helper);
         ItemStack head = gear(Registration.POWERSUIT_HEAD.get(), ArmorUpgradeType.SCRAMBLE);
-        head.getTag().putInt("power", 1);
+        player.getInventory().setItem(9, chargedHolder(50));
         ItemStack backpack = head.copy();
         tick(backpack, player, EquipmentSlot.HEAD.getIndex());
         helper.assertTrue(!ModuleSupport.hasWorkingUpgrade(backpack, ArmorUpgradeType.SCRAMBLE)
-                && backpack.getTag().getInt("power") == 1, "Backpack copies must not consume fuel or enable effects");
+                && player.getInventory().getItem(9).getTag().getLong("charge") == 50, "Backpack copies must not consume fuel or enable effects");
         player.setItemSlot(EquipmentSlot.HEAD, head);
         tick(head, player, EquipmentSlot.HEAD.getIndex());
         helper.assertTrue(ModuleSupport.hasWorkingUpgrade(head, ArmorUpgradeType.SCRAMBLE), "Last powered tick must work");
         tick(head, player, EquipmentSlot.HEAD.getIndex());
         helper.assertTrue(!ModuleSupport.hasWorkingUpgrade(head, ArmorUpgradeType.SCRAMBLE), "Exhaustion must clear Scramble");
-        head.getTag().putInt("power", 3);
+        player.getInventory().setItem(9, chargedHolder(150));
         tick(head, player, EquipmentSlot.HEAD.getIndex());
         player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
         tick(head, player, 3);
@@ -44,44 +46,33 @@ public class EquipmentRegressionTests {
     }
 
     @GameTest(template = "empty")
-    public static void atomicMixedAutofeed(GameTestHelper helper) {
-        Player player = helper.makeMockPlayer();
-        ItemStack chest = gear(Registration.POWERSUIT_CHEST.get(), ArmorUpgradeType.FLIGHT, ArmorUpgradeType.AUTOFEED);
-        chest.getTag().putInt("power", 0);
+    public static void sharedHolderRequiresACompletePair(GameTestHelper helper) {
+        Player player = poweredPlayer(helper);
+        ItemStack chest = gear(Registration.POWERSUIT_CHEST.get(), ArmorUpgradeType.FLIGHT);
+        player.setItemSlot(EquipmentSlot.CHEST, chest);
         ItemStack negarite = holder(3, 0);
-        ItemStack posirite = holder(0, 4);
         player.getInventory().setItem(9, negarite);
-        helper.assertTrue(!ModuleSupport.managePower(chest, player) && negarite.getTag().getInt("negarite") == 3,
-                "Missing second component must not consume the first");
-        player.getInventory().setItem(10, posirite);
+        player.getInventory().setItem(10, holder(0, 4));
+        helper.assertTrue(!ModuleSupport.managePower(chest, player) && EnergyHolderItem.count(negarite, "negarite") == 3,
+                "Separate holders must not mix partial fuel pairs or consume the available component");
+        negarite.getTag().putInt("posirite", 2);
         helper.assertTrue(ModuleSupport.managePower(chest, player)
-                        && negarite.getTag().getInt("negarite") == 2 && posirite.getTag().getInt("posirite") == 3,
-                "Each component must be drawn from its own holder");
-        chest.getTag().putInt("power", 0);
-        chest.getTag().putInt("negarite", 5);
-        helper.assertTrue(ModuleSupport.managePower(chest, player) && chest.getTag().getInt("negarite") == 4
-                        && negarite.getTag().getInt("negarite") == 2 && posirite.getTag().getInt("posirite") == 2,
-                "Autofeed must supply only the missing component and retain surplus local fuel");
-        chest.getTag().putInt("power", 0);
-        chest.getTag().putInt("negarite", 0);
-        player.getInventory().setItem(9, holder(2, 2));
-        player.getInventory().setItem(10, ItemStack.EMPTY);
-        helper.assertTrue(ModuleSupport.managePower(chest, player)
-                        && player.getInventory().getItem(9).getTag().getInt("negarite") == 1
-                        && player.getInventory().getItem(9).getTag().getInt("posirite") == 1,
-                "One holder may supply both components");
+                        && EnergyHolderItem.count(negarite, "negarite") == 2 && EnergyHolderItem.count(negarite, "posirite") == 1,
+                "The active holder must burn both components together without Autofeed");
+        helper.assertTrue(!chest.getTag().contains("power") && !chest.getTag().contains("negarite"),
+                "Player equipment must never acquire a separate fuel reserve");
         helper.succeed();
     }
 
     @GameTest(template = "empty")
     public static void budgetToggleAndHotkeyState(GameTestHelper helper) {
-        Player player = helper.makeMockPlayer();
+        Player player = poweredPlayer(helper);
         ItemStack chest = gear(Registration.POWERSUIT_CHEST.get(), ArmorUpgradeType.FLIGHT,
                 ArmorUpgradeType.FORCEFIELD, ArmorUpgradeType.HOVER);
         player.setItemSlot(EquipmentSlot.CHEST, chest);
         tick(chest, player, 2);
         helper.assertTrue(!ModuleSupport.hasWorkingUpgrade(chest, ArmorUpgradeType.FLIGHT)
-                        && chest.getTag().getInt("power") == 10, "Over-budget gear must stop without consuming fuel");
+                        && EnergyHolderItem.count(player, "negarite") == 64, "Over-budget gear must stop without consuming fuel");
         chest.getTag().putBoolean(ArmorUpgradeType.ENERGY.getModuleKey(), true);
         tick(chest, player, 2);
         helper.assertTrue(ModuleSupport.hasWorkingUpgrade(chest, ArmorUpgradeType.FLIGHT), "Optimizer must permit a 120-usage chest");
@@ -97,7 +88,7 @@ public class EquipmentRegressionTests {
 
     @GameTest(template = "empty")
     public static void sabreHeldSlotAndEnchantments(GameTestHelper helper) {
-        Player player = helper.makeMockPlayer();
+        Player player = poweredPlayer(helper);
         ItemStack sabre = gear(Registration.ENHANCED_ENERGY_SABRE.get(), ArmorUpgradeType.LOOTING, ArmorUpgradeType.FIRE, ArmorUpgradeType.POWER);
         sabre.enchant(Enchantments.UNBREAKING, 2);
         sabre.enchant(Enchantments.MOB_LOOTING, 1);
@@ -118,7 +109,7 @@ public class EquipmentRegressionTests {
                 "Offhand must stop modules and restore pre-module enchants");
         player.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
         player.getInventory().setItem(5, sabre);
-        sabre.getTag().putInt("power", 1);
+        player.getInventory().setItem(9, chargedHolder(70));
         tick(sabre, player, 5);
         tick(sabre, player, 5);
         helper.assertTrue(!ModuleSupport.hasWorkingUpgrade(sabre, ArmorUpgradeType.POWER)
@@ -129,7 +120,7 @@ public class EquipmentRegressionTests {
 
     @GameTest(template = "empty")
     public static void suitEffectOwnership(GameTestHelper helper) {
-        Player player = helper.makeMockPlayer();
+        Player player = poweredPlayer(helper);
         ItemStack head = gear(Registration.POWERSUIT_HEAD.get(), ArmorUpgradeType.NIGHTVISION);
         player.setItemSlot(EquipmentSlot.HEAD, head);
         tick(head, player, 3);
@@ -156,12 +147,24 @@ public class EquipmentRegressionTests {
         helper.succeed();
     }
 
+    private static Player poweredPlayer(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer();
+        player.getInventory().setItem(9, holder(64, 64));
+        return player;
+    }
+
+    private static ItemStack chargedHolder(int charge) {
+        ItemStack holder = holder(0, 0);
+        holder.getOrCreateTag().putLong("charge", charge);
+        holder.getOrCreateTag().putLong("chargeCapacity", UtilityConfiguration.POWERSUIT_TICKS.get());
+        return holder;
+    }
+
     private static ItemStack gear(Item item, ArmorUpgradeType... modules) {
         ItemStack stack = new ItemStack(item);
         for (ArmorUpgradeType module : modules) {
             stack.getOrCreateTag().putBoolean(module.getModuleKey(), true);
         }
-        stack.getOrCreateTag().putInt("power", 10);
         return stack;
     }
 

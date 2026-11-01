@@ -2,6 +2,7 @@ package mcjty.arienteworld.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import mcjty.ariente.api.ArmorUpgradeType;
+import mcjty.ariente.items.EnergyHolderItem;
 import mcjty.ariente.bindings.Binding;
 import mcjty.ariente.bindings.KeyBindings;
 import mcjty.ariente.gui.ModGuis;
@@ -77,6 +78,12 @@ public class LanceModuleClientChecks implements IModPlugin {
                     player.setItemSlot(slot, ItemStack.EMPTY);
                 }
                 player.getInventory().setItem(9, new ItemStack(Registration.MODULE_ENERGY.get(), 4));
+                ItemStack holder = new ItemStack(Registration.ENERGY_HOLDER.get());
+                holder.getOrCreateTag().putInt("negarite", 1);
+                holder.getOrCreateTag().putInt("posirite", 1);
+                holder.getOrCreateTag().putLong("chargeCapacity", 100);
+                holder.getOrCreateTag().putLong("charge", 74);
+                player.getInventory().setItem(12, holder);
                 player.getInventory().setItem(10, new ItemStack(Registration.DUST_NEGARITE.get()));
                 player.getInventory().setItem(11, new ItemStack(Registration.DUST_POSIRITE.get()));
                 player.getInventory().setChanged();
@@ -115,13 +122,11 @@ public class LanceModuleClientChecks implements IModPlugin {
                 click(player, holo, 1.5, 2.3);
                 click(player, holo, 2.5, 2.3);
                 click(player, holo, 3.5, 2.3);
-                click(player, holo, 3.5, 6.5);
-                click(player, holo, 3.5, 7.5);
                 player.teleportTo(position.x, position.y, position.z);
             });
             stage = 2;
         } else if (stage == 2 && renders == 2) {
-            require(tag.getInt("negarite") == 1 && tag.getInt("posirite") == 1
+            require(EnergyHolderItem.count(mc.player, "negarite") == 1 && EnergyHolderItem.count(mc.player, "posirite") == 1
                             && mc.player.getInventory().countItem(Registration.MODULE_ENERGY.get()) == 3,
                     "Lance fuel, installed modules and inventory must synchronize to the client");
             press(KeyBindings.armorHotkey1);

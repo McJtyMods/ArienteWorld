@@ -144,7 +144,7 @@
         "chance": 0.1
       },
       {
-        "id": "ariente:module_autofeed",
+        "id": "ariente:energy_holder",
         "blueprint": true,
         "meta": 0,
         "max": 1,

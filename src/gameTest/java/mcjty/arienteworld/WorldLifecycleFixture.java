@@ -179,7 +179,10 @@ public class WorldLifecycleFixture {
                 player.getInventory().setItem(9, token);
                 ItemStack helmet = new ItemStack(Registration.POWERSUIT_HEAD.get());
                 helmet.getOrCreateTag().putBoolean(ArmorUpgradeType.NIGHTVISION.getModuleKey(), true);
-                helmet.getTag().putInt("power", 30000);
+                ItemStack holder = new ItemStack(Registration.ENERGY_HOLDER.get());
+                holder.getOrCreateTag().putInt("negarite", 64);
+                holder.getOrCreateTag().putInt("posirite", 64);
+                player.getInventory().setItem(10, holder);
                 player.setItemSlot(EquipmentSlot.HEAD, helmet);
                 player.teleportTo(overworld, source.getX() + .5, source.getY() + 1, source.getZ() + .5, 0, 0);
                 persisted.putBoolean("worldcheckInitialized", true);
