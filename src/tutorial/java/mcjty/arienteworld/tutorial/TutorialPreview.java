@@ -2,6 +2,10 @@ package mcjty.arienteworld.tutorial;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import mcjty.arienteworld.ArienteWorld;
+import mcjty.ariente.entities.fluxship.FluxShipEntity;
+import net.minecraft.client.CameraType;
+import net.minecraft.client.GraphicsStatus;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -20,6 +24,8 @@ import java.nio.file.Path;
 @Mod.EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class TutorialPreview {
 
+    private static final String[] SCENES = {"Tutorial-city", "Tutorial-plaza", "Tutorial-bend",
+            "Tutorial-beams", "Tutorial-elevator", "Tutorial-cockpit"};
     private static int scene;
     private static int ticks;
     private static boolean started;
@@ -50,6 +56,10 @@ public class TutorialPreview {
         if (!started) {
             started = true;
             mc.options.hideGui = true;
+            if (Boolean.getBoolean("ariente.tutorial.fabulous")) {
+                mc.options.graphicsMode().set(GraphicsStatus.FABULOUS);
+                mc.levelRenderer.allChanged();
+            }
             mc.options.renderDistance().set(12);
             mc.options.simulationDistance().set(5);
             prepare(mc);
@@ -60,10 +70,10 @@ public class TutorialPreview {
         Path directory = Path.of("..", "screenshots");
         Files.createDirectories(directory);
         try (NativeImage screenshot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
-            screenshot.writeToFile(directory.resolve(scene == 0 ? "Tutorial-city.png" : "Tutorial-plaza.png"));
+            screenshot.writeToFile(directory.resolve(SCENES[scene] + ".png"));
         }
-        if (++scene == 2) {
-            ArienteWorld.setup.getLogger().info("TUTORIAL PREVIEW: city and plaza screenshots saved");
+        if (++scene == SCENES.length) {
+            ArienteWorld.setup.getLogger().info("TUTORIAL PREVIEW: city, plaza, bend, beam transparency, elevator and cockpit screenshots saved");
             mc.stop();
         } else {
             ready = false;
@@ -75,13 +85,27 @@ public class TutorialPreview {
     private static void prepare(Minecraft mc) {
         int current = scene;
         var playerId = mc.player.getUUID();
+        mc.options.setCameraType(current == 5 ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON);
         mc.getSingleplayerServer().execute(() -> {
             var player = mc.getSingleplayerServer().getPlayerList().getPlayer(playerId);
-            player.setGameMode(GameType.SPECTATOR);
-            if (current == 0) {
-                player.teleportTo(player.serverLevel(), 236, 183, 236, 135, 40);
-            } else {
-                player.teleportTo(player.serverLevel(), 171, 97, 176, 139, 34);
+            player.stopRiding();
+            player.setGameMode(current == 5 ? GameType.CREATIVE : GameType.SPECTATOR);
+            switch (current) {
+                case 0 -> player.teleportTo(player.serverLevel(), 236, 183, 236, 135, 40);
+                case 1 -> player.teleportTo(player.serverLevel(), 178, 116, 185, 139, 42);
+                case 2 -> player.teleportTo(player.serverLevel(), 142.5, 68, 144.5, 27, 60);
+                case 3 -> player.teleportTo(player.serverLevel(), 134.5, 66, 140.5, -144, 7);
+                case 4 -> player.teleportTo(player.serverLevel(), 151.5, 67, 157.5, 180, 10);
+                case 5 -> {
+                    var ships = player.serverLevel().getEntitiesOfClass(FluxShipEntity.class, new AABB(128, 60, 144, 144, 80, 160));
+                    if (ships.isEmpty()) {
+                        throw new IllegalStateException("Tutorial has no parked Flux Ship");
+                    }
+                    FluxShipEntity ship = ships.get(0);
+                    player.teleportTo(player.serverLevel(), ship.getX(), ship.getY(), ship.getZ(), 135, 15);
+                    player.startRiding(ship, true);
+                }
+                default -> throw new IllegalStateException("Unknown Tutorial preview scene");
             }
             ready = true;
         });

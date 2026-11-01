@@ -155,6 +155,7 @@ public class AutoFieldRenderingChecks {
         } finally {
             rendered.release();
         }
+        BeamRenderingChecks.check(mc);
         Path output = Path.of("screenshots");
         Files.createDirectories(output);
         try (NativeImage screenshot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {

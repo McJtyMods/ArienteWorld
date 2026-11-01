@@ -23,10 +23,15 @@ gradle.afterProject { p ->
         if (p.hasProperty('tutorial_preview')) {
             p.minecraft.runs.client {
                 mods.arienteworld.source(p.sourceSets.tutorial)
-                workingDirectory p.file('build/tutorial/client')
+                workingDirectory p.file(p.findProperty('tutorial_client_directory') ?: 'build/tutorial/client')
+                property 'ariente.tutorial.fabulous', p.hasProperty('tutorial_fabulous').toString()
                 property 'ariente.tutorial.preview', 'true'
                 args '--quickPlaySingleplayer', 'Tutorial', '--width', '1280', '--height', '800'
             }
+        }
+        if (p.hasProperty('tutorial_render_mods')) {
+            p.dependencies.add('runtimeOnly', p.fg.deobf('curse.maven:embeddium-908741:5681725'))
+            p.dependencies.add('runtimeOnly', p.fg.deobf('curse.maven:oculus-581495:6020952'))
         }
         p.tasks.withType(JavaExec).configureEach {
             if (name == 'runServer' || (name == 'runClient' && p.hasProperty('tutorial_preview'))) {

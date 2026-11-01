@@ -40,7 +40,7 @@ def main():
             'structure_overrides': []
         }, separators=(',', ':'))
         properties = {
-            'level-name': 'Tutorial', 'level-type': 'minecraft:flat', 'level-seed': '20261101',
+            'level-name': 'Tutorial', 'level-type': 'minecraft:flat', 'level-seed': '20261102',
             'generator-settings': generator, 'generate-structures': 'false',
             'gamemode': 'creative', 'difficulty': 'peaceful', 'allow-flight': 'true',
             'spawn-protection': '0', 'spawn-monsters': 'false', 'spawn-animals': 'false',

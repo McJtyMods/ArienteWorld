@@ -33,6 +33,9 @@ import mcjty.ariente.power.PowerReceiverSupport;
 import mcjty.ariente.power.PowerSenderSupport;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
+import mcjty.arienteworld.cities.CityTools;
+import mcjty.arienteworld.dimension.ArienteLandscapeCity;
+import mcjty.arienteworld.dimension.CityChunk;
 import mcjty.lib.multipart.PartSlot;
 import mcjty.lib.tileentity.GenericTileEntity;
 import mcjty.lib.varia.RedstoneMode;
@@ -51,6 +54,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
@@ -149,13 +154,23 @@ public class TutorialWorld {
     }
 
     private static void platform(ServerLevel level) {
-        for (int x = 64; x < 208; x++) {
-            for (int z = 64; z < 208; z++) {
-                int distance = Math.max(Math.abs(x - 135), Math.abs(z - 135));
-                int top = distance <= 24 ? FLOOR : FLOOR - Math.min(3, (distance - 9) / 16);
-                for (int y = top - 3; y <= top; y++) {
+        require(!CityTools.isCityCenter(level.getSeed(), 8, 8), "Tutorial seed must leave the teaching city free of dungeons");
+        for (int chunkX = 4; chunkX <= 12; chunkX++) {
+            for (int chunkZ = 4; chunkZ <= 12; chunkZ++) {
+                if (chunkX >= 7 && chunkX <= 9 && chunkZ >= 7 && chunkZ <= 9) {
+                    continue;
+                }
+                CityChunk city = new CityChunk(level, new ChunkPos(chunkX, chunkZ));
+                city.fill(marble(MarbleColor.BLACK), FLOOR - 3, ArienteLandscapeCity.CITY_LEVEL - 2);
+                ArienteLandscapeCity.generate(chunkX, chunkZ, city);
+            }
+        }
+        // Only the central nine chunks are cleared for the teaching plaza.
+        for (int x = 112; x < 160; x++) {
+            for (int z = 112; z < 160; z++) {
+                for (int y = FLOOR - 3; y <= FLOOR; y++) {
                     BlockState state = marble(MarbleColor.BLACK);
-                    if (y == top) {
+                    if (y == FLOOR) {
                         state = marble(MarbleColor.GRAY);
                         if (Math.floorMod(x, 16) <= 1 || Math.floorMod(z, 16) <= 1) {
                             state = marble(MarbleColor.DARKBLUE);
@@ -169,23 +184,8 @@ public class TutorialWorld {
                     }
                     level.setBlock(new BlockPos(x, y, z), state, Block.UPDATE_CLIENTS);
                 }
-                if (x == 64 || x == 207 || z == 64 || z == 207) {
-                    put(level, new BlockPos(x, top + 1, z), Registration.TECH_FENCE.get());
-                }
             }
         }
-        // Shallow staircases connect all four city terraces without flight.
-        for (int d = 25; d <= 71; d++) {
-            int height = FLOOR - Math.min(3, (d - 9) / 16);
-            for (int w = -1; w <= 2; w++) {
-                for (BlockPos pos : new BlockPos[]{new BlockPos(135 + d, height, 135 + w),
-                        new BlockPos(135 - d, height, 135 + w), new BlockPos(135 + w, height, 135 + d),
-                        new BlockPos(135 + w, height, 135 - d)}) {
-                    level.setBlock(pos, marble(MarbleColor.WHITE), Block.UPDATE_CLIENTS);
-                }
-            }
-        }
-        // A quiet spare building area on each outer ring; exhibits stay in the central nine chunks.
         label(level, 136, 65, 129, "TUTORIAL", "Ariente city lab", "9 x 9 chunks", "Start at the book");
     }
 
@@ -344,7 +344,7 @@ public class TutorialWorld {
                 }
             }
         }
-        put(level, new BlockPos(x, 64, z), Registration.DOOR_MARKER.get());
+        put(level, new BlockPos(x, 65, z), Registration.DOOR_MARKER.get());
     }
 
     private static void doors(ServerLevel level) {
@@ -425,21 +425,30 @@ public class TutorialWorld {
     }
 
     private static void transport(ServerLevel level) {
-        for (int x = 130; x <= 140; x++) {
-            put(level, new BlockPos(x, 64, 150), Registration.FLUX_BEAM.get().defaultBlockState()
-                    .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
+        // The 1.3-block-wide cart needs an exposed rail, not a slot sunk into a full-block floor.
+        for (int x = 129; x <= 141; x++) {
+            for (int z : new int[]{146, 156}) {
+                put(level, new BlockPos(x, 65, z), Registration.FLUX_BEAM.get().defaultBlockState()
+                        .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
+            }
         }
-        put(level, new BlockPos(140, 64, 150), Registration.FLUX_BEND_BEAM.get().defaultBlockState()
-                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
-        for (int z = 151; z <= 156; z++) {
-            put(level, new BlockPos(140, 64, z), Registration.FLUX_BEAM.get().defaultBlockState()
-                    .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST));
+        for (int z = 147; z < 156; z++) {
+            for (int x : new int[]{129, 141}) {
+                put(level, new BlockPos(x, 65, z), Registration.FLUX_BEAM.get().defaultBlockState()
+                        .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST));
+            }
         }
-        FluxLevitatorEntity cart = FluxLevitatorEntity.create(level, 132.5, 64.0625, 150.5);
+        int[][] corners = {{129, 146}, {141, 146}, {141, 156}, {129, 156}};
+        Direction[] facings = {Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH};
+        for (int i = 0; i < corners.length; i++) {
+            put(level, new BlockPos(corners[i][0], 65, corners[i][1]), Registration.FLUX_BEND_BEAM.get().defaultBlockState()
+                    .setValue(BlockStateProperties.HORIZONTAL_FACING, facings[i]));
+        }
+        FluxLevitatorEntity cart = FluxLevitatorEntity.create(level, 132.5, 65.0625, 146.5);
         level.addFreshEntity(cart);
-        FluxShipEntity ship = FluxShipEntity.create(level, 133.5, 65, 154.5);
+        FluxShipEntity ship = FluxShipEntity.create(level, 135, 65, 151.5);
         level.addFreshEntity(ship);
-        label(level, 131, 65, 158, "08 / TRANSPORT", "Board flux cart", "Panel: speed/direction", "Corner on east end");
+        label(level, 131, 65, 158, "08 / TRANSPORT", "Board flux cart", "Panel: speed/stop", "Four-bend loop");
         label(level, 138, 65, 158, "FLUX SHIP", "WASD moves/turns", "Space/Backspace", "Sneak: exit");
     }
 
@@ -458,7 +467,7 @@ public class TutorialWorld {
                 "05 SECURITY (east)\n\nTake the Tutorial keycard from the welcome barrel. Use it on the lock, then walk near the door. The invisible door blocks belong to the marker under the opening.\n\nThe AI Core and safe Alarm show city equipment. AI behavior belongs to the Ariente dimension; this Overworld exhibit does not spawn defenders.",
                 "06 WIRELESS (southwest)\n\nThe left wireless button controls a lamp and the nearby Wireless Lock. Walk near the door after unlocking.\n\nThe right lever supplies the transmitter; its remote receiver controls the southern lamp. These are separate pre-linked channels. Use the tablet to copy/reassign channels.",
                 "07 ELEVATOR (southeast)\n\nWalk onto the beam and choose a floor in its hologram. The upper Level Marker provides the observation-deck stop.\n\nElevators do not consume flux.\n\n08 TRANSPORT (south)\nBoard the cart and use its holograms. The track includes a bend. Try the Flux Ship from its landing pad.",
-                "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCreative mode, daylight, no natural mob spawning and keep-inventory are enabled for teaching. Outer terraces are spare build space. Copy this save before experimenting."
+                "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCreative mode, daylight, no natural mob spawning and keep-inventory are enabled for teaching. The surrounding 72 chunks use ArienteWorld city generation, including buildings, parks and levitator corridors. Copy this save before experimenting."
         }) {
             pages.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(page))));
         }
@@ -630,7 +639,7 @@ public class TutorialWorld {
                 + ", receiver=" + ((SignalReceiverTile) level.getBlockEntity(SHIELD.north())).getPowerOutput());
         require(((SignalReceiverTile) level.getBlockEntity(new BlockPos(115, 65, 148))).getPowerOutput() == 15,
                 "Wireless button/receiver pair does not send redstone");
-        require(level.getBlockState(new BlockPos(148, 65, 134)).is(Registration.INVISIBLE_DOOR.get()), "Door marker did not create its door");
+        require(level.getBlockState(new BlockPos(148, 66, 134)).is(Registration.INVISIBLE_DOOR.get()), "Door marker did not create its door");
         Set<ResourceLocation> coverage = new HashSet<>();
         for (int x = 7; x <= 9; x++) {
             for (int z = 7; z <= 9; z++) {
@@ -647,6 +656,30 @@ public class TutorialWorld {
             require(coverage.contains(type.getId()), "Missing saved machine exhibit: " + type.getId());
         }
         require(level.getBlockState(new BlockPos(115, 65, 149)).getValue(BlockStateProperties.LIT), "Wireless button lamp is dark");
+        int tallCityChunks = 0;
+        for (int chunkX = 4; chunkX <= 12; chunkX++) {
+            for (int chunkZ = 4; chunkZ <= 12; chunkZ++) {
+                if (chunkX >= 7 && chunkX <= 9 && chunkZ >= 7 && chunkZ <= 9) {
+                    continue;
+                }
+                int highest = 0;
+                for (int x = 2; x < 16; x += 4) {
+                    for (int z = 2; z < 16; z += 4) {
+                        highest = Math.max(highest, level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                                chunkX * 16 + x, chunkZ * 16 + z));
+                    }
+                }
+                if (highest > 75) {
+                    tallCityChunks++;
+                }
+            }
+        }
+        require(tallCityChunks >= 8, "The outer city must contain real buildings and parks, not an empty platform");
+        for (BlockPos marker : new BlockPos[]{new BlockPos(148, 65, 134), new BlockPos(119, 65, 151)}) {
+            require(level.getBlockState(marker).is(Registration.DOOR_MARKER.get()) && !level.isEmptyBlock(marker.below()),
+                    "Door markers must rest on the walking floor");
+        }
+        ArienteWorld.setup.getLogger().info("TUTORIAL CITY CHECK: {} outer chunks have raised city architecture", tallCityChunks);
         require(level.isEmptyBlock(new BlockPos(63, 64, 136)) && level.isEmptyBlock(new BlockPos(208, 64, 136)),
                 "Expected void beyond the nine-chunk platform");
         for (Entity entity : level.getAllEntities()) {
