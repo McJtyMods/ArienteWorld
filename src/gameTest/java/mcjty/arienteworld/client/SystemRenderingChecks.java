@@ -19,6 +19,12 @@ import mcjty.ariente.entities.fluxship.FluxShipRender;
 import mcjty.ariente.entities.soldier.SoldierRender;
 import mcjty.ariente.items.BlueprintItem;
 import mcjty.ariente.items.BlueprintRenderer;
+import mcjty.ariente.items.modules.ArmorModuleItem;
+import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.runtime.IJeiRuntime;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraftforge.registries.ForgeRegistries;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.hologui.config.HoloGuiModConfigGui;
@@ -232,7 +238,19 @@ public class SystemRenderingChecks {
                 try (NativeImage image = soldier(false, leftHanded, aggressive)) {
                     save(image, "soldier-sabre-" + (leftHanded ? "left-" : "right-") + (aggressive ? "attack-" : "idle-") + runs);
                 }
+                try (NativeImage image = soldier(false, leftHanded, aggressive, true)) {
+                    require(bright(image) > 200, "A lance and its two-handed wielder must render visible pixels");
+                    save(image, "soldier-lance-" + (leftHanded ? "left-" : "right-") + (aggressive ? "attack-" : "idle-") + runs);
+                }
             }
+        }
+        try (NativeImage item = blueprint(new ItemStack(Registration.ENERGY_LANCE.get()));
+             NativeImage blueprint = blueprint(BlueprintItem.makeBluePrint(new ItemStack(Registration.ENERGY_LANCE.get())));
+             NativeImage armored = soldier(true, false, true, true)) {
+            require(bright(item) > 50 && bright(blueprint) > 50, "The lance and populated blueprint must render in inventory");
+            save(item, "energy-lance-" + runs);
+            save(blueprint, "energy-lance-blueprint-" + runs);
+            save(armored, "soldier-lance-armored-" + runs);
         }
         try (NativeImage bare = soldier(false, false, false); NativeImage armored = soldier(true, false, false)) {
             int changed = 0;
@@ -254,10 +272,44 @@ public class SystemRenderingChecks {
                 new AutoFieldRenderInfo.Transfer(new ItemStack(Blocks.DIAMOND_BLOCK), 0), BlockPos.ZERO);
     }
 
+    public static void checkModuleTooltips(Minecraft mc, IJeiRuntime runtime) {
+        var jeiRenderer = runtime.getIngredientManager().getIngredientRenderer(VanillaTypes.ITEM_STACK);
+        for (var item : ForgeRegistries.ITEMS.getValues()) {
+            if (!(item instanceof ArmorModuleItem module)) {
+                continue;
+            }
+            ItemStack stack = new ItemStack(module);
+            String description = module.getInstallationDescription().getString();
+            require(description.startsWith("This module can be installed in ") && description.contains(" to ")
+                            && !description.contains("message.ariente") && !description.contains("enhance it's abilities"),
+                    "Every module needs a translated equipment list and effect: " + description);
+            require(stack.getTooltipLines(mc.player, TooltipFlag.Default.NORMAL).stream().map(Component::getString).anyMatch(description::equals),
+                    "The hologram's native item tooltip must include the module description");
+            require(jeiRenderer.getTooltip(stack, TooltipFlag.Default.NORMAL).stream().map(Component::getString).anyMatch(description::equals),
+                    "JEI must include the same module description");
+            try (NativeImage tooltip = picture(.65F, (pose, buffers) -> {
+                pose.scale(.01F, .01F, .01F);
+                pose.mulPose(Axis.YP.rotationDegrees(180));
+                pose.mulPose(Axis.ZP.rotationDegrees(180));
+                pose.translate(0, 0, -10);
+                pose.scale(.4F, .4F, 1);
+                HoloGuiRenderTools.renderToolTip(pose, buffers, stack, -90, -60, (s, lines) -> lines.add("Click to install or remove"));
+            })) {
+                require(bright(tooltip) > 100, "The module tooltip must emit visible text");
+                save(tooltip, "module-tooltip-" + module.getType().getName());
+            }
+        }
+        ArienteWorld.setup.getLogger().info("MODULE TOOLTIP CHECK PASSED: every module describes compatible equipment and its effect in JEI and holograms");
+    }
+
     private static NativeImage soldier(boolean armored, boolean leftHanded, boolean aggressive) {
+        return soldier(armored, leftHanded, aggressive, false);
+    }
+
+    private static NativeImage soldier(boolean armored, boolean leftHanded, boolean aggressive, boolean lance) {
         Minecraft mc = Minecraft.getInstance();
         var soldier = Registration.ENTITY_SOLDIER.get().create(mc.level);
-        soldier.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Registration.ENERGY_SABRE.get()));
+        soldier.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(lance ? Registration.ENERGY_LANCE.get() : Registration.ENERGY_SABRE.get()));
         soldier.setLeftHanded(leftHanded);
         soldier.setAggressive(aggressive);
         if (armored) {
@@ -271,11 +323,16 @@ public class SystemRenderingChecks {
         model.setupAnim(soldier, 0, 0, 0, 0, 0);
         var weaponArm = leftHanded ? model.leftArm : model.rightArm;
         var freeArm = leftHanded ? model.rightArm : model.leftArm;
-        require(freeArm.xRot > -.6F && (aggressive ? weaponArm.xRot < -1 : weaponArm.xRot > -1),
-                "Soldiers must hold a sword in their dominant hand without the zombie's two raised arms");
-        return picture(1.8F, (pose, buffers) -> {
+        if (lance) {
+            require(freeArm.xRot < -1 && weaponArm.xRot < -1,
+                    "Lance wielders must keep both arms on the weapon, including while aggressive or left-handed");
+        } else {
+            require(freeArm.xRot > -.6F && (aggressive ? weaponArm.xRot < -1 : weaponArm.xRot > -1),
+                    "Soldiers must hold a sword in their dominant hand without the zombie's two raised arms");
+        }
+        return picture(lance ? 2.2F : 1.8F, (pose, buffers) -> {
             pose.translate(0, -.9, 0);
-            pose.mulPose(Axis.YP.rotationDegrees(20));
+            pose.mulPose(Axis.YP.rotationDegrees(lance ? 60 : 20));
             mc.getEntityRenderDispatcher().getRenderer(soldier).render(soldier, 180, 0, pose, buffers, LightTexture.FULL_BRIGHT);
         });
     }

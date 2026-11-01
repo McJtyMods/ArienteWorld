@@ -7,6 +7,8 @@ import mcjty.ariente.entities.soldier.EntityAISoldierAttack;
 import mcjty.ariente.entities.soldier.SoldierEntity;
 import mcjty.ariente.setup.Registration;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -59,6 +61,7 @@ public class CombatRegressionTests {
     }
 
     private static void verifySoldierMelee(GameTestHelper helper, SoldierEntity soldier, BlockPos pos) {
+        soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Registration.ENERGY_SABRE.get()));
         var player = helper.makeMockSurvivalPlayer();
         player.moveTo(pos.getX() + 1.5, pos.getY(), pos.getZ() + .5);
         soldier.moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + .5);

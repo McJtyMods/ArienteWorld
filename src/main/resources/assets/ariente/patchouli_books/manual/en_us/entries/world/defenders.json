@@ -21,6 +21,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Lance wielders",
+      "text": "Some soldiers and guards carry a longer Energy Lance with both hands. They fire lasers instead of closing for a sabre strike.$(br2)Their lasers deal 30% more raw damage than their sabres. Use walls and cover, especially at advanced bases.$(br2)Lances and matching Constructor blueprints can be found rarely in Storage Cubes. Keep your off hand empty when firing a captured lance."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Master Soldiers",
       "text": "Master Soldiers are tough, regenerate health, and resist fire and magic. Bring a reliable weapon and a retreat plan.$(br2)An Enhanced Energy Sabre with a working Inhibit module suppresses their regeneration and strips beneficial effects. Fire alone will not solve this fight.$(br2)Check your modules and both fuel supplies before engaging."
     }

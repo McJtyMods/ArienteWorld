@@ -13,9 +13,15 @@ to existing generated dungeons.
 Sabre-wielding soldiers can kill unarmored players in one hit on every non-Peaceful
 difficulty. Advanced complexes (`city2_1` and higher) have stronger foot soldiers
 and combat drones whose lasers can kill players in plain netherite with one hit.
-Protection enchantments still mitigate laser damage; foot soldiers remain
+Protection enchantments still mitigate laser damage; sabre hits remain
 survivable in full unenchanted netherite. City plans can tune these attacks with
 `soldierSabreDamage` and `droneLaserDamage`, measured before armor and enchantments.
+
+One in five new soldiers and guards carries a two-handed Energy Lance and fights
+at range. Its lasers deal 30% more raw damage than that soldier's sabre damage,
+including `soldierSabreDamage`. Use cover against lance wielders. Lances and their
+reusable Constructor blueprints are rare storage-cube loot in cities with loot.
+Players must leave the off hand empty to fire a lance.
 
 See [PORTING.txt](PORTING.txt) for development status, build instructions,
 verification commands and release gates, and the

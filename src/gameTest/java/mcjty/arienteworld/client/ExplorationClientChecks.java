@@ -228,7 +228,7 @@ public class ExplorationClientChecks {
         if (observing && event.getLevel().dimension().equals(DimensionRegister.DIMENSION)
                 && event.getEntity() instanceof Mob mob && mob.getSpawnType() == MobSpawnType.NATURAL
                 && (mob.getType() == Registration.ENTITY_SOLDIER.get() || mob.getType() == Registration.ENTITY_MASTER_SOLDIER.get())) {
-            require(mob.getMainHandItem().is(Registration.ENERGY_SABRE.get()), "Naturally spawned soldiers must be armed");
+            require((mob.getMainHandItem().is(Registration.ENERGY_SABRE.get()) || mob.getMainHandItem().is(Registration.ENERGY_LANCE.get())), "Naturally spawned soldiers must be armed");
             SPAWNS[period]++;
             if (mob.getType() == Registration.ENTITY_MASTER_SOLDIER.get()) {
                 masters++;

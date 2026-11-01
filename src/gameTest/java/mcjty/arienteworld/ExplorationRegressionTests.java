@@ -86,7 +86,7 @@ public class ExplorationRegressionTests {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
         for (var type : List.of(Registration.ENTITY_SOLDIER.get(), Registration.ENTITY_MASTER_SOLDIER.get())) {
             Mob soldier = type.spawn(level, pos, MobSpawnType.NATURAL);
-            helper.assertTrue(soldier != null && soldier.getMainHandItem().is(Registration.ENERGY_SABRE.get()),
+            helper.assertTrue(soldier != null && (soldier.getMainHandItem().is(Registration.ENERGY_SABRE.get()) || soldier.getMainHandItem().is(Registration.ENERGY_LANCE.get())),
                     "Spawn finalization must actually call the soldier/master equipment initializer");
             CompoundTag saved = new CompoundTag();
             soldier.saveWithoutId(saved);
@@ -278,7 +278,7 @@ public class ExplorationRegressionTests {
                     helper.assertTrue(soldiers >= soldierMin && soldiers <= soldierMax && drones >= droneMin && drones <= droneMax,
                             "Alert waves must refill within the local plan limits for " + count + " players: " + soldiers + "/" + drones);
                     helper.assertTrue(level.getEntitiesOfClass(Mob.class, bounds, entity -> entity instanceof ISoldier).stream()
-                                    .allMatch(mob -> mob.getMainHandItem().is(Registration.ENERGY_SABRE.get())), "Reinforcements must be armed");
+                                    .allMatch(mob -> (mob.getMainHandItem().is(Registration.ENERGY_SABRE.get()) || mob.getMainHandItem().is(Registration.ENERGY_LANCE.get()))), "Reinforcements must be armed");
                 }
             }
             helper.assertTrue(!fields.isEmpty() && fields.stream().allMatch(field -> field.getRSMode() == RedstoneMode.REDSTONE_IGNORED),

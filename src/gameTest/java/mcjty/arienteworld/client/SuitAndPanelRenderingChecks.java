@@ -134,9 +134,11 @@ public class SuitAndPanelRenderingChecks {
         LaserEntity laser = LaserEntity.create(mc.level, mc.player.getX() + 2, mc.player.getY() + 1, mc.player.getZ() + 2, 1, 0, 0);
         laser.setDeltaMovement(1, 0, 0);
         BufferBuilder builder = new BufferBuilder(1024);
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
-        mc.getEntityRenderDispatcher().getRenderer(laser).render(laser, 0, 0, new PoseStack(), type -> {
-            require(type == ArienteRenderType.ARIENTE_TRANSLUCENT, "Laser must use its buffered translucent material");
+        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
+        PoseStack poses = new PoseStack();
+        poses.translate(0, 0, -10);
+        mc.getEntityRenderDispatcher().getRenderer(laser).render(laser, 0, 0, poses, type -> {
+            require(type == ArienteRenderType.ARIENTE_ADDITIVE, "Laser must use its buffered additive material");
             return builder;
         }, LightTexture.FULL_BRIGHT);
         var rendered = builder.end();

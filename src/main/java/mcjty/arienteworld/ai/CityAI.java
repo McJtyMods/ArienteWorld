@@ -32,7 +32,6 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.core.BlockPos;
@@ -45,7 +44,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static mcjty.ariente.setup.Registration.ENERGY_SABRE;
 import static mcjty.ariente.setup.Registration.FLUX_BEAM;
 import static mcjty.ariente.setup.Registration.KEY_CARD;
 import static mcjty.ariente.setup.Registration.POWERSUIT_CHEST;
@@ -411,7 +409,6 @@ public class CityAI implements ICityAI {
                     this.levitator = entity.getId();
 
                     LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, path.direction, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT, false);
-                    soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));
                     soldier.startRiding(entity);
                 }
             }
@@ -667,7 +664,6 @@ public class CityAI implements ICityAI {
         Direction facing = soldierPositions.get(pos);
         LivingEntity entity = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT,
                 random.nextDouble() < plan.getMasterChance());
-        entity.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));    // @todo need a lasergun
 
         if (random.nextFloat() < plan.getPowerArmorChance()) {
             entity.setItemSlot(EquipmentSlot.HEAD, createNiceHelmet());
@@ -1054,7 +1050,6 @@ public class CityAI implements ICityAI {
             BlockPos pos = entry.getKey();
             Direction facing = entry.getValue();
             LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_GUARD, false);
-            soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));
         }
     }
 
@@ -1063,7 +1058,6 @@ public class CityAI implements ICityAI {
             BlockPos pos = entry.getKey();
             Direction facing = entry.getValue();
             LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER, true);
-            soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ENERGY_SABRE.get()));
         }
     }
 

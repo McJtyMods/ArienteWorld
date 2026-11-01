@@ -4,6 +4,7 @@ import mcjty.ariente.entities.LaserEntity;
 import mcjty.ariente.entities.drone.DroneEntity;
 import mcjty.ariente.entities.soldier.SoldierEntity;
 import mcjty.ariente.items.EnergySabreItem;
+import mcjty.ariente.items.EnergyLanceItem;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityTools;
@@ -29,7 +30,9 @@ public class DefenderCombat {
         boolean laser = event.getSource().getDirectEntity() instanceof LaserEntity && defender instanceof DroneEntity;
         boolean sabre = event.getSource().is(DamageTypes.MOB_ATTACK) && defender instanceof SoldierEntity
                 && defender.getMainHandItem().getItem() instanceof EnergySabreItem;
-        if (!laser && !sabre) {
+        boolean lance = event.getSource().getDirectEntity() instanceof LaserEntity shot && shot.isLanceShot()
+                && defender instanceof SoldierEntity;
+        if (!laser && !sabre && !lance) {
             return;
         }
         ChunkPos center = defender instanceof SoldierEntity soldier ? soldier.getCityCenter() : ((DroneEntity) defender).getCityCenter();
@@ -37,6 +40,9 @@ public class DefenderCombat {
         City city = center == null ? SoldierSpawning.getDungeonAt(level, defender.blockPosition()) : CityTools.getCity(level.getSeed(), center);
         if (city != null) {
             float damage = laser ? city.getPlan().getDroneLaserDamage() : city.getPlan().getSoldierSabreDamage();
+            if (lance) {
+                damage *= EnergyLanceItem.DAMAGE_MULTIPLIER;
+            }
             event.setAmount(Math.max(event.getAmount(), damage));
         }
     }

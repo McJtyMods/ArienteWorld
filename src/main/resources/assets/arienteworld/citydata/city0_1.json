@@ -23,6 +23,20 @@
     "masterChance": 0.0,
     "loot": [
       {
+        "id": "ariente:energy_lance",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.005,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:energy_lance",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.01,
+        "blueprint": true
+      },
+      {
         "meta": 0,
         "blueprint": true,
         "max": 3,

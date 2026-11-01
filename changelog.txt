@@ -1,4 +1,5 @@
 1.20-0.0.31-alpha:
+- Soldiers and guards can carry two-handed Energy Lances and fire lasers. Lances and their blueprints are rare finds in storage cubes.
 - Advanced bases have stronger foot soldiers and combat drones whose lasers can kill players in unenchanted netherite armor with one hit, even on Easy.
 - Soldiers and occasional master soldiers now spawn naturally inside every dungeon type, including underground and huge dungeons, at light levels of 11 or lower.
 - Expanded the huge cube dungeon with varied multi-deck interiors, valuable storage-cube loot, and a large arena reserved for a future boss.
