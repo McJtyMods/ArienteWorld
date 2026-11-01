@@ -4,6 +4,8 @@ Minecraft **1.20.1 / Forge** companion to Ariente, adding an alien dimension,
 cities and progression to obtain its technology. Requires matching Ariente,
 HoloGui and McJtyLib; The One Probe is optional.
 
+Ariente biomes do not spawn vanilla mobs, including outside cities.
+
 Soldiers and occasional master soldiers spawn naturally in city biomes and inside
 all dungeon types, including underground halls and the huge cube, at light levels
 of 11 or lower. Natural patrols use the normal hostile mob cap and spawning distances
