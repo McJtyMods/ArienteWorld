@@ -140,6 +140,7 @@ Tutorial under `build/verification/autofield-vanilla/saves/Tutorial` and run
 from the workspace root. This checks all 48 outline vertices, beam depth ordering,
 uniform populated module backgrounds across display bases at three camera angles,
 constant field-marker brightness at three pitches, outline/display depth interaction,
+stable tank lighting after item renderers at three angles, tank sorting and stacked seams,
 visible holograms in the final world framebuffer, real world frames and a resource reload. Add `-Phologram_fabulous` for Fabulous graphics.
 Add `-Pautofield_render_mods` for Embeddium/Oculus and
 `-Pautofield_check_directory=<directory>` for a separate client profile. Shader

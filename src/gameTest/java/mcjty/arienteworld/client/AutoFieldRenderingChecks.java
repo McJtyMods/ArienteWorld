@@ -181,6 +181,7 @@ public class AutoFieldRenderingChecks {
         }
         BeamRenderingChecks.check(mc);
         DisplayTransparencyChecks.check(mc);
+        TankLightingChecks.check(mc);
         Path output = Path.of("screenshots");
         Files.createDirectories(output);
         try (NativeImage screenshot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
