@@ -1,10 +1,17 @@
 package mcjty.arienteworld.tutorial;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import mcjty.ariente.Ariente;
+import mcjty.ariente.blocks.utility.LockTile;
+import mcjty.ariente.blocks.utility.autofield.NodeOrientation;
+import mcjty.ariente.blocks.utility.door.DoorMarkerTile;
+import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.GraphicsStatus;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -13,6 +20,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.world.level.GameType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -25,8 +33,9 @@ import java.nio.file.Path;
 public class TutorialPreview {
 
     private static final String[] SCENES = {"Tutorial-city", "Tutorial-plaza", "Tutorial-bend",
-            "Tutorial-beams", "Tutorial-elevator", "Tutorial-cockpit"};
-    private static int scene;
+            "Tutorial-beams", "Tutorial-elevator", "Tutorial-cockpit", "Tutorial-displays", "Tutorial-automation", "Tutorial-filter", "Tutorial-welcome", "Tutorial-power", "Tutorial-construction", "Tutorial-forcefield", "Tutorial-security",
+            "Tutorial-outline-displays", "Tutorial-module-left", "Tutorial-module-right", "Tutorial-alarm"};
+    private static int scene = Integer.getInteger("ariente.tutorial.scene", 0);
     private static int ticks;
     private static boolean started;
     private static volatile boolean ready;
@@ -67,13 +76,16 @@ public class TutorialPreview {
         if (!ready || ++ticks < 160) {
             return;
         }
+        if (scene == 9 && !mc.player.hasPermissions(2)) {
+            throw new IllegalStateException("Tutorial client did not receive gamemode permission");
+        }
         Path directory = Path.of("..", "screenshots");
         Files.createDirectories(directory);
         try (NativeImage screenshot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
             screenshot.writeToFile(directory.resolve(SCENES[scene] + ".png"));
         }
         if (++scene == SCENES.length) {
-            ArienteWorld.setup.getLogger().info("TUTORIAL PREVIEW: city, plaza, bend, beam transparency, elevator and cockpit screenshots saved");
+            ArienteWorld.setup.getLogger().info("TUTORIAL PREVIEW: screenshot sequence complete");
             mc.stop();
         } else {
             ready = false;
@@ -89,7 +101,7 @@ public class TutorialPreview {
         mc.getSingleplayerServer().execute(() -> {
             var player = mc.getSingleplayerServer().getPlayerList().getPlayer(playerId);
             player.stopRiding();
-            player.setGameMode(current == 5 ? GameType.CREATIVE : GameType.SPECTATOR);
+            player.setGameMode((current == 5 || current == 9) ? GameType.CREATIVE : GameType.SPECTATOR);
             switch (current) {
                 case 0 -> player.teleportTo(player.serverLevel(), 236, 183, 236, 135, 40);
                 case 1 -> player.teleportTo(player.serverLevel(), 178, 116, 185, 139, 42);
@@ -105,6 +117,60 @@ public class TutorialPreview {
                     player.teleportTo(player.serverLevel(), ship.getX(), ship.getY(), ship.getZ(), 135, 15);
                     player.startRiding(ship, true);
                 }
+                case 6 -> player.teleportTo(player.serverLevel(), 121, 65.8, 134.5, 180, 7);
+                case 7 -> player.teleportTo(player.serverLevel(), 112, 69, 125.5, -135, 28);
+                case 8 -> {
+                    player.teleportTo(player.serverLevel(), 115.5, 65, 118.5, 180, 0);
+                    var panel = Ariente.guiHandler.openHoloGuiEntity(player.serverLevel(), new BlockPos(115, 66, 115), player,
+                            NodeOrientation.NORTH_DE.getSlot().name(), 1.0);
+                    panel.setPinned(true);
+                }
+                case 9 -> {
+                    if (!player.hasPermissions(2)) {
+                        throw new IllegalStateException("Tutorial player cannot change game mode");
+                    }
+                    var commands = mc.getSingleplayerServer().getCommands();
+                    commands.performPrefixedCommand(player.createCommandSourceStack(), "gamemode survival");
+                    if (player.gameMode.getGameModeForPlayer() != GameType.SURVIVAL) {
+                        throw new IllegalStateException("Tutorial /gamemode survival failed");
+                    }
+                    commands.performPrefixedCommand(player.createCommandSourceStack(), "gamemode creative");
+                    if (player.gameMode.getGameModeForPlayer() != GameType.CREATIVE) {
+                        throw new IllegalStateException("Tutorial /gamemode creative failed");
+                    }
+                    ArienteWorld.setup.getLogger().info("TUTORIAL PERMISSIONS: player commands switched survival -> creative");
+                    player.teleportTo(player.serverLevel(), 136.5, 65, 140.5, 180, 0);
+                }
+                case 10 -> player.teleportTo(player.serverLevel(), 132, 65.8, 127, 180, -2);
+                case 11 -> player.teleportTo(player.serverLevel(), 117.5, 66, 144.5, 180, 12);
+                case 12 -> player.teleportTo(player.serverLevel(), 148.5, 65, 129.5, 180, 0);
+                case 13 -> {
+                    var storage = player.serverLevel().getBlockEntity(new BlockPos(138, 65, 137))
+                            .getCapability(ForgeCapabilities.ITEM_HANDLER).orElseThrow(IllegalStateException::new);
+                    ItemStack card = ItemStack.EMPTY;
+                    for (int slot = 0; slot < storage.getSlots(); slot++) {
+                        if (storage.getStackInSlot(slot).is(Registration.KEY_CARD.get())) {
+                            card = storage.getStackInSlot(slot);
+                            break;
+                        }
+                    }
+                    LockTile lock = (LockTile) player.serverLevel().getBlockEntity(new BlockPos(147, 66, 140));
+                    DoorMarkerTile door = (DoorMarkerTile) player.serverLevel().getBlockEntity(new BlockPos(148, 65, 139));
+                    lock.acceptKeyCard(card);
+                    if (lock.isLocked() || door.isLocked()) {
+                        throw new IllegalStateException("The welcome keycard did not unlock the relocated door");
+                    }
+                    lock.acceptKeyCard(card);
+                    if (!lock.isLocked() || !door.isLocked()) {
+                        throw new IllegalStateException("The welcome keycard did not relock the relocated door");
+                    }
+                    ArienteWorld.setup.getLogger().info("TUTORIAL SECURITY: welcome keycard unlocks/relocks relocated door");
+                    player.teleportTo(player.serverLevel(), 147.5, 65, 144.5, 180, 0);
+                }
+                case 14 -> player.teleportTo(player.serverLevel(), 128.6, 65, 121, 58, 0);
+                case 15 -> player.teleportTo(player.serverLevel(), 118.8, 65.6, 130.5, -154, 6);
+                case 16 -> player.teleportTo(player.serverLevel(), 124.5, 65.6, 130.5, 142, 6);
+                case 17 -> player.teleportTo(player.serverLevel(), 154.5, 65.5, 138.5, 180, 10);
                 default -> throw new IllegalStateException("Unknown Tutorial preview scene");
             }
             ready = true;

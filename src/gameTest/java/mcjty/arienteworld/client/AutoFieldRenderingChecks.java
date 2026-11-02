@@ -6,9 +6,12 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
 import mcjty.ariente.blocks.utility.autofield.AutoFieldTile;
-import mcjty.ariente.client.ArienteSpriteUploader;
+import mcjty.ariente.blocks.utility.autofield.AutoFieldRenderer;
+import mcjty.ariente.client.ArienteRenderType;
+import mcjty.ariente.client.WorldHolograms;
 import mcjty.arienteworld.ArienteWorld;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -21,6 +24,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 
@@ -67,12 +71,18 @@ public class AutoFieldRenderingChecks {
         if (!started) {
             started = true;
             mc.options.renderDistance().set(8);
+            if (Boolean.getBoolean("ariente.hologramFabulous")) {
+                mc.options.graphicsMode().set(GraphicsStatus.FABULOUS);
+                mc.levelRenderer.allChanged();
+            }
             mc.options.hideGui = true;
             var server = mc.getSingleplayerServer();
             var uuid = mc.player.getUUID();
             server.execute(() -> {
                 var player = server.getPlayerList().getPlayer(uuid);
-                player.setGameMode(GameType.SPECTATOR);
+                player.setGameMode(GameType.CREATIVE);
+                player.getAbilities().flying = true;
+                player.onUpdateAbilities();
                 player.teleportTo(player.serverLevel(), 119.5, 74, 129.5, 180, 35);
                 ready = true;
             });
@@ -86,14 +96,14 @@ public class AutoFieldRenderingChecks {
             });
         }
         if (checks == 2) {
-            ArienteWorld.setup.getLogger().info("AUTOFIELD RENDER CHECK PASSED: 48 complete outline vertices, close-range world frames and resource reload; Oculus={}, Embeddium={}",
+            ArienteWorld.setup.getLogger().info("AUTOFIELD RENDER CHECK PASSED: outline depth, uniform module backgrounds, stable marker lighting and resource reload; Oculus={}, Embeddium={}",
                     ModList.get().isLoaded("oculus"), ModList.get().isLoaded("embeddium"));
             mc.stop();
         }
         require(ticks < 1200, "Client never finished the field rendering check");
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void render(RenderLevelStageEvent event) throws IOException {
         if (!Boolean.getBoolean("ariente.autoFieldRenderCheck") || event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL
                 || !ready || ticks < 100 || checks == 2 || (checks == 1 && (!reloaded || ticks < reloadTick + 60))) {
@@ -102,6 +112,20 @@ public class AutoFieldRenderingChecks {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getOverlay() != null) {
             return;
+        }
+        try (NativeImage before = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+            WorldHolograms.renderWorld();
+            try (NativeImage after = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+                int changed = 0;
+                for (int y = 0; y < after.getHeight(); y += 2) {
+                    for (int x = 0; x < after.getWidth(); x += 2) {
+                        if (before.getPixelRGBA(x, y) != after.getPixelRGBA(x, y)) {
+                            changed++;
+                        }
+                    }
+                }
+                require(changed > 100, "Deferred holograms must appear in the final world framebuffer, including Fabulous mode");
+            }
         }
         require(mc.level.getBlockEntity(FIELD) instanceof AutoFieldTile, "The Tutorial automation field is missing");
         AutoFieldTile field = (AutoFieldTile) mc.level.getBlockEntity(FIELD);
@@ -113,15 +137,15 @@ public class AutoFieldRenderingChecks {
         tag.getCompound("Info").putBoolean("renderItems", false);
         outline.load(tag);
         require(outline.getFieldBox() != null, "Field markers must be loaded before auditing its outline");
-        RenderType type = RenderType.entityTranslucent(ArienteSpriteUploader.ARIENTE_ATLAS);
+        RenderType type = ArienteRenderType.FIELD_OUTLINE;
         BufferBuilder vertices = new BufferBuilder(4096);
         vertices.begin(VertexFormat.Mode.QUADS, type.format());
         var renderer = mc.getBlockEntityRenderDispatcher().getRenderer(field);
         require(renderer != null, "The registered field renderer is missing");
-        renderer.render(outline, 0, new PoseStack(), requested -> {
+        AutoFieldRenderer.renderOutline(outline, new PoseStack(), requested -> {
             require(requested == type, "Outline must retain its entity render type and dedicated atlas");
             return vertices;
-        }, 0, OverlayTexture.NO_OVERLAY);
+        });
         var rendered = vertices.end();
         try {
             require(rendered.drawState().vertexCount() == 48, "A field outline must have 12 four-vertex beams");
@@ -156,6 +180,7 @@ public class AutoFieldRenderingChecks {
             rendered.release();
         }
         BeamRenderingChecks.check(mc);
+        DisplayTransparencyChecks.check(mc);
         Path output = Path.of("screenshots");
         Files.createDirectories(output);
         try (NativeImage screenshot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {

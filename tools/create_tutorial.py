@@ -3,7 +3,7 @@
 
 Requires Java 17 in JAVA_HOME. The generated world and server logs stay under
 build/tutorial. Supply --saves to install the verified save in a Minecraft client.
-Existing installed saves are never overwritten. Run --verify to check persistence
+Use --replace to explicitly replace an existing Tutorial save. Run --verify to check persistence
 by restarting the generated server world before installing it.
 """
 import argparse
@@ -21,18 +21,23 @@ def main():
     parser.add_argument('--directory', type=Path, default=ROOT / 'build/tutorial/server')
     parser.add_argument('--saves', type=Path, help='Minecraft saves directory to install Tutorial into')
     parser.add_argument('--verify', action='store_true', help='restart and verify the completed server world')
+    parser.add_argument('--replace', action='store_true', help='replace existing Tutorial worlds without a backup')
     args = parser.parse_args()
     directory = args.directory.resolve()
     world = directory / 'Tutorial'
     destination = args.saves.resolve() / 'Tutorial' if args.saves else None
-    if destination and destination.exists():
+    if destination and (destination == world or destination in world.parents or world in destination.parents):
+        parser.error('The installed save must be separate from the authoring world')
+    if destination and destination.exists() and not args.replace:
         parser.error(f'Refusing to overwrite an existing save: {destination}')
     if args.verify:
         if not (world / 'Tutorial.complete').is_file():
             parser.error(f'No completed Tutorial map to verify: {world}')
     else:
         if world.exists():
-            parser.error(f'Refusing to overwrite an existing server world: {world}')
+            if not args.replace:
+                parser.error(f'Refusing to overwrite an existing server world: {world}')
+            shutil.rmtree(world)
         directory.mkdir(parents=True, exist_ok=True)
         generator = json.dumps({
             'layers': [{'block': 'minecraft:air', 'height': 1}],
@@ -64,6 +69,8 @@ def main():
         return 1
     if destination:
         destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.exists():
+            shutil.rmtree(destination)
         shutil.copytree(world, destination, ignore=shutil.ignore_patterns('session.lock'))
         print(f'Installed verified save: {destination}')
     else:

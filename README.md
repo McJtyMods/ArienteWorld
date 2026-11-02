@@ -67,8 +67,8 @@ underground flux-cart clearance and loot balance in Minecraft.
 `tools/create_tutorial.py` authors a separate Forge 1.20.1 world named **Tutorial**.
 It uses a void Overworld, a 144×144 city platform aligned around city-center
 chunk (8, 8), and a flat 48×48 teaching plaza in chunks (7–9, 7–9). The outer 72 chunks
-use ArienteWorld's city generator, with parks, buildings and levitator corridors. Numbered
-signs and a lectern guide explain power, automation, both constructors, storage,
+use ArienteWorld's city generator, with parks, buildings and levitator corridors. Numbered Ariente text
+displays and a lectern guide explain power, automation, both constructors, storage,
 forcefields, keycard doors, wireless controls, an elevator, flux vehicles and the
 Warper. The city AI Core is explicitly identified as a dimension-specific exhibit;
 its city behavior runs in Ariente, which the charged Warper can reach.
@@ -83,12 +83,40 @@ python3 tools/create_tutorial.py --verify --saves ../workspace/run/saves
 The first command builds under `build/tutorial/server`. The second restarts that
 world, checks persistence and installs it in the development client's saves list.
 Use `--directory` for another authoring directory or `--saves` for another client.
-Existing worlds are never overwritten. All 31 registered block-entity types are
-represented, including multipart nodes; the authoring run checks real power,
-recirculating items, crafted circuits, shield panels and wireless signals before
-saving. Fuel barrels and return hoppers keep the live exhibits running. The cart runs on
+Existing worlds are protected unless `--replace` is supplied. For example,
+`python3 tools/create_tutorial.py --verify --replace --saves ../workspace/run/saves`
+replaces the installed Tutorial after verification succeeds, without a backup.
+All registered block-entity types are represented, including multipart nodes.
+The authoring run checks real power, smelting, fuel routing, sorted storage,
+crafted circuits, shield panels, display layouts and wireless signals before saving.
+Fuel barrels keep the main power exhibit running. The cart runs on
 an exposed four-bend loop; door markers sit above the walking floor. Copy the
 save before experimenting. The authoring sources are excluded from release jars.
+Cheats are enabled in the saved world, allowing `/gamemode survival` and
+`/gamemode creative` without opening to LAN. The WELCOME display sits in front
+of the spawn point facing the arriving player. Welcome supplies use a Holo
+Storage Cube; the manual Constructor's four ingredients use an Ariente Storage
+Cube. The keycard door and its reader-facing lock sit just behind station 05's
+display. Station 04's reader-facing wireless switch is beside its display and
+outside the shield railing. Station 01 has a six-base, four-block-tall display
+with live meters and history modules for both generators, on a 70% transparent
+surface. The AI Core demo alarm faces the reader on the front of its support.
+
+The automation station takes four item types at a time in the original 2x2
+Storage Cube. Recipe-aware input categories route all furnace inputs to a Smelter,
+with two dedicated three-tank generators and a separate overhead combined-flux bus.
+Negarite and Posirite dust, including dust smelted from their ores, refuel those
+generators. Three Holo Storage Cubes receive non-smeltable wood, tagged ingots and
+other items. Fuel dust is explicitly excluded from storage. Logs become charcoal;
+planks go to Wood. Full destinations leave their backlog in the source. The saved
+world starts with a fresh input batch, and the welcome Holo Storage contains more samples.
+
+Booth 10, west of the center, compares three four-base, three-block-tall displays:
+transparent cyan with a border, solid pale green without a border, and invisible
+amber without a border. Live modules demonstrate power numbers, meters, history,
+inventory lists and grids alongside different text sizes. All teaching labels use
+installed Text Modules. Click bases/modules to configure, or hold right-click and
+drag a module to rearrange it. The welcome Holo Storage includes spare display components.
 
 For screenshots, copy the completed save to
 `build/tutorial/client/saves/Tutorial` and run from the multiworkspace root:
@@ -98,15 +126,21 @@ For screenshots, copy the completed save to
 ```
 
 The preview uses its own copy and writes city, plaza, bend, beam, elevator and
-cockpit images under `build/tutorial/screenshots`. Add `-Ptutorial_fabulous` to
+cockpit, display-booth, automation and category-filter images under `build/tutorial/screenshots`. Add `-Ptutorial_fabulous` to
 check vanilla Fabulous graphics, or `-Ptutorial_render_mods` for Embeddium/Oculus.
 Use `-Ptutorial_client_directory=<directory>` for a separate client profile.
+Use `-Ptutorial_scene=6` to start at the display booth, or `-Ptutorial_scene=8`
+to start at the category-filter panel. Start at `-Ptutorial_scene=9` to check
+the spawn view, both gamemode commands, the power monitors, construction,
+forcefield controls and the keycard door.
 
 To check the automation field renderer at close range, put a disposable copy of
 Tutorial under `build/verification/autofield-vanilla/saves/Tutorial` and run
 `./gradlew -I ArienteWorld/tools/autofield_rendering.gradle -Pariente_runs :ArienteWorld:runClient`
-from the workspace root. This checks all 48 outline vertices, beam depth ordering
-against translucent surfaces, real world frames and a resource reload.
+from the workspace root. This checks all 48 outline vertices, beam depth ordering,
+uniform populated module backgrounds across display bases at three camera angles,
+constant field-marker brightness at three pitches, outline/display depth interaction,
+visible holograms in the final world framebuffer, real world frames and a resource reload. Add `-Phologram_fabulous` for Fabulous graphics.
 Add `-Pautofield_render_mods` for Embeddium/Oculus and
 `-Pautofield_check_directory=<directory>` for a separate client profile. Shader
 packs can be enabled in that profile's Oculus configuration. Screenshots go in

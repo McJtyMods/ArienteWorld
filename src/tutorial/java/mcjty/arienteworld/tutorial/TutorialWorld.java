@@ -9,11 +9,13 @@ import mcjty.ariente.blocks.generators.PowerCombinerTile;
 import mcjty.ariente.blocks.utility.AutoConstructorTile;
 import mcjty.ariente.blocks.utility.ElevatorTile;
 import mcjty.ariente.blocks.utility.LockTile;
+import mcjty.ariente.blocks.utility.SmelterTile;
 import mcjty.ariente.blocks.utility.WarperTile;
 import mcjty.ariente.blocks.utility.AlarmTile;
 import mcjty.ariente.blocks.utility.autofield.AbstractNodeTile;
 import mcjty.ariente.blocks.utility.autofield.AutoFieldTile;
 import mcjty.ariente.blocks.utility.autofield.InputItemNodeTile;
+import mcjty.ariente.blocks.utility.autofield.ItemFilterCategory;
 import mcjty.ariente.blocks.utility.autofield.NodeOrientation;
 import mcjty.ariente.blocks.utility.autofield.OutputItemNodeTile;
 import mcjty.ariente.blocks.utility.autofield.SensorItemNodeTile;
@@ -24,6 +26,12 @@ import mcjty.ariente.blocks.utility.wireless.WirelessLockTile;
 import mcjty.ariente.cables.CableColor;
 import mcjty.ariente.cables.GenericCableBlock;
 import mcjty.ariente.config.UtilityConfiguration;
+import mcjty.ariente.display.DisplayAppearance;
+import mcjty.ariente.display.DisplayBackground;
+import mcjty.ariente.display.DisplayBaseTile;
+import mcjty.ariente.display.DisplayGeometry;
+import mcjty.ariente.display.DisplayModuleItem;
+import mcjty.ariente.display.InstalledModule;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.ariente.entities.levitator.FluxLevitatorEntity;
 import mcjty.ariente.items.BlueprintItem;
@@ -43,7 +51,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -63,7 +73,6 @@ import net.minecraft.world.level.block.HopperBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
-import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -71,15 +80,15 @@ import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.IItemHandlerModifiable;
+import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -93,11 +102,23 @@ public class TutorialWorld {
     private static final BlockPos SHIELD = new BlockPos(151, 65, 119);
     private static final BlockPos CRAFTER = new BlockPos(120, 65, 134);
     private static final BlockPos COMBINER = new BlockPos(132, 65, 114);
+    private static final BlockPos POWER_DISPLAY = new BlockPos(129, 65, 120);
+    private static final BlockPos WELCOME_DISPLAY = new BlockPos(135, 65, 138);
+    private static final BlockPos WELCOME_STORAGE = new BlockPos(138, 65, 137);
+    private static final BlockPos INGREDIENT_STORAGE = new BlockPos(115, 65, 138);
+    private static final BlockPos KEYCARD_DOOR = new BlockPos(148, 65, 139);
+    private static final BlockPos KEYCARD_LOCK = new BlockPos(147, 66, 140);
+    private static final BlockPos SHIELD_BUTTON = new BlockPos(147, 66, 126);
     private static final Set<BlockPos> CABLES = new HashSet<>();
     private static int ticks;
     private static boolean running;
-    private static int[] previousItems;
-    private static int transfers;
+    private static final BlockPos INPUT = new BlockPos(115, 66, 120);
+    private static final BlockPos SMELTER = new BlockPos(120, 66, 117);
+    private static final BlockPos NEGATIVE = new BlockPos(121, 66, 120);
+    private static final BlockPos POSITIVE = new BlockPos(125, 66, 120);
+    private static final BlockPos WOOD = new BlockPos(115, 66, 114);
+    private static final BlockPos INGOTS = new BlockPos(120, 66, 114);
+    private static final BlockPos OTHER = new BlockPos(125, 66, 114);
 
     @SubscribeEvent
     public static void start(ServerStartedEvent event) throws IOException {
@@ -109,6 +130,11 @@ public class TutorialWorld {
         var marker = server.getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete");
         if (Boolean.getBoolean("ariente.tutorial.verify")) {
             require(Files.exists(marker), "Verification requires a completed Tutorial map");
+            // The saved introduction batch is for players; restart the deterministic verification batch.
+            IItemHandler source = inventory(level, INPUT);
+            for (int slot = 0; slot < source.getSlots(); slot++) {
+                source.extractItem(slot, 64, false);
+            }
         } else {
             require(!Files.exists(marker), "Refusing to overwrite a completed Tutorial map");
             require(level.getBlockState(SPAWN.below()).isAir(), "Refusing to overwrite an existing platform");
@@ -121,6 +147,22 @@ public class TutorialWorld {
         }
         running = true;
         ArienteWorld.setup.getLogger().info("TUTORIAL: platform ready; observing real machine ticks");
+    }
+
+    @SubscribeEvent
+    public static void stopped(ServerStoppedEvent event) throws IOException {
+        if (!Boolean.getBoolean("ariente.tutorial")) {
+            return;
+        }
+        var root = event.getServer().getWorldPath(LevelResource.ROOT);
+        if (Files.exists(root.resolve("Tutorial.complete"))) {
+            // Dedicated servers create saves with cheats disabled. Enable them for the singleplayer tutorial.
+            var levelFile = root.resolve("level.dat").toFile();
+            CompoundTag saved = NbtIo.readCompressed(levelFile);
+            saved.getCompound("Data").putBoolean("allowCommands", true);
+            NbtIo.writeCompressed(saved, levelFile);
+            ArienteWorld.setup.getLogger().info("TUTORIAL: saved world permits survival/creative commands");
+        }
     }
 
     private static void build(ServerLevel level) {
@@ -137,6 +179,7 @@ public class TutorialWorld {
         platform(level);
         power(level);
         automation(level);
+        displays(level);
         crafting(level);
         shield(level);
         doors(level);
@@ -214,8 +257,16 @@ public class TutorialWorld {
         for (int y = 62; y <= 64; y++) {
             cable(level, new BlockPos(132, y, 114), CableColor.COMBINED, y == 64);
         }
-        label(level, 130, 65, 120, "01 / POWER", "Blue + red flux", "8 tanks per tower", "Fuel barrels north");
-        label(level, 134, 65, 120, "POWER COMBINER", "6,000 in each", "5,880 out each", "2% combining loss");
+        DisplayBaseTile[] screen = displayRow(level, POWER_DISPLAY, 6, 4,
+                new DisplayAppearance(DisplayBackground.TRANSPARENT, 0x102c3b, 70, true));
+        install(screen[0], text("01 / POWER", 2, 0xd2faff), 4, 4);
+        install(screen[3], text("8 tanks per tower\nFuel barrels north", 1, 0xd2faff), 4, 4);
+        install(screen[0], text("Combiner: 6,000/t in -> 5,880/t out each / 2% loss", 1, 0xd2faff), 4, 40);
+        for (int column : new int[]{0, 3}) {
+            BlockPos generator = new BlockPos(column == 0 ? 130 : 134, 65, 114);
+            install(screen[column], powerModule(level, generator, 1), 24, 72);
+            install(screen[column], powerModule(level, generator, 2), 24, 144);
+        }
         // The inspection hatch exposes the actual supply rather than decorative cabling.
         for (int z = 115; z <= 123; z++) {
             cable(level, new BlockPos(132, 62, z), CableColor.COMBINED, false);
@@ -243,43 +294,183 @@ public class TutorialWorld {
     private static void automation(ServerLevel level) {
         put(level, FIELD, Registration.AUTOMATION_FIELD.get());
         AutoFieldTile field = (AutoFieldTile) level.getBlockEntity(FIELD);
-        field.setHeight(5);
-        for (int x = 114; x <= 124; x++) {
-            for (int z = 114; z <= 120; z++) {
+        field.setHeight(7);
+        for (int x = 114; x <= 126; x++) {
+            for (int z = 113; z <= 121; z++) {
                 part(level, new BlockPos(x, 65, z), Registration.FIELD_MARKER.get().defaultBlockState(), PartSlot.DOWN);
             }
         }
         supply(level, FIELD);
-        // Source at y=66; destination hoppers at y=66 return items to it by gravity.
-        BlockPos source = new BlockPos(115, 66, 117);
-        put(level, source, Blocks.BARREL);
-        ((Container) level.getBlockEntity(source)).setItem(0, new ItemStack(Items.IRON_INGOT, 64));
-        ((Container) level.getBlockEntity(source)).setItem(1, new ItemStack(Items.IRON_INGOT, 64));
-        BlockPos outputPos = source.north();
-        OutputItemNodeTile output = (OutputItemNodeTile) node(level, outputPos, Registration.OUTPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
-        output.getOutputFilter().set(0, new ItemStack(Items.IRON_INGOT));
-        part(level, outputPos, Registration.ROUND_ROBIN_NODE.get().defaultBlockState()
+        put(level, INPUT, Registration.STORAGE.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH));
+        OutputItemNodeTile output = (OutputItemNodeTile) node(level, INPUT.north(), Registration.OUTPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
+        CompoundTag tag = output.saveWithoutMetadata();
+        tag.getCompound("Info").putBoolean("outBlacklist", true);
+        output.load(tag);
+        part(level, INPUT.north(), Registration.ROUND_ROBIN_NODE.get().defaultBlockState()
                 .setValue(AbstractNodeTile.ORIENTATION, NodeOrientation.SOUTH_DE), PartSlot.SOUTH_DE_BACK);
-        for (int x = 116; x <= 123; x++) {
-            put(level, new BlockPos(x, 66, 117), Blocks.HOPPER.defaultBlockState().setValue(HopperBlock.FACING, Direction.WEST));
-        }
-        for (int x : new int[]{120, 123}) {
-            BlockPos barrel = new BlockPos(x, 67, 117);
-            put(level, barrel, Blocks.BARREL);
-            InputItemNodeTile input = (InputItemNodeTile) node(level, barrel.north(), Registration.INPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
-            input.getInputFilter().set(0, new ItemStack(Items.IRON_INGOT));
-        }
-        SensorItemNodeTile sensor = (SensorItemNodeTile) node(level, source.south(), Registration.SENSOR_ITEM_NODE.get(), NodeOrientation.NORTH_DE);
-        CompoundTag tag = sensor.saveWithoutMetadata();
+        SensorItemNodeTile sensor = (SensorItemNodeTile) node(level, INPUT.south(), Registration.SENSOR_ITEM_NODE.get(), NodeOrientation.NORTH_DE);
+        tag = sensor.saveWithoutMetadata();
         tag.getCompound("Info").putInt("op", 3);
         tag.getCompound("Info").putInt("amount", 1);
         sensor.load(tag);
-        // The white sensor signal gates the output: items move only while source >= 1.
         tag = output.saveWithoutMetadata();
         tag.getCompound("Info").putInt("f0", 0);
         output.load(tag);
-        label(level, 115, 65, 123, "02 / AUTOMATION", "Output = extract", "Input = insert", "Iron loops forever");
-        label(level, 120, 65, 123, "MARKED COLUMNS", "Round robin: A/B", "Sensor: source >=1", "Hoppers return iron");
+
+        put(level, SMELTER, Registration.SMELTER.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
+        categoryInput(level, SMELTER.west(), NodeOrientation.EAST_DN, ItemFilterCategory.SMELTABLE);
+        OutputItemNodeTile products = (OutputItemNodeTile) node(level, SMELTER.north(), Registration.OUTPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
+        tag = products.saveWithoutMetadata();
+        tag.getCompound("Info").putBoolean("outBlacklist", true);
+        products.load(tag);
+        BlockPos combiner = new BlockPos(123, 66, 120);
+        put(level, combiner, Registration.POWER_COMBINER.get());
+        ((PowerCombinerTile) level.getBlockEntity(combiner)).setPowerTransfer(2500);
+        for (boolean negative : new boolean[]{true, false}) {
+            BlockPos generator = negative ? NEGATIVE : POSITIVE;
+            put(level, generator, (negative ? Registration.NEGARITE_GENERATOR : Registration.POSIRITE_GENERATOR).get());
+            ((GenericTileEntity) level.getBlockEntity(generator)).setRSMode(RedstoneMode.REDSTONE_IGNORED);
+            stock(level, generator, new ItemStack((negative ? Registration.DUST_NEGARITE : Registration.DUST_POSIRITE).get(), 16));
+            for (int y = 1; y <= 3; y++) {
+                put(level, generator.above(y), (negative ? Registration.NEGARITE_TANK : Registration.POSIRITE_TANK).get());
+            }
+            cable(level, generator.offset(negative ? 1 : -1, 0, 0), negative ? CableColor.NEGARITE : CableColor.POSIRITE, true);
+            InputItemNodeTile fuel = (InputItemNodeTile) node(level, generator.south(), Registration.INPUT_ITEM_NODE.get(), NodeOrientation.NORTH_DE);
+            fuel.getInputFilter().set(0, new ItemStack((negative ? Registration.DUST_NEGARITE : Registration.DUST_POSIRITE).get()));
+        }
+        // A visible overhead yellow bus keeps this smelter supply separate from the plaza bus.
+        for (int y = 67; y <= 69; y++) {
+            cable(level, new BlockPos(123, y, 120), CableColor.COMBINED, y == 67);
+            cable(level, new BlockPos(120, y, 117), CableColor.COMBINED, y == 67);
+        }
+        for (int z = 117; z <= 120; z++) {
+            cable(level, new BlockPos(123, 69, z), CableColor.COMBINED, false);
+        }
+        for (int x = 120; x <= 123; x++) {
+            cable(level, new BlockPos(x, 69, 117), CableColor.COMBINED, false);
+        }
+        for (BlockPos destination : new BlockPos[]{WOOD, INGOTS, OTHER}) {
+            Block block = destination.equals(WOOD) ? Registration.HOLO_STORAGE_1.get()
+                    : destination.equals(INGOTS) ? Registration.HOLO_STORAGE_2.get() : Registration.HOLO_STORAGE_3.get();
+            put(level, destination, block);
+            categoryInput(level, destination.south(), NodeOrientation.NORTH_DE,
+                    destination.equals(WOOD) ? ItemFilterCategory.WOOD : destination.equals(INGOTS) ? ItemFilterCategory.INGOTS : ItemFilterCategory.OTHER);
+        }
+        label(level, 115, 67, 120, "INPUT / 2x2", "Four types at a time");
+        label(level, 115, 67, 114, "WOOD", "Non-smeltable wood");
+        label(level, 120, 67, 114, "INGOTS", "All tagged metals");
+        label(level, 125, 67, 114, "VARIOUS", "Other finished items");
+        label(level, 115, 65, 123, "02 / AUTOMATION", "2x2 cube: add items", "Output = extract", "Sensor: source >=1");
+        label(level, 120, 65, 123, "SMELT + REFUEL", "Recipes -> smelter", "Dust -> generators", "Own overhead power");
+        label(level, 125, 65, 123, "SORTED STORAGE", "Wood / ingots / other", "Full? Wait in source", "Logs smelt to charcoal");
+    }
+
+    private static void categoryInput(ServerLevel level, BlockPos pos, NodeOrientation orientation, ItemFilterCategory category) {
+        InputItemNodeTile input = (InputItemNodeTile) node(level, pos, Registration.INPUT_ITEM_NODE.get(), orientation);
+        input.getInputFilter().set(0, new ItemStack(Registration.DUST_NEGARITE.get()));
+        input.getInputFilter().set(1, new ItemStack(Registration.DUST_POSIRITE.get()));
+        CompoundTag tag = input.saveWithoutMetadata();
+        tag.getCompound("Info").putBoolean("inBlacklist", true);
+        input.load(tag);
+        input.setInputCategory(category);
+    }
+
+    private static void displays(ServerLevel level) {
+        // Three independent four-base screens, with a walkway between the booth and its instructions.
+        DisplayBaseTile[] glass = displayRow(level, new BlockPos(114, 65, 126), 4, 3,
+                new DisplayAppearance(DisplayBackground.TRANSPARENT, 0x64dce8, 78, true));
+        install(glass[0], text("LIVE / PROCESSING", 2, 0x83f2ff), 4, 4);
+        install(glass[0], text("Meter + inventory list", 1, 0xffffff), 4, 40);
+        install(glass[0], powerModule(level, SMELTER, 1), 0, 68);
+        install(glass[2], storageModule(level, INGOTS, false), 0, 68);
+        install(glass[0], text("Transparent 78% / cyan / border", 1, 0x83f2ff), 4, 164);
+
+        DisplayBaseTile[] solid = displayRow(level, new BlockPos(119, 65, 126), 4, 3,
+                new DisplayAppearance(DisplayBackground.SOLID, 0xe8eee3, 0, false));
+        install(solid[0], text("STORAGE / GRID", 2, 0x123c32), 4, 4);
+        install(solid[0], text("Icons + compact power numbers", 1, 0x123c32), 4, 40);
+        ItemStack grid = storageModule(level, OTHER, true);
+        DisplayModuleItem.config(grid).putInt("Color", 0x123c32);
+        install(solid[0], grid, 4, 68);
+        ItemStack numbers = powerModule(level, NEGATIVE, 0);
+        DisplayModuleItem.config(numbers).putInt("Color", 0x123c32);
+        install(solid[2], numbers, 4, 68);
+        install(solid[0], text("Solid / light green / no border", 1, 0x123c32), 4, 164);
+
+        DisplayBaseTile[] floating = displayRow(level, new BlockPos(124, 65, 126), 4, 3,
+                new DisplayAppearance(DisplayBackground.INVISIBLE, 0xffffff, 100, false));
+        install(floating[0], text("FLUX HISTORY", 2, 0xffc36b), 4, 4);
+        install(floating[0], text("Live generator output / 32 seconds", 1, 0xffe3bc), 4, 40);
+        install(floating[0], powerModule(level, POSITIVE, 2), 0, 68);
+        install(floating[2], powerModule(level, POSITIVE, 0), 4, 68);
+        install(floating[0], text("Invisible / amber / no border", 1, 0xffc36b), 4, 164);
+        label(level, 121, 65, 131, "10 / DISPLAYS", "Click base: surface", "Click module: settings", "Hold + drag: layout");
+    }
+
+    private static ItemStack text(String text, int scale, int color) {
+        ItemStack stack = new ItemStack(Registration.DISPLAY_TEXT.get());
+        CompoundTag config = DisplayModuleItem.config(stack);
+        config.putString("Text", text);
+        config.putInt("Scale", scale);
+        config.putInt("Color", color);
+        return stack;
+    }
+
+    private static ItemStack linkedModule(ServerLevel level, Item item, BlockPos target) {
+        ItemStack stack = new ItemStack(item);
+        CompoundTag link = new CompoundTag();
+        link.putString("Dimension", level.dimension().location().toString());
+        link.putLong("Pos", target.asLong());
+        link.putInt("Side", Direction.UP.get3DDataValue());
+        link.putString("Block", ForgeRegistries.BLOCKS.getKey(level.getBlockState(target).getBlock()).toString());
+        DisplayModuleItem.config(stack).put("Link", link);
+        return stack;
+    }
+
+    private static ItemStack powerModule(ServerLevel level, BlockPos target, int mode) {
+        ItemStack stack = linkedModule(level, Registration.DISPLAY_POWER.get(), target);
+        CompoundTag config = DisplayModuleItem.config(stack);
+        config.putInt("Mode", mode);
+        config.putBoolean("Available", true);
+        config.putBoolean("Usage", target.equals(SMELTER));
+        config.putBoolean("Output", !target.equals(SMELTER));
+        config.putBoolean("Fuel", !target.equals(SMELTER));
+        return stack;
+    }
+
+    private static ItemStack storageModule(ServerLevel level, BlockPos target, boolean grid) {
+        ItemStack stack = linkedModule(level, Registration.DISPLAY_STORAGE.get(), target);
+        CompoundTag config = DisplayModuleItem.config(stack);
+        config.putInt("Count", grid ? 8 : 3);
+        config.putInt("Columns", 4);
+        config.putBoolean("Grid", grid);
+        return stack;
+    }
+
+    private static DisplayBaseTile[] displayRow(ServerLevel level, BlockPos left, int width, int height, DisplayAppearance appearance) {
+        DisplayBaseTile[] bases = new DisplayBaseTile[width];
+        for (int column = 0; column < width; column++) {
+            BlockPos pos = left.east(column);
+            require(level.isEmptyBlock(pos), "Display overlaps another exhibit at " + pos);
+            put(level, pos, Registration.DISPLAY_BASE.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
+            DisplayBaseTile base = (DisplayBaseTile) level.getBlockEntity(pos);
+            CompoundTag tag = base.saveWithoutMetadata();
+            tag.putInt("Height", height);
+            appearance.write(tag);
+            base.load(tag);
+            base.changed();
+            bases[column] = base;
+        }
+        return bases;
+    }
+
+    private static void install(DisplayBaseTile base, ItemStack stack, int x, int y) {
+        InstalledModule module = new InstalledModule(stack, x, y);
+        require(DisplayGeometry.canPlace(base, module.size(), x, y), "Module does not fit its tutorial display at " + base.getBlockPos());
+        CompoundTag tag = base.saveWithoutMetadata();
+        tag.getList("Modules", Tag.TAG_COMPOUND).add(module.save(false));
+        base.load(tag);
+        base.changed();
     }
 
     private static void crafting(ServerLevel level) {
@@ -300,14 +491,10 @@ public class TutorialWorld {
         stock(level, storage, new ItemStack(Registration.DUST_SILICON.get(), 64), new ItemStack(Registration.INGOT_MANGANESE.get(), 64),
                 new ItemStack(Registration.DUST_NEGARITE.get(), 64), new ItemStack(Registration.DUST_POSIRITE.get(), 64));
         // Give the player materials to take; the manual constructor uses PLAYER inventory.
-        BlockPos ingredients = new BlockPos(115, 65, 138);
-        put(level, ingredients, Blocks.BARREL);
-        Container container = (Container) level.getBlockEntity(ingredients);
-        container.setItem(0, new ItemStack(Registration.DUST_SILICON.get(), 64));
-        container.setItem(1, new ItemStack(Registration.INGOT_MANGANESE.get(), 64));
-        container.setItem(2, new ItemStack(Registration.DUST_NEGARITE.get(), 64));
-        container.setItem(3, new ItemStack(Registration.DUST_POSIRITE.get(), 64));
-        label(level, 115, 65, 141, "03 / CONSTRUCTION", "Take barrel inputs", "Open constructor", "Double-click circuit");
+        put(level, INGREDIENT_STORAGE, Registration.STORAGE.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH));
+        stock(level, INGREDIENT_STORAGE, new ItemStack(Registration.DUST_SILICON.get(), 64), new ItemStack(Registration.INGOT_MANGANESE.get(), 64),
+                new ItemStack(Registration.DUST_NEGARITE.get(), 64), new ItemStack(Registration.DUST_POSIRITE.get(), 64));
+        label(level, 115, 65, 141, "03 / CONSTRUCTION", "Take storage inputs", "Open constructor", "Double-click circuit");
         label(level, 121, 65, 141, "AUTO CONSTRUCTOR", "Adjacent blueprints", "Both fluxes below", "Outputs: circuits");
     }
 
@@ -321,9 +508,10 @@ public class TutorialWorld {
         BlockPos receiverPos = SHIELD.north();
         put(level, receiverPos, Registration.SIGNAL_RECEIVER.get().defaultBlockState()
                 .setValue(BlockStateProperties.FACING, Direction.NORTH));
-        BlockPos buttonPos = new BlockPos(145, 65, 119);
-        put(level, buttonPos, Registration.WIRELESS_BUTTON.get());
-        WirelessButtonTile button = (WirelessButtonTile) level.getBlockEntity(buttonPos);
+        level.setBlock(SHIELD_BUTTON.north().below(), marble(MarbleColor.DARKBLUE), Block.UPDATE_ALL);
+        level.setBlock(SHIELD_BUTTON.north(), marble(MarbleColor.DARKBLUE), Block.UPDATE_ALL);
+        put(level, SHIELD_BUTTON, Registration.WIRELESS_BUTTON.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH));
+        WirelessButtonTile button = (WirelessButtonTile) level.getBlockEntity(SHIELD_BUTTON);
         button.setLocked(true);
         ((SignalReceiverTile) level.getBlockEntity(receiverPos)).setChannel(button.getChannel(false));
         for (int x = 147; x <= 155; x++) {
@@ -333,7 +521,7 @@ public class TutorialWorld {
                 }
             }
         }
-        label(level, 149, 65, 126, "04 / FORCEFIELD", "Radius 3 shield", "Keep outside rail", "Button west toggles");
+        label(level, 149, 65, 126, "04 / FORCEFIELD", "Radius 3 shield", "Keep outside rail", "Button left toggles");
     }
 
     private static void doorFrame(ServerLevel level, int x, int z) {
@@ -348,18 +536,18 @@ public class TutorialWorld {
     }
 
     private static void doors(ServerLevel level) {
-        doorFrame(level, 148, 134);
-        BlockPos lockPos = new BlockPos(146, 65, 134);
-        put(level, lockPos, Registration.LOCK.get());
-        LockTile lock = (LockTile) level.getBlockEntity(lockPos);
+        doorFrame(level, KEYCARD_DOOR.getX(), KEYCARD_DOOR.getZ());
+        put(level, KEYCARD_LOCK, Registration.LOCK.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH));
+        LockTile lock = (LockTile) level.getBlockEntity(KEYCARD_LOCK);
         lock.setHorizontalRange(3);
         lock.setVerticalRange(3);
         lock.setKeyId("Tutorial");
         lock.setLocked(true);
         BlockPos alarmPos = new BlockPos(154, 66, 134);
-        level.setBlock(alarmPos.south(), marble(MarbleColor.DARKBLUE), Block.UPDATE_ALL);
+        level.setBlock(alarmPos, marble(MarbleColor.DARKBLUE), Block.UPDATE_ALL);
+        alarmPos = alarmPos.south();
         put(level, alarmPos, Registration.ALARM.get().defaultBlockState()
-                .setValue(BlockStateProperties.FACING, Direction.NORTH));
+                .setValue(BlockStateProperties.FACING, Direction.SOUTH));
         ((AlarmTile) level.getBlockEntity(alarmPos)).setAlarmType(AlarmType.SAFE);
         put(level, new BlockPos(155, 65, 138), Registration.AICORE.get());
         ((AICoreTile) level.getBlockEntity(new BlockPos(155, 65, 138))).setCityName("Tutorial exhibit");
@@ -459,15 +647,17 @@ public class TutorialWorld {
         tag.putString("author", "Ariente");
         ListTag pages = new ListTag();
         for (String page : new String[]{
-                "Welcome to Tutorial!\n\nA 9 x 9 chunk city platform in the void. The central 3 x 3 chunks contain the teaching stations.\n\nStart north at Power, then follow the numbered signs. The supply barrel beside this lectern contains tools and the full manual.",
+                "Welcome to Tutorial!\n\nA 9 x 9 chunk city platform in the void. The central 3 x 3 chunks contain the teaching stations.\n\nStart north at Power, then follow the numbered displays. The Holo Storage beside this lectern contains tools and the full manual.",
                 "01 POWER (north)\n\nEach generator has eight matching tanks and a fuel barrel feeding a hopper. Blue = Negarite; red = Posirite. Each tank adds 1,000 flux/tick.\n\nThe combiner takes 6,000 of each and outputs 5,880 of each to the buried yellow network. The glass hatch shows its route.",
-                "02 ITEMS (northwest)\n\nOutput nodes EXTRACT; input nodes INSERT. Both filter iron. The round-robin modifier alternates destinations.\n\nA sensor gates extraction while the source contains items. Hoppers return iron to the source, so this exhibit recirculates. Open the field controller to see its height and outline.",
-                "03 CRAFTING (west)\n\nTake four ingredients from the barrel into YOUR inventory. Open the manual Constructor and double-click the circuit blueprint.\n\nThe Auto Constructor has its own ingredients, power and an adjacent Blueprint Storage. Inspect its circuit outputs. Extra materials are in the Ariente Storage.",
-                "04 SHIELD (northeast)\n\nA working radius-3 forcefield is behind the rail. Stay outside: active shield panels hurt.\n\nUse the wireless button WEST of the railing to switch it off before approaching the generator. Right-click the generator to change radius or redstone mode. Increase power for larger shields.",
-                "05 SECURITY (east)\n\nTake the Tutorial keycard from the welcome barrel. Use it on the lock, then walk near the door. The invisible door blocks belong to the marker under the opening.\n\nThe AI Core and safe Alarm show city equipment. AI behavior belongs to the Ariente dimension; this Overworld exhibit does not spawn defenders.",
+                "02 ITEMS (northwest)\n\nPut up to four item types in the 2x2 input cube. Output nodes EXTRACT; input nodes INSERT. A sensor enables extraction when items are present.\n\nSmeltables go to the Smelter. Its own fuel towers and overhead bus supply power. Both raw ores and dust can be added: smelted fuel dust feeds its matching generator.",
+                "02 SORTING\n\nNon-smeltables go to Wood, Ingots or Various holo cubes. Categories follow current furnace recipes and item tags. Fuel dust is excluded from storage.\n\nLogs smelt to charcoal; planks go to Wood. If the smelter or destination fills, items wait safely in the input. Add more supplies to keep processing. The welcome storage has sample batches.",
+                "10 DISPLAYS (west of center)\n\nThree independent joined screens show transparent cyan, solid pale green and invisible amber surfaces. Each is four bases wide and three blocks tall.\n\nCompare text sizes, a power meter, numbers, live history, storage lists and item grids. Click a base or module to configure; hold right-click and drag to rearrange modules.",
+                "03 CRAFTING (west)\n\nTake four ingredients from the Storage Cube into YOUR inventory. Open the manual Constructor and double-click the circuit blueprint.\n\nThe Auto Constructor has its own ingredients, power and an adjacent Blueprint Storage. Inspect its circuit outputs. Extra materials are in the Ariente Storage.",
+                "04 SHIELD (northeast)\n\nA working radius-3 forcefield is behind the rail. Stay outside: active shield panels hurt.\n\nUse the wireless button beside the display to switch it off before approaching the generator. Right-click the generator to change radius or redstone mode. Increase power for larger shields.",
+                "05 SECURITY (east)\n\nTake the Tutorial keycard from the welcome storage. Use it on the lock, then walk near the door. The invisible door blocks belong to the marker under the opening.\n\nThe AI Core and safe Alarm show city equipment. AI behavior belongs to the Ariente dimension; this Overworld exhibit does not spawn defenders.",
                 "06 WIRELESS (southwest)\n\nThe left wireless button controls a lamp and the nearby Wireless Lock. Walk near the door after unlocking.\n\nThe right lever supplies the transmitter; its remote receiver controls the southern lamp. These are separate pre-linked channels. Use the tablet to copy/reassign channels.",
                 "07 ELEVATOR (southeast)\n\nWalk onto the beam and choose a floor in its hologram. The upper Level Marker provides the observation-deck stop.\n\nElevators do not consume flux.\n\n08 TRANSPORT (south)\nBoard the cart and use its holograms. The track includes a bend. Try the Flux Ship from its landing pad.",
-                "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCreative mode, daylight, no natural mob spawning and keep-inventory are enabled for teaching. The surrounding 72 chunks use ArienteWorld city generation, including buildings, parks and levitator corridors. Copy this save before experimenting."
+                "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCheats are enabled: /gamemode survival or /gamemode creative. Daylight, no natural mob spawning and keep-inventory are enabled for teaching. The surrounding 72 chunks use ArienteWorld city generation, including buildings, parks and levitator corridors. Copy this save before experimenting."
         }) {
             pages.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(page))));
         }
@@ -480,32 +670,30 @@ public class TutorialWorld {
         put(level, lectern, Blocks.LECTERN.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
         ((LecternBlockEntity) level.getBlockEntity(lectern)).setBook(guide());
         level.setBlock(lectern, level.getBlockState(lectern).setValue(BlockStateProperties.HAS_BOOK, true), Block.UPDATE_ALL);
-        BlockPos supplies = new BlockPos(138, 65, 137);
-        put(level, supplies, Blocks.BARREL);
-        Container barrel = (Container) level.getBlockEntity(supplies);
-        barrel.setItem(0, guide());
+        put(level, WELCOME_STORAGE, Registration.HOLO_STORAGE_1.get());
         ItemStack card = new ItemStack(Registration.KEY_CARD.get());
         KeyCardItem.addSecurityTag(card, "Tutorial");
         card.setHoverName(Component.literal("Tutorial door key"));
-        barrel.setItem(1, card);
-        barrel.setItem(2, new ItemStack(Registration.TABLET.get()));
-        barrel.setItem(3, new ItemStack(Registration.FLUX_LEVITATOR.get()));
-        barrel.setItem(4, new ItemStack(Registration.FLUX_SHIP.get()));
         ItemStack manual = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation("patchouli", "guide_book")));
         manual.getOrCreateTag().putString("patchouli:book", "ariente:manual");
-        barrel.setItem(5, manual);
-        int slot = 6;
+        stock(level, WELCOME_STORAGE, guide(), card, new ItemStack(Registration.TABLET.get()),
+                new ItemStack(Registration.FLUX_LEVITATOR.get()), new ItemStack(Registration.FLUX_SHIP.get()), manual);
         for (Item item : new Item[]{Registration.POWERSUIT_HEAD.get(), Registration.POWERSUIT_CHEST.get(), Registration.POWERSUIT_LEGS.get(),
                 Registration.POWERSUIT_FEET.get(), Registration.ENERGY_HOLDER.get(), Registration.ENERGY_LANCE.get(), Registration.ENERGY_SABRE.get()}) {
-            barrel.setItem(slot++, new ItemStack(item));
+            stock(level, WELCOME_STORAGE, new ItemStack(item));
         }
-        barrel.setItem(slot++, new ItemStack(Registration.DUST_NEGARITE.get(), 64));
-        barrel.setItem(slot, new ItemStack(Registration.DUST_POSIRITE.get(), 64));
+        stock(level, WELCOME_STORAGE, new ItemStack(Registration.DUST_NEGARITE.get(), 64), new ItemStack(Registration.DUST_POSIRITE.get(), 64));
+        for (Item item : new Item[]{Items.RAW_IRON, Items.SAND, Items.OAK_PLANKS, Items.DIAMOND, Items.RAW_GOLD,
+                Items.OAK_LOG, Registration.ORE_NEGARITE.get().asItem(), Registration.ORE_POSIRITE.get().asItem()}) {
+            stock(level, WELCOME_STORAGE, new ItemStack(item, 16));
+        }
+        stock(level, WELCOME_STORAGE, new ItemStack(Registration.DISPLAY_BASE.get(), 8), text("Your display\nClick to edit", 1, 0x83f2ff),
+                new ItemStack(Registration.DISPLAY_POWER.get()), new ItemStack(Registration.DISPLAY_STORAGE.get()));
         BlockPos warper = new BlockPos(140, 64, 132);
         put(level, warper, Registration.WARPER.get());
         ((WarperTile) level.getBlockEntity(warper)).setCharges(UtilityConfiguration.WARPER_MAX_CHARGES.get());
         label(level, 140, 65, 130, "09 / WARPER", "Visit Ariente", "Return via Warper", "Remembers this spot");
-        label(level, 135, 65, 143, "WELCOME", "Read the lectern", "Supplies to right", "Follow 01 to 09");
+        label(level, WELCOME_DISPLAY, 2, "WELCOME", "Read the lectern", "Storage to right", "Displays: booth 10");
     }
 
     private static BlockEntity node(ServerLevel level, BlockPos pos, Block block, NodeOrientation orientation) {
@@ -530,9 +718,9 @@ public class TutorialWorld {
     }
 
     private static void stock(ServerLevel level, BlockPos pos, ItemStack... stacks) {
-        IItemHandlerModifiable handler = (IItemHandlerModifiable) inventory(level, pos);
-        for (int slot = 0; slot < stacks.length; slot++) {
-            handler.setStackInSlot(slot, stacks[slot]);
+        IItemHandler handler = inventory(level, pos);
+        for (ItemStack stack : stacks) {
+            require(ItemHandlerHelper.insertItem(handler, stack.copy(), false).isEmpty(), "Cannot stock " + stack + " at " + pos);
         }
         level.getBlockEntity(pos).setChanged();
     }
@@ -550,16 +738,15 @@ public class TutorialWorld {
     }
 
     private static void label(ServerLevel level, int x, int y, int z, String... lines) {
-        BlockPos pos = new BlockPos(x, y, z);
-        put(level, pos, Blocks.OAK_SIGN.defaultBlockState().setValue(BlockStateProperties.ROTATION_16, 0));
-        SignText text = new SignText();
-        for (int i = 0; i < lines.length; i++) {
-            text = text.setMessage(i, Component.literal(lines[i]));
-        }
-        SignBlockEntity sign = (SignBlockEntity) level.getBlockEntity(pos);
-        sign.setText(text, true);
-        sign.setText(text, false);
-        sign.setChanged();
+        label(level, new BlockPos(x, y, z), 1, lines);
+    }
+
+    private static void label(ServerLevel level, BlockPos center, int height, String... lines) {
+        ItemStack module = text(String.join("\n", lines), 1, 0xd2faff);
+        int width = (((DisplayModuleItem) module.getItem()).type().size(module).width() + 4 + 63) / 64;
+        DisplayBaseTile[] bases = displayRow(level, center.west(width / 2), width, height,
+                new DisplayAppearance(DisplayBackground.SOLID, 0x102c3b, 0, true));
+        install(bases[0], module, 4, 4);
     }
 
     @SubscribeEvent
@@ -569,28 +756,14 @@ public class TutorialWorld {
         }
         ServerLevel level = event.getServer().overworld();
         ticks++;
-        if (ticks % 10 == 0) {
-            int[] items = new int[3];
-            int index = 0;
-            for (BlockPos pos : new BlockPos[]{new BlockPos(115, 66, 117), new BlockPos(120, 67, 117), new BlockPos(123, 67, 117)}) {
-                Container barrel = (Container) level.getBlockEntity(pos);
-                for (int slot = 0; slot < barrel.getContainerSize(); slot++) {
-                    items[index] += barrel.getItem(slot).getCount();
-                }
-                index++;
-            }
-            if (previousItems != null && !Arrays.equals(items, previousItems)) {
-                transfers++;
-            }
-            previousItems = items;
-        }
+        automationChecks(level);
         if (ticks == 200) {
             require(((ForceFieldTile) level.getBlockEntity(SHIELD)).getUsingPower() > 0, "Shield is not running before its control check");
-            ((WirelessButtonTile) level.getBlockEntity(new BlockPos(145, 65, 119))).setLocked(false);
+            ((WirelessButtonTile) level.getBlockEntity(SHIELD_BUTTON)).setLocked(false);
         }
         if (ticks == 220) {
             require(((ForceFieldTile) level.getBlockEntity(SHIELD)).getUsingPower() == 0, "Remote shield button did not switch the field off");
-            ((WirelessButtonTile) level.getBlockEntity(new BlockPos(145, 65, 119))).setLocked(true);
+            ((WirelessButtonTile) level.getBlockEntity(SHIELD_BUTTON)).setLocked(true);
         }
         if (ticks == 300 || ticks == 320) {
             BlockPos lever = new BlockPos(124, 65, 148);
@@ -606,18 +779,103 @@ public class TutorialWorld {
         }
         if (ticks == 1000) {
             verify(level);
+            // Leave four useful input types ready to process when the player opens the save.
+            stock(level, INPUT, new ItemStack(Items.RAW_IRON, 64), new ItemStack(Registration.DUST_NEGARITE.get(), 32),
+                    new ItemStack(Registration.DUST_POSIRITE.get(), 32), new ItemStack(Items.OAK_PLANKS, 64));
             Files.writeString(event.getServer().getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete"),
-                    "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified power, routing, crafting, shield and registered machine coverage.\n");
+                    "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified displays, recipe sorting, smelting, refueling, power, crafting, shield and machine coverage.\n");
             running = false;
-            ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: live flux, {} item observations, circuits, shield panels, wireless links; saving map", transfers);
+            ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: displays, smelting, refueling, sorted storage, circuits, shield and wireless; saving map");
             event.getServer().halt(false);
         }
     }
 
+    private static int count(ServerLevel level, BlockPos pos, Item item) {
+        IItemHandler inventory = inventory(level, pos);
+        int count = 0;
+        for (int slot = 0; slot < inventory.getSlots(); slot++) {
+            if (inventory.getStackInSlot(slot).is(item)) {
+                count += inventory.getStackInSlot(slot).getCount();
+            }
+        }
+        return count;
+    }
+
+    private static void automationChecks(ServerLevel level) {
+        if (ticks == 20) {
+            // Restart verification begins with a stocked input. Clear it using normal extraction.
+            IItemHandler source = inventory(level, INPUT);
+            for (int slot = 0; slot < source.getSlots(); slot++) {
+                source.extractItem(slot, 64, false);
+            }
+            stock(level, INPUT, new ItemStack(Items.RAW_IRON, 2), new ItemStack(Items.SAND, 2),
+                    new ItemStack(Registration.DUST_NEGARITE.get(), 4), new ItemStack(Registration.DUST_POSIRITE.get(), 4));
+        }
+        if (ticks == 180) {
+            require(count(level, INPUT, Items.RAW_IRON) == 0 && count(level, INPUT, Items.SAND) == 0, "Initial smelting batch did not drain");
+            require(count(level, INPUT, Registration.DUST_NEGARITE.get()) == 0 && count(level, INPUT, Registration.DUST_POSIRITE.get()) == 0,
+                    "Fuel dust did not leave the source");
+            require(count(level, NEGATIVE, Registration.DUST_NEGARITE.get()) > 16 && count(level, POSITIVE, Registration.DUST_POSIRITE.get()) > 16,
+                    "Fuel dust was not inserted into the matching generator");
+            stock(level, INPUT, new ItemStack(Items.RAW_GOLD, 2), new ItemStack(Items.CHICKEN, 2),
+                    new ItemStack(Items.OAK_PLANKS, 2), new ItemStack(Items.DIAMOND, 2));
+        }
+        if (ticks == 340) {
+            stock(level, INPUT, new ItemStack(Registration.ORE_NEGARITE.get(), 2), new ItemStack(Registration.ORE_POSIRITE.get(), 2),
+                    new ItemStack(Items.OAK_LOG, 2));
+        }
+        if (ticks == 600) {
+            require(((SmelterTile) level.getBlockEntity(SMELTER)).getStack(SmelterTile.SLOT_INPUT).isEmpty()
+                    && ((SmelterTile) level.getBlockEntity(SMELTER)).getStack(SmelterTile.SLOT_OUTPUT).isEmpty(), "Smelter backlog did not drain");
+            require(count(level, INPUT, Registration.ORE_NEGARITE.get().asItem()) == 0 && count(level, INPUT, Registration.ORE_POSIRITE.get().asItem()) == 0,
+                    "Fuel ores were not processed");
+            require(count(level, NEGATIVE, Registration.DUST_NEGARITE.get()) > 18 && count(level, POSITIVE, Registration.DUST_POSIRITE.get()) > 18,
+                    "Smelted fuel dust did not reach the generators");
+            for (BlockPos pos : new BlockPos[]{WOOD, INGOTS, OTHER}) {
+                require(count(level, pos, Registration.DUST_NEGARITE.get()) == 0 && count(level, pos, Registration.DUST_POSIRITE.get()) == 0,
+                        "Fuel leaked into storage");
+                IItemHandler handler = inventory(level, pos);
+                for (int slot = 0; slot < handler.getSlots(); slot++) {
+                    ItemStack stack = handler.getStackInSlot(slot);
+                    require(stack.isEmpty() || !ItemFilterCategory.SMELTABLE.matches(level, stack), "Unprocessed item leaked into storage: " + stack);
+                }
+            }
+        }
+    }
+
     private static void verify(ServerLevel level) {
+        if (Boolean.getBoolean("ariente.tutorial.verify")) {
+            require(level.getServer().getWorldData().getAllowCommands(), "Reloaded Tutorial must permit survival/creative commands");
+        }
+        require(level.getBlockState(WELCOME_DISPLAY).getValue(BlockStateProperties.HORIZONTAL_FACING) == Direction.SOUTH
+                && WELCOME_DISPLAY.getZ() < SPAWN.getZ(), "Welcome display must face the player at spawn");
+        require(level.getBlockState(WELCOME_STORAGE).is(Registration.HOLO_STORAGE_1.get())
+                && count(level, WELCOME_STORAGE, Registration.KEY_CARD.get()) == 1, "Welcome supplies need populated Ariente storage");
+        require(level.getBlockState(INGREDIENT_STORAGE).is(Registration.STORAGE.get())
+                && count(level, INGREDIENT_STORAGE, Registration.DUST_SILICON.get()) == 64
+                && count(level, INGREDIENT_STORAGE, Registration.INGOT_MANGANESE.get()) == 64,
+                "Construction ingredients need four-type Ariente storage");
+        require(level.getBlockState(KEYCARD_LOCK).getValue(BlockStateProperties.FACING) == Direction.SOUTH
+                && level.getBlockState(SHIELD_BUTTON).getValue(BlockStateProperties.FACING) == Direction.SOUTH,
+                "Door lock and shield button must face the reader");
+        DisplayBaseTile power = (DisplayBaseTile) level.getBlockEntity(POWER_DISPLAY);
+        require(power.getHeight() == 4 && DisplayGeometry.row(power).size() == 6, "Power station needs its large four-block-tall display");
+        require(power.background() == DisplayBackground.TRANSPARENT && power.appearance().transparency() == 70,
+                "Power display must remain 70% transparent");
+        require(level.getBlockState(new BlockPos(154, 66, 135)).getValue(BlockStateProperties.FACING) == Direction.SOUTH,
+                "AI demo alarm must face its reader");
+        long powerModules = DisplayGeometry.row(power).stream().flatMap(base -> base.modules().stream())
+                .filter(module -> module.stack().is(Registration.DISPLAY_POWER.get())).count();
+        require(powerModules == 4, "Power station needs four live generator monitors");
         require(PowerReceiverSupport.getPowerAvailable(level, FIELD, true) > 0, "Automation field has no real flux supply");
         require(PowerReceiverSupport.getPowerAvailable(level, SHIELD, true) > 0, "Shield has no real flux supply");
-        require(transfers > 3, "Item automation is not recirculating");
+        require(PowerReceiverSupport.getPowerAvailable(level, SMELTER, true) > 0, "Smelter has no independent power supply");
+        require(count(level, WOOD, Items.OAK_PLANKS) >= 2, "Planks did not reach wood storage");
+        require(count(level, INGOTS, Items.IRON_INGOT) >= 2 && count(level, INGOTS, Items.GOLD_INGOT) >= 2,
+                "Smelted metals did not reach ingot storage");
+        require(count(level, OTHER, Items.GLASS) >= 2 && count(level, OTHER, Items.COOKED_CHICKEN) >= 2
+                && count(level, OTHER, Items.CHARCOAL) >= 2 && count(level, OTHER, Items.DIAMOND) >= 2,
+                "Finished products did not reach various storage");
         IItemHandler crafter = inventory(level, CRAFTER);
         int circuits = 0;
         for (int slot = AutoConstructorTile.SLOT_OUTPUT; slot < crafter.getSlots(); slot++) {
@@ -639,11 +897,18 @@ public class TutorialWorld {
                 + ", receiver=" + ((SignalReceiverTile) level.getBlockEntity(SHIELD.north())).getPowerOutput());
         require(((SignalReceiverTile) level.getBlockEntity(new BlockPos(115, 65, 148))).getPowerOutput() == 15,
                 "Wireless button/receiver pair does not send redstone");
-        require(level.getBlockState(new BlockPos(148, 66, 134)).is(Registration.INVISIBLE_DOOR.get()), "Door marker did not create its door");
+        require(level.getBlockState(KEYCARD_DOOR.above()).is(Registration.INVISIBLE_DOOR.get()), "Door marker did not create its door");
         Set<ResourceLocation> coverage = new HashSet<>();
         for (int x = 7; x <= 9; x++) {
             for (int z = 7; z <= 9; z++) {
                 for (BlockEntity tile : level.getChunk(x, z).getBlockEntities().values()) {
+                    require(!(tile instanceof SignBlockEntity), "A vanilla sign remains in the plaza");
+                    if (tile instanceof DisplayBaseTile display) {
+                        for (InstalledModule module : display.modules()) {
+                            require(DisplayGeometry.fits(display, module.x(), module.y(), module.size()), "A saved display module does not fit");
+                            require(!module.snapshot().contains("Status"), "Display source failed: " + module.snapshot());
+                        }
+                    }
                     coverage.add(ForgeRegistries.BLOCK_ENTITY_TYPES.getKey(tile.getType()));
                     if (tile instanceof MultipartTE multipart) {
                         multipart.getParts().values().forEach(part -> coverage.add(
@@ -675,7 +940,7 @@ public class TutorialWorld {
             }
         }
         require(tallCityChunks >= 8, "The outer city must contain real buildings and parks, not an empty platform");
-        for (BlockPos marker : new BlockPos[]{new BlockPos(148, 65, 134), new BlockPos(119, 65, 151)}) {
+        for (BlockPos marker : new BlockPos[]{KEYCARD_DOOR, new BlockPos(119, 65, 151)}) {
             require(level.getBlockState(marker).is(Registration.DOOR_MARKER.get()) && !level.isEmptyBlock(marker.below()),
                     "Door markers must rest on the walking floor");
         }

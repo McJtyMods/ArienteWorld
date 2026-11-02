@@ -2,7 +2,7 @@
 // Add -Pautofield_render_mods to include Embeddium and Oculus without changing normal dependencies.
 gradle.afterProject { p ->
     if (p.name == 'ArienteWorld') {
-        p.sourceSets.gameTest.java.setIncludes(['mcjty/arienteworld/client/AutoFieldRenderingChecks.java', 'mcjty/arienteworld/client/BeamRenderingChecks.java'])
+        p.sourceSets.gameTest.java.setIncludes(['mcjty/arienteworld/client/AutoFieldRenderingChecks.java', 'mcjty/arienteworld/client/BeamRenderingChecks.java', 'mcjty/arienteworld/client/DisplayTransparencyChecks.java'])
         p.sourceSets.gameTest.output.classesDirs.setFrom(p.layout.buildDirectory.dir('verification/autofield-classes'))
         p.tasks.named('compileGameTestJava') {
             destinationDirectory.set(p.layout.buildDirectory.dir('verification/autofield-classes'))
@@ -15,6 +15,7 @@ gradle.afterProject { p ->
             mods.arienteworld.source(p.sourceSets.gameTest)
             workingDirectory p.file(p.findProperty('autofield_check_directory') ?: 'build/verification/autofield-vanilla')
             property 'ariente.autoFieldRenderCheck', 'true'
+            property 'ariente.hologramFabulous', p.hasProperty('hologram_fabulous').toString()
             property 'forge.logging.console.level', 'info'
             args '--quickPlaySingleplayer', 'Tutorial', '--width', '1280', '--height', '800'
         }

@@ -26,6 +26,7 @@ gradle.afterProject { p ->
                 workingDirectory p.file(p.findProperty('tutorial_client_directory') ?: 'build/tutorial/client')
                 property 'ariente.tutorial.fabulous', p.hasProperty('tutorial_fabulous').toString()
                 property 'ariente.tutorial.preview', 'true'
+                property 'ariente.tutorial.scene', (p.findProperty('tutorial_scene') ?: '0').toString()
                 args '--quickPlaySingleplayer', 'Tutorial', '--width', '1280', '--height', '800'
             }
         }
