@@ -133,7 +133,9 @@ face and the back movement key (S) to slow down to a stop. Release the keys to k
 the speed; the panels can select reverse or stop instantly. Both panels are checked
 again after reloading.
 Door markers sit above the walking floor. Copy the
-save before experimenting. The authoring sources are excluded from release jars.
+save before experimenting. Older soldier spawners in existing saves are migrated
+to ArienteWorld entity IDs when their chunks load, preserving their spawn settings.
+The authoring sources are excluded from release jars.
 Cheats are enabled in the saved world, allowing `/gamemode survival` and
 `/gamemode creative` without opening to LAN. The WELCOME display sits in front
 of the spawn point facing the arriving player. Welcome supplies use a Holo
