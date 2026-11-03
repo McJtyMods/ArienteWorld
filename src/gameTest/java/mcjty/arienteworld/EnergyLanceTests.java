@@ -1,15 +1,18 @@
 package mcjty.arienteworld;
 
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
+
 import mcjty.ariente.Ariente;
-import mcjty.ariente.api.SoldierBehaviourType;
+import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.ariente.api.ArmorUpgradeType;
 import mcjty.ariente.items.EnergyHolderItem;
 import mcjty.ariente.blocks.utility.BlueprintStorageTile;
 import mcjty.ariente.blocks.utility.ConstructorTile;
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.ariente.entities.soldier.EntityAISoldierAttack;
-import mcjty.ariente.entities.soldier.SoldierEntity;
-import mcjty.ariente.entities.soldier.SoldierLanceAttackGoal;
+import mcjty.arienteworld.entities.soldier.EntityAISoldierAttack;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.entities.soldier.SoldierLanceAttackGoal;
 import mcjty.ariente.items.BlueprintItem;
 import mcjty.ariente.items.EnergyLanceItem;
 import mcjty.ariente.items.LanceAim;
@@ -135,7 +138,7 @@ public class EnergyLanceTests {
     @GameTest(template = "empty")
     public static void stationarySoldierLanceStaysBelowItsHead(GameTestHelper helper) {
         Vec3 origin = clearFiringLane(helper);
-        SoldierEntity soldier = Registration.ENTITY_SOLDIER.get().create(helper.getLevel());
+        SoldierEntity soldier = ENTITY_SOLDIER.get().create(helper.getLevel());
         soldier.setNoAi(true);
         soldier.moveTo(origin.x, origin.y, origin.z, 0, 0);
         soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Registration.ENERGY_LANCE.get()));
@@ -222,7 +225,7 @@ public class EnergyLanceTests {
             soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Registration.ENERGY_LANCE.get()));
             CompoundTag saved = new CompoundTag();
             soldier.saveWithoutId(saved);
-            SoldierEntity restored = Registration.ENTITY_SOLDIER.get().create(helper.getLevel());
+            SoldierEntity restored = ENTITY_SOLDIER.get().create(helper.getLevel());
             restored.load(saved);
             restored.setTarget(target);
             SoldierLanceAttackGoal ranged = new SoldierLanceAttackGoal(restored);
@@ -382,7 +385,7 @@ public class EnergyLanceTests {
             target.discard();
             restored.discard();
         }
-        var master = Registration.ENTITY_MASTER_SOLDIER.get().create(helper.getLevel());
+        var master = ENTITY_MASTER_SOLDIER.get().create(helper.getLevel());
         master.setPos(origin.add(4, player.getEyeHeight() - master.getEyeHeight(), 0));
         helper.getLevel().addFreshEntity(master);
         LaserEntity inhibitor = Registration.ENTITY_LASER.get().create(helper.getLevel());

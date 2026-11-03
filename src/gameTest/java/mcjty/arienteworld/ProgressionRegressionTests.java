@@ -1,5 +1,10 @@
 package mcjty.arienteworld;
 
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
+import static mcjty.arienteworld.setup.Registration.ENTITY_SENTINEL_DRONE;
+
 import mcjty.ariente.Ariente;
 import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.blocks.decorative.DecorativeBlockModule;
@@ -228,8 +233,8 @@ public class ProgressionRegressionTests {
     public static void entityResourceLoot(GameTestHelper helper) {
         var level = helper.getLevel();
         var player = helper.makeMockPlayer();
-        for (EntityType<?> type : List.of(Registration.ENTITY_SOLDIER.get(), Registration.ENTITY_MASTER_SOLDIER.get(),
-                Registration.ENTITY_DRONE.get(), Registration.ENTITY_SENTINEL_DRONE.get())) {
+        for (EntityType<?> type : List.of(ENTITY_SOLDIER.get(), ENTITY_MASTER_SOLDIER.get(),
+                ENTITY_DRONE.get(), ENTITY_SENTINEL_DRONE.get())) {
             Mob mob = (Mob) type.create(level);
             var table = level.getServer().getLootData().getLootTable(mob.getLootTable());
             var context = new LootParams.Builder(level).withParameter(LootContextParams.THIS_ENTITY, mob)

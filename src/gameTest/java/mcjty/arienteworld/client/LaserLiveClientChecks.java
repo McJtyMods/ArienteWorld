@@ -1,7 +1,7 @@
 package mcjty.arienteworld.client;
 
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.ariente.entities.drone.DroneEntity;
+import mcjty.arienteworld.entities.drone.DroneEntity;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.dimension.DimensionRegister;

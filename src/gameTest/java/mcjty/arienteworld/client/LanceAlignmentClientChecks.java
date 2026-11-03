@@ -2,7 +2,7 @@ package mcjty.arienteworld.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import mcjty.ariente.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import mcjty.ariente.items.EnergyLanceItem;
 import mcjty.ariente.items.LanceAim;
 import mcjty.arienteworld.ArienteWorld;

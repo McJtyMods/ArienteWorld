@@ -10,7 +10,16 @@
     "grass_color": 4491383,
     "foliage_color": 2245751
   },
-  "spawners": {},
+  "spawners": {
+    "monster": [
+      {
+        "type": "arienteworld:darkbat",
+        "weight": 1,
+        "minCount": 1,
+        "maxCount": 1
+      }
+    ]
+  },
   "spawn_costs": {},
   "carvers": {},
   "features": [

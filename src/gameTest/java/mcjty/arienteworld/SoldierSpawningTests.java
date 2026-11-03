@@ -1,6 +1,9 @@
 package mcjty.arienteworld;
 
-import mcjty.ariente.entities.soldier.SoldierEntity;
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
+
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.arienteworld.cities.BuildingPart;
@@ -42,8 +45,8 @@ public class SoldierSpawningTests {
                 .getMobSettings().getMobs(MobCategory.MONSTER);
         var citySpawns = biomes.get(new ResourceLocation(ArienteWorld.MODID, "ariente_city"))
                 .getMobSettings().getMobs(MobCategory.MONSTER);
-        helper.assertTrue(citySpawns.unwrap().stream().anyMatch(entry -> entry.type == Registration.ENTITY_SOLDIER.get())
-                        && citySpawns.unwrap().stream().anyMatch(entry -> entry.type == Registration.ENTITY_MASTER_SOLDIER.get()),
+        helper.assertTrue(citySpawns.unwrap().stream().anyMatch(entry -> entry.type == ENTITY_SOLDIER.get())
+                        && citySpawns.unwrap().stream().anyMatch(entry -> entry.type == ENTITY_MASTER_SOLDIER.get()),
                 "City biomes must include soldiers and occasional masters");
         int checked = 0;
         for (CityPlan plan : AssetRegistries.CITYPLANS.getIterable()) {
@@ -113,7 +116,7 @@ public class SoldierSpawningTests {
                             && level.getBrightness(LightLayer.BLOCK, pos) == 11
                             && level.getBrightness(LightLayer.BLOCK, pos.west()) == 12,
                     "Wait for the enclosed room's light levels to settle");
-            for (var type : List.of(Registration.ENTITY_SOLDIER.get(), Registration.ENTITY_MASTER_SOLDIER.get())) {
+            for (var type : List.of(ENTITY_SOLDIER.get(), ENTITY_MASTER_SOLDIER.get())) {
                 SoldierEntity soldier = type.create(level);
                 soldier.moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + .5);
                 helper.assertTrue(SpawnPlacements.checkSpawnRules(type, level, MobSpawnType.NATURAL, pos, RandomSource.create(1))

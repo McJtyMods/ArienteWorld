@@ -1,10 +1,14 @@
 package mcjty.arienteworld;
 
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
+
 import com.mojang.authlib.GameProfile;
-import mcjty.ariente.api.SoldierBehaviourType;
+import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.ariente.entities.drone.DroneEntity;
-import mcjty.ariente.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.entities.drone.DroneEntity;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.arienteworld.cities.CityPlan;
@@ -44,7 +48,7 @@ public class DefenderCombatTests {
         try {
             for (Difficulty difficulty : DIFFICULTIES) {
                 level.getServer().setDifficulty(difficulty, true);
-                for (var type : List.of(Registration.ENTITY_SOLDIER.get(), Registration.ENTITY_MASTER_SOLDIER.get())) {
+                for (var type : List.of(ENTITY_SOLDIER.get(), ENTITY_MASTER_SOLDIER.get())) {
                     for (var weapon : List.of(Registration.ENERGY_SABRE.get(), Registration.ENHANCED_ENERGY_SABRE.get())) {
                         SoldierEntity soldier = type.create(level);
                         soldier.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(weapon));
@@ -62,7 +66,7 @@ public class DefenderCombatTests {
                         }
                     }
                 }
-                SoldierEntity unarmed = Registration.ENTITY_SOLDIER.get().create(level);
+                SoldierEntity unarmed = ENTITY_SOLDIER.get().create(level);
                 Player player = target(level, false, false);
                 try {
                     unarmed.doHurtTarget(player);
@@ -95,7 +99,7 @@ public class DefenderCombatTests {
                 DroneEntity original = DroneEntity.create(level, center);
                 CompoundTag saved = new CompoundTag();
                 original.saveWithoutId(saved);
-                DroneEntity restored = Registration.ENTITY_DRONE.get().create(level);
+                DroneEntity restored = ENTITY_DRONE.get().create(level);
                 restored.load(saved);
                 try {
                     for (Difficulty difficulty : DIFFICULTIES) {

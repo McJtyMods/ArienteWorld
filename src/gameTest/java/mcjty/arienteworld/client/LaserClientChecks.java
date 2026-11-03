@@ -1,7 +1,9 @@
 package mcjty.arienteworld.client;
 
+import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
+
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.ariente.entities.drone.DroneEntity;
+import mcjty.arienteworld.entities.drone.DroneEntity;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
 import net.minecraft.client.Minecraft;
@@ -64,7 +66,7 @@ public class LaserClientChecks {
                 for (BlockPos pos : BlockPos.betweenClosed(center.offset(-35, -1, -3), center.offset(35, 20, 3))) {
                     level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
                 }
-                var drone = Registration.ENTITY_DRONE.get().create(level);
+                var drone = ENTITY_DRONE.get().create(level);
                 shooter = drone;
                 drone.setNoAi(true);
                 drone.setNoGravity(true);

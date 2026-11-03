@@ -1,5 +1,8 @@
 package mcjty.arienteworld;
 
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
+
 import com.mojang.authlib.GameProfile;
 import mcjty.ariente.blocks.utility.WarperTile;
 import mcjty.ariente.config.UtilityConfiguration;
@@ -84,13 +87,13 @@ public class PopulationTests {
         }
         helper.assertTrue(checked == 8 && trees > 0 && plants > 0 && ores > 0,
                 "Natural forest chunks must contain trees, plants and ores: " + checked + "/" + trees + "/" + plants + "/" + ores);
-        helper.assertTrue(Registration.ENTITY_SOLDIER.get().getCategory() == MobCategory.MONSTER
-                        && Registration.ENTITY_MASTER_SOLDIER.get().getCategory() == MobCategory.MONSTER,
+        helper.assertTrue(ENTITY_SOLDIER.get().getCategory() == MobCategory.MONSTER
+                        && ENTITY_MASTER_SOLDIER.get().getCategory() == MobCategory.MONSTER,
                 "City inhabitants must participate in hostile spawning and mob caps");
         var cityBiome = level.getChunkSource().getGenerator().getBiomeSource().possibleBiomes().stream()
                 .filter(holder -> holder.unwrapKey().orElseThrow().location().getPath().equals("ariente_city")).findFirst().orElseThrow();
         helper.assertTrue(cityBiome.value().getMobSettings().getMobs(MobCategory.MONSTER).unwrap().stream()
-                        .anyMatch(entry -> entry.type == Registration.ENTITY_SOLDIER.get()), "City biomes must register their natural soldier spawn table");
+                        .anyMatch(entry -> entry.type == ENTITY_SOLDIER.get()), "City biomes must register their natural soldier spawn table");
         ArienteWorld.setup.getLogger().info("Population check: {} logs, {} plants, {} ore blocks", trees, plants, ores);
         verifyTreesRespectCityFloors(helper, level, new BlockPos(origin * 16 + 8, 180, origin * 16 + 8));
         helper.succeed();

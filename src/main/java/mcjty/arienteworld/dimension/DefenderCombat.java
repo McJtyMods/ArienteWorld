@@ -1,8 +1,8 @@
 package mcjty.arienteworld.dimension;
 
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.ariente.entities.drone.DroneEntity;
-import mcjty.ariente.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.entities.drone.DroneEntity;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import mcjty.ariente.items.EnergySabreItem;
 import mcjty.ariente.items.EnergyLanceItem;
 import mcjty.arienteworld.ArienteWorld;
@@ -18,6 +18,24 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
 public class DefenderCombat {
+
+    @SubscribeEvent
+    public static void onSoldierSabreAttack(LivingHurtEvent event) {
+        if (event.getSource().is(DamageTypes.MOB_ATTACK)
+                && event.getSource().getDirectEntity() instanceof SoldierEntity soldier
+                && soldier.getMainHandItem().getItem() instanceof EnergySabreItem) {
+            // Player difficulty scaling has run; armor, enchantments and suit defenses still apply afterwards.
+            event.setAmount(Math.max(event.getAmount(), soldier.getMinimumSabreDamage()));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onSoldierLanceAttack(LivingHurtEvent event) {
+        if (event.getSource().getDirectEntity() instanceof LaserEntity laser && laser.isLanceShot()
+                && event.getSource().getEntity() instanceof SoldierEntity soldier) {
+            event.setAmount(Math.max(event.getAmount(), soldier.getMinimumSabreDamage() * EnergyLanceItem.DAMAGE_MULTIPLIER));
+        }
+    }
 
     @SubscribeEvent
     public static void hurt(LivingHurtEvent event) {

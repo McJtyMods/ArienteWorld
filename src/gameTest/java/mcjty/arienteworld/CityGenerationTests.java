@@ -1,7 +1,7 @@
 package mcjty.arienteworld;
 
 import com.mojang.authlib.GameProfile;
-import mcjty.ariente.entities.drone.EntityAIScanForPlayer;
+import mcjty.arienteworld.entities.drone.EntityAIScanForPlayer;
 import mcjty.ariente.blocks.utility.StorageTile;
 import mcjty.ariente.items.BlueprintItem;
 import mcjty.ariente.items.KeyCardItem;
@@ -9,7 +9,7 @@ import mcjty.ariente.recipes.BlueprintRecipeRegistry;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import mcjty.ariente.entities.drone.SentinelDroneEntity;
+import mcjty.arienteworld.entities.drone.SentinelDroneEntity;
 import mcjty.ariente.api.IAICoreTile;
 import mcjty.ariente.api.ICityEquipment;
 import mcjty.ariente.api.ISignalChannel;

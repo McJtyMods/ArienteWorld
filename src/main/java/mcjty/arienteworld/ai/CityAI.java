@@ -1,6 +1,13 @@
 package mcjty.arienteworld.ai;
 
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.entities.drone.SentinelDroneEntity;
+import mcjty.arienteworld.entities.drone.DroneEntity;
+import mcjty.arienteworld.entities.ArienteMobs;
 import mcjty.ariente.api.*;
+import mcjty.arienteworld.entities.drone.ISentinel;
+import mcjty.arienteworld.entities.drone.IDrone;
+import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.ariente.Ariente;
 import mcjty.hologui.api.IHoloGuiEntity;
 import net.minecraft.world.entity.Entity;
@@ -380,7 +387,7 @@ public class CityAI implements ICityAI {
             } else {
                 LevitatorPath path = findValidBeam(world);
                 if (path != null) {
-                    List<? extends ISoldier> entities = Ariente.arienteSystem.getSoldiersWithinAABB(world, new AABB(path.end).inflate(15));
+                    List<? extends ISoldier> entities = world.getEntitiesOfClass(SoldierEntity.class, new AABB(path.end).inflate(15));
                     if (entities.size() > 2) {
                         // Too many already
                         return;
@@ -406,7 +413,7 @@ public class CityAI implements ICityAI {
                     world.addFreshEntity(entity);
                     this.levitator = entity.getId();
 
-                    LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, path.direction, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT, false);
+                    LivingEntity soldier = ArienteMobs.createSoldier(world, pos, path.direction, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT, false);
                     soldier.startRiding(entity);
                 }
             }
@@ -659,7 +666,7 @@ public class CityAI implements ICityAI {
         } while (avoidNearby > 0);
 
         Direction facing = soldierPositions.get(pos);
-        LivingEntity entity = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT,
+        LivingEntity entity = ArienteMobs.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_REINFORCEMENT,
                 random.nextDouble() < plan.getMasterChance());
 
         if (random.nextFloat() < plan.getPowerArmorChance()) {
@@ -713,7 +720,7 @@ public class CityAI implements ICityAI {
 
     private void spawnDrone(Level world, int height) {
         // Too few drones. Spawn a new one
-        LivingEntity entity = Ariente.arienteSystem.createDrone(world, center);
+        LivingEntity entity = DroneEntity.create(world, center);
         int cx = center.x * 16 + 8;
         int cy = height;
         int cz = center.z * 16 + 8;
@@ -1041,7 +1048,7 @@ public class CityAI implements ICityAI {
         for (Map.Entry<BlockPos, Direction> entry : guardPositions.entrySet()) {
             BlockPos pos = entry.getKey();
             Direction facing = entry.getValue();
-            LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_GUARD, false);
+            LivingEntity soldier = ArienteMobs.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_GUARD, false);
         }
     }
 
@@ -1049,7 +1056,7 @@ public class CityAI implements ICityAI {
         for (Map.Entry<BlockPos, Direction> entry : masterSoldierPositions.entrySet()) {
             BlockPos pos = entry.getKey();
             Direction facing = entry.getValue();
-            LivingEntity soldier = Ariente.arienteSystem.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER, true);
+            LivingEntity soldier = ArienteMobs.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER, true);
         }
     }
 
@@ -1104,7 +1111,7 @@ public class CityAI implements ICityAI {
     }
 
     private void createSentinel(Level world, int i, int height) {
-        LivingEntity entity = Ariente.arienteSystem.createSentinel(world, i, center);
+        LivingEntity entity = SentinelDroneEntity.create(world, i, center);
         int cx = center.x * 16 + 8;
         int cy = height;
         int cz = center.z * 16 + 8;

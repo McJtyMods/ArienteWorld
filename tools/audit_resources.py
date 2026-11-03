@@ -69,7 +69,7 @@ def main():
                         reference(sound, 'sounds', '.ogg')
                     elif sound.get('type', 'file') == 'file':
                         reference(sound['name'], 'sounds', '.ogg')
-        if '/worldgen/biome/' in name:
+        if name.startswith(f'data/{NAMESPACE}/worldgen/biome/'):
             for step in doc['features']:
                 for feature in step:
                     if feature.startswith(NAMESPACE + ':'):
@@ -83,6 +83,17 @@ def main():
     if docs.get('pack.mcmeta', {}).get('pack', {}).get('pack_format') != 15:
         errors.append('Expected 1.20.1 resource pack format 15')
     registration = (ROOT / 'src/main/java/mcjty/arienteworld/setup/Registration.java').read_text()
+    entities = re.findall(r'ENTITIES.register\("([^"]+)"', registration)
+    for entity in entities:
+        if f'entity.{NAMESPACE}.{entity}' not in docs.get(f'assets/{NAMESPACE}/lang/en_us.json', {}):
+            errors.append(f'Missing entity translation: {entity}')
+    for name, doc in docs.items():
+        if name.startswith(f'data/{NAMESPACE}/worldgen/biome/'):
+            for spawners in doc.get('spawners', {}).values():
+                for spawner in spawners:
+                    mob = spawner['type']
+                    if mob.startswith(NAMESPACE + ':') and mob.split(':', 1)[1] not in entities:
+                        errors.append(f'Unknown biome spawn entity: {mob}')
     blocks = re.findall(r'BLOCKS.register\("([^"]+)"', registration)
     language = docs.get('assets/arienteworld/lang/en_us.json', {})
     for block in blocks:

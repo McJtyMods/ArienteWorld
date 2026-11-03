@@ -11,6 +11,7 @@ public class Config {
         AIConfiguration.init(SERVER_BUILDER, CLIENT_BUILDER);
         WorldgenConfiguration.init(SERVER_BUILDER, CLIENT_BUILDER);
         LootConfiguration.init(SERVER_BUILDER, CLIENT_BUILDER);
+        SpawningConfiguration.init(SERVER_BUILDER);
 
         SERVER_CONFIG = SERVER_BUILDER.build();
         CLIENT_CONFIG = CLIENT_BUILDER.build();

@@ -20,5 +20,10 @@
   "block.arienteworld.negarite": "Negarite Ore",
   "itemGroup.arienteworld": "Ariente World",
   "block.arienteworld.solider_dummy": "Soldier Dummy",
-  "block.arienteworld.master_solider_dummy": "Master Soldier Dummy"
+  "block.arienteworld.master_solider_dummy": "Master Soldier Dummy",
+  "entity.arienteworld.ariente_drone": "Drone",
+  "entity.arienteworld.ariente_sentinel_drone": "Sentinel Drone",
+  "entity.arienteworld.soldier": "Soldier",
+  "entity.arienteworld.master_soldier": "Master Soldier",
+  "entity.arienteworld.darkbat": "Darkbat"
 }

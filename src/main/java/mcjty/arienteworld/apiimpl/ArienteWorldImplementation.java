@@ -5,7 +5,6 @@ import mcjty.ariente.api.ICityAI;
 import mcjty.ariente.api.ICityAISystem;
 import mcjty.arienteworld.ai.CityAISystem;
 import mcjty.arienteworld.cities.CityTools;
-import mcjty.arienteworld.config.LootConfiguration;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import mcjty.arienteworld.dimension.PortalGenerator;
 import mcjty.arienteworld.oregen.OverworldDungeonGen;
@@ -61,11 +60,6 @@ public class ArienteWorldImplementation implements IArienteWorld {
     @Override
     public BlockPos getNearestDungeon(Level world, BlockPos pos) {
         return world instanceof ServerLevel level ? OverworldDungeonGen.getNearestDungeon(level, pos) : null;
-    }
-
-    @Override
-    public double getSoldierCityKeyChance() {
-        return LootConfiguration.SOLDIER_CITYKEY_CHANCE.get();
     }
 
     @Override

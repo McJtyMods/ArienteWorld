@@ -6,6 +6,11 @@
   "pages": [
     {
       "type": "patchouli:text",
+      "title": "Wilderness predators",
+      "text": "Rare Darkbats hunt outside cities and dungeon grounds, circling overhead before diving in powerful melee sweeps. They attack on sight even if you are well rested.$(br2)Daylight and torches do not prevent spawns; sunlight does not burn them. Natural spawning stops at three nearby Darkbats per player by default (server configurable). Watch the open sky and use solid cover when one dives."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Watch the sky",
       "text": "Soldiers defend complexes on foot. Combat Drones attack from the air. Sentinel Drones watch for intruders and can raise the city’s alert.$(br2)Keep cover between yourself and observers. A working Scramble helmet module helps avoid sentinel detection, but fighting defenders can still raise an alert."
     },

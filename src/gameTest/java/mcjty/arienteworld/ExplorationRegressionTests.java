@@ -1,10 +1,13 @@
 package mcjty.arienteworld;
 
+import mcjty.arienteworld.entities.ArienteMobs;
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
+
 import com.mojang.authlib.GameProfile;
-import mcjty.ariente.Ariente;
-import mcjty.ariente.api.SoldierBehaviourType;
-import mcjty.ariente.entities.soldier.SoldierEntity;
-import mcjty.ariente.api.IDrone;
+import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.entities.drone.IDrone;
 import mcjty.ariente.api.ISoldier;
 import mcjty.ariente.blocks.aicore.AICoreTile;
 import mcjty.ariente.blocks.defense.ForceFieldTile;
@@ -84,7 +87,7 @@ public class ExplorationRegressionTests {
     public static void naturallyInitializedSoldiersCarryWeapons(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
-        for (var type : List.of(Registration.ENTITY_SOLDIER.get(), Registration.ENTITY_MASTER_SOLDIER.get())) {
+        for (var type : List.of(ENTITY_SOLDIER.get(), ENTITY_MASTER_SOLDIER.get())) {
             Mob soldier = type.spawn(level, pos, MobSpawnType.NATURAL);
             helper.assertTrue(soldier != null && (soldier.getMainHandItem().is(Registration.ENERGY_SABRE.get()) || soldier.getMainHandItem().is(Registration.ENERGY_LANCE.get())),
                     "Spawn finalization must actually call the soldier/master equipment initializer");
@@ -389,11 +392,11 @@ public class ExplorationRegressionTests {
         try {
             // More fixed defenders than the wave maximum reproduced the old zero-fighter result.
             for (int i = 0; i <= city.getPlan().getSoldiersWaveMax1(); i++) {
-                var guard = Ariente.arienteSystem.createSoldier(level, spawn, Direction.NORTH, city.getCenter(), SoldierBehaviourType.SOLDIER_GUARD, false);
+                var guard = ArienteMobs.createSoldier(level, spawn, Direction.NORTH, city.getCenter(), SoldierBehaviourType.SOLDIER_GUARD, false);
                 guard.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Registration.ENERGY_SABRE.get()));
                 extra.add(guard);
             }
-            extra.add(Ariente.arienteSystem.createSoldier(level, spawn, Direction.NORTH,
+            extra.add(ArienteMobs.createSoldier(level, spawn, Direction.NORTH,
                     new ChunkPos(city.getCenter().x + 16, city.getCenter().z), SoldierBehaviourType.SOLDIER_REINFORCEMENT, false));
             ai.alertCity(observer);
             for (int step = 0; step < 20; step++) {

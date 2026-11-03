@@ -1,10 +1,14 @@
 package mcjty.arienteworld;
 
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
+
 import com.mojang.authlib.GameProfile;
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.ariente.entities.drone.DroneEntity;
-import mcjty.ariente.entities.soldier.EntityAISoldierAttack;
-import mcjty.ariente.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.entities.drone.DroneEntity;
+import mcjty.arienteworld.entities.soldier.EntityAISoldierAttack;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import mcjty.ariente.setup.Registration;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
@@ -39,7 +43,7 @@ public class CombatRegressionTests {
         for (BlockPos block : BlockPos.betweenClosed(pos.offset(-2, -1, -2), pos.offset(3, 3, 2))) {
             level.setBlock(block, (block.getY() < pos.getY() ? Blocks.STONE : Blocks.AIR).defaultBlockState(), 2);
         }
-        for (var type : List.of(Registration.ENTITY_SOLDIER.get(), Registration.ENTITY_MASTER_SOLDIER.get())) {
+        for (var type : List.of(ENTITY_SOLDIER.get(), ENTITY_MASTER_SOLDIER.get())) {
             SoldierEntity soldier = type.spawn(level, pos, MobSpawnType.NATURAL);
             helper.assertTrue(soldier != null, "Soldier must spawn for the melee check");
             try {
@@ -100,7 +104,7 @@ public class CombatRegressionTests {
         player.setNoGravity(true);
         player.moveTo(origin.getX() + 8.5, origin.getY(), origin.getZ() + .5);
         level.addFreshEntity(player);
-        DroneEntity drone = new DroneEntity(Registration.ENTITY_DRONE.get(), level) {
+        DroneEntity drone = new DroneEntity(ENTITY_DRONE.get(), level) {
             {
                 goalSelector.removeAllGoals(goal -> goal.getClass().getSimpleName().equals("AIDroneFly"));
             }

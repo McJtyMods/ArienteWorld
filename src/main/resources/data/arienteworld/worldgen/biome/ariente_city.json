@@ -13,13 +13,13 @@
   "spawners": {
     "monster": [
       {
-        "type": "ariente:soldier",
+        "type": "arienteworld:soldier",
         "weight": 95,
         "minCount": 4,
         "maxCount": 4
       },
       {
-        "type": "ariente:master_soldier",
+        "type": "arienteworld:master_soldier",
         "weight": 5,
         "minCount": 1,
         "maxCount": 1

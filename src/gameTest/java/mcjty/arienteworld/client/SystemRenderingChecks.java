@@ -1,5 +1,8 @@
 package mcjty.arienteworld.client;
 
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+import static mcjty.arienteworld.setup.Registration.ENTITIES;
+
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -13,10 +16,11 @@ import mcjty.ariente.facade.FacadeItemBlock;
 import mcjty.lib.multipart.PartPos;
 import mcjty.lib.multipart.PartSlot;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Mob;
 import mcjty.ariente.client.ArienteSpriteUploader;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.ariente.entities.fluxship.FluxShipRender;
-import mcjty.ariente.entities.soldier.SoldierRender;
+import mcjty.arienteworld.entities.soldier.SoldierRender;
 import mcjty.ariente.items.BlueprintItem;
 import mcjty.ariente.items.BlueprintRenderer;
 import mcjty.ariente.items.modules.ArmorModuleItem;
@@ -152,6 +156,7 @@ public class SystemRenderingChecks {
         Minecraft mc = Minecraft.getInstance();
         if (soldierOnly) {
             renderSoldiers(mc);
+            renderDimensionMobs(mc);
             runs++;
             ArienteWorld.setup.getLogger().info("SOLDIER RENDER CHECK PASSED: sword transforms, both hands, idle/attack poses and armor; pass=" + runs);
             return;
@@ -266,6 +271,23 @@ public class SystemRenderingChecks {
         }
     }
 
+    private static void renderDimensionMobs(Minecraft mc) {
+        for (var entry : ENTITIES.getEntries()) {
+            Mob mob = (Mob) entry.get().create(mc.level);
+            var renderer = mc.getEntityRenderDispatcher().getRenderer(mob);
+            require(mc.getResourceManager().getResource(renderer.getTextureLocation(mob)).isPresent(),
+                    "Dimension mob textures must resolve after the move: " + entry.getId());
+            try (NativeImage image = picture(3.0F, (pose, buffers) -> {
+                pose.mulPose(Axis.XP.rotationDegrees(20));
+                pose.mulPose(Axis.YP.rotationDegrees(30));
+                renderer.render(mob, 0, 0, pose, buffers, LightTexture.FULL_BRIGHT);
+            })) {
+                require(bright(image) > 100, "Dimension mobs must render visible textured pixels: " + entry.getId());
+                save(image, entry.getId().getPath() + "-moved-" + runs);
+            }
+        }
+    }
+
     private static TransferRender createTransfer() {
         return new TransferRender(new AutoFieldRenderInfo.TransferPath(PartPos.create(new BlockPos(-5, 0, 0), PartSlot.UP_NW),
                 PartPos.create(new BlockPos(5, 0, 0), PartSlot.UP_NW)),
@@ -315,7 +337,7 @@ public class SystemRenderingChecks {
 
     private static NativeImage soldier(boolean armored, boolean leftHanded, boolean aggressive, boolean lance) {
         Minecraft mc = Minecraft.getInstance();
-        var soldier = Registration.ENTITY_SOLDIER.get().create(mc.level);
+        var soldier = ENTITY_SOLDIER.get().create(mc.level);
         soldier.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(lance ? Registration.ENERGY_LANCE.get() : Registration.ENERGY_SABRE.get()));
         soldier.setLeftHanded(leftHanded);
         soldier.setAggressive(aggressive);

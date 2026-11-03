@@ -1,28 +1,128 @@
 {
-   "music":{
-      "category":"music",
-      "subtitle":"subtitle.arienteworld.music",
-      "sounds":[
-         { "name": "arienteworld:music/nakisee_song1", "stream": true },
-         { "name": "arienteworld:music/thegur90_ambient02", "stream": true },
-         { "name": "arienteworld:music/thegur90_ambient03", "stream": true },
-         { "name": "arienteworld:music/thegur90_ambient04", "stream": true },
-         { "name": "arienteworld:music/thegur90_ambient05", "stream": true },
-         { "name": "arienteworld:music/icelingbolt_disharmony", "stream": true },
-         { "name": "arienteworld:music/icelingbolt_observation", "stream": true }
-      ]
+  "music": {
+    "category": "music",
+    "subtitle": "subtitle.arienteworld.music",
+    "sounds": [
+      {
+        "name": "arienteworld:music/nakisee_song1",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:music/thegur90_ambient02",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:music/thegur90_ambient03",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:music/thegur90_ambient04",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:music/thegur90_ambient05",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:music/icelingbolt_disharmony",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:music/icelingbolt_observation",
+        "stream": true
+      }
+    ]
   },
-   "ambient":{
-      "category":"ambient",
-      "subtitle":"subtitle.arienteworld.ambient",
-      "sounds":[
-         { "name": "arienteworld:ambient/nakisee_ambient01", "stream": true },
-         { "name": "arienteworld:ambient/nakisee_ambient02", "stream": true },
-         { "name": "arienteworld:ambient/thegur90_ambient01", "stream": true },
-         { "name": "arienteworld:ambient/thegur90_ambient02", "stream": true },
-         { "name": "arienteworld:ambient/thegur90_ambient03", "stream": true },
-         { "name": "arienteworld:ambient/thegur90_ambient04", "stream": true },
-         { "name": "arienteworld:ambient/thegur90_ambient05", "stream": true }
-      ]
-   }
+  "ambient": {
+    "category": "ambient",
+    "subtitle": "subtitle.arienteworld.ambient",
+    "sounds": [
+      {
+        "name": "arienteworld:ambient/nakisee_ambient01",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:ambient/nakisee_ambient02",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:ambient/thegur90_ambient01",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:ambient/thegur90_ambient02",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:ambient/thegur90_ambient03",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:ambient/thegur90_ambient04",
+        "stream": true
+      },
+      {
+        "name": "arienteworld:ambient/thegur90_ambient05",
+        "stream": true
+      }
+    ]
+  },
+  "step": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/step"
+    ]
+  },
+  "drone_ambient": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/droneidle1",
+      "arienteworld:monster/droneidle2",
+      "arienteworld:monster/droneidle3",
+      "arienteworld:monster/droneidle4",
+      "arienteworld:monster/droneidle5"
+    ]
+  },
+  "drone_hurt": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/dronehit"
+    ]
+  },
+  "drone_death": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/dronedeathfighter"
+    ]
+  },
+  "sentinel_death": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/dronedeath"
+    ]
+  },
+  "soldier_hurt": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/mobhit"
+    ]
+  },
+  "soldier_death": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/soldierdeath"
+    ]
+  },
+  "boss_soldier_hurt": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/bosshit"
+    ]
+  },
+  "boss_soldier_death": {
+    "category": "hostile",
+    "sounds": [
+      "arienteworld:monster/bossdeath"
+    ]
+  }
 }

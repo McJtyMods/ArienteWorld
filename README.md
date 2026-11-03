@@ -68,6 +68,32 @@ To regenerate the additive city assets, run `python3 tools/expand_city_assets.py
 Use a fresh world to review entrances, elevator stops, city skyline silhouettes,
 underground flux-cart clearance and loot balance in Minecraft.
 
+## Hostile mobs
+
+ArienteWorld owns the soldiers, master soldiers, combat drones, sentinel drones
+and their models, textures, sounds and loot. Their entity IDs use the
+`arienteworld` namespace. Ariente supplies the shared weapons, equipment,
+vehicles and laser projectiles and can run without the dimension mod.
+
+Darkbats are rare, solitary outdoor predators using the phantom's circling and
+diving attacks. They are 60% larger than a phantom, have 40 health and deal 12
+melee damage on Normal difficulty. They target visible survival players
+immediately, independently of insomnia, and do not burn in daylight.
+They can spawn in the plains, hills, ocean, forest and rough biomes at any light
+level, under open sky, outside city biomes and dungeon footprints. Only one in
+64 otherwise valid spawn attempts passes. Natural spawning also stops when any
+non-spectator player within 128 horizontal blocks of the spawn already has three
+living Darkbats within that radius, at any height. Overlapping players share their
+nearby population; distant players have independent limits. This keeps Darkbats
+from gradually filling the normal hostile mob cap while a player waits.
+Set `spawning.darkbatMaxPerPlayer` in the world's
+`serverconfig/arienteworld-server.toml` to change the limit, or use `0` to disable
+natural Darkbat spawning. Existing mobs are left to despawn normally. Named,
+summoned and spawner Darkbats count toward the limit, but commands, eggs and
+spawners can still create them. The biome tag `arienteworld:darkbat_spawns`
+identifies their outdoor biomes.
+Use `/summon arienteworld:darkbat` to inspect one in a development world.
+
 ## Tutorial save
 
 `tools/create_tutorial.py` authors a separate Forge 1.20.1 world named **Tutorial**.

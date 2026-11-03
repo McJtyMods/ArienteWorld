@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "arienteworld:ariente_plains",
+    "arienteworld:ariente_hills",
+    "arienteworld:ariente_ocean",
+    "arienteworld:ariente_forest",
+    "arienteworld:ariente_rough"
+  ]
+}

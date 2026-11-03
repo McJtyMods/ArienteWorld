@@ -1,4 +1,6 @@
 1.20-0.0.31-alpha:
+- Added rare Darkbats to the wilderness: larger flying predators that dive at players for heavy melee damage, in daylight or darkness. They do not spawn in cities or dungeons. Natural spawns are limited to three nearby Darkbats per player by default, configurable with darkbatMaxPerPlayer.
+- Sabre-wielding soldiers now kill unarmored players in one hit on every non-Peaceful difficulty; master soldiers hit harder.
 - Some city buildings, floating dungeon rooms, huge cube control desks and underground console banks now have alien glyph displays. Salvage their unreadable Alien Text Modules by recovering them from the display or breaking its base; they have no blueprint or crafting recipe.
 - Replaced obsolete Autofeed module blueprints in city loot with Energy Holder blueprints for the shared equipment power supply.
 - Vanilla mobs no longer spawn naturally in Ariente biomes outside cities.
