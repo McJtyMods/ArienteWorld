@@ -639,7 +639,7 @@ public class TutorialWorld {
         level.addFreshEntity(cart);
         FluxShipEntity ship = FluxShipEntity.create(level, 135, 65, 151.5);
         level.addFreshEntity(ship);
-        label(level, 131, 65, 158, "08 / TRANSPORT", "Board flux cart", "Panel: speed/stop", "Four-bend loop");
+        label(level, 131, 65, 158, "08 / TRANSPORT", "W: accelerate", "S: slow down", "Panels: reverse/stop");
         label(level, 138, 65, 158, "FLUX SHIP", "WASD moves/turns", "Space/Backspace", "Sneak: exit");
     }
 
@@ -659,7 +659,7 @@ public class TutorialWorld {
                 "04 SHIELD (northeast)\n\nA working radius-3 forcefield is behind the rail. Stay outside: active shield panels hurt.\n\nUse the wireless button beside the display to switch it off before approaching the generator. Right-click the generator to change radius or redstone mode. Increase power for larger shields.",
                 "05 SECURITY (east)\n\nTake the Tutorial keycard from the welcome storage. Use it on the lock, then walk near the door. The invisible door blocks belong to the marker under the opening.\n\nThe AI Core and safe Alarm show city equipment. AI behavior belongs to the Ariente dimension; this Overworld exhibit does not spawn defenders.",
                 "06 WIRELESS (southwest)\n\nThe left wireless button controls a lamp and the nearby Wireless Lock. Walk near the door after unlocking.\n\nThe right lever supplies the transmitter; its remote receiver controls the southern lamp. These are separate pre-linked channels. Use the tablet to copy/reassign channels.",
-                "07 ELEVATOR (southeast)\n\nWalk onto the beam and choose a floor in its hologram. The upper Level Marker provides the observation-deck stop.\n\nElevators do not consume flux.\n\n08 TRANSPORT (south)\nBoard the cart and use its holograms. The track includes a bend. Try the Flux Ship from its landing pad.",
+                "07 ELEVATOR (southeast)\n\nWalk onto the beam and choose a floor in its hologram. The upper Level Marker provides the observation-deck stop.\n\n08 TRANSPORT (south)\nBoard the cart. Hold Forward (W) to accelerate where you face, Back (S) to slow down; release to coast. Turn around and hold W to reverse gradually. Both panels also set speed or stop instantly. Movement key remaps work.",
                 "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCheats are enabled: /gamemode survival or /gamemode creative. Daylight, no natural mob spawning and keep-inventory are enabled for teaching. The surrounding 72 chunks use ArienteWorld city generation, including buildings, parks and levitator corridors. Copy this save before experimenting."
         }) {
             pages.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(page))));
@@ -786,9 +786,9 @@ public class TutorialWorld {
             stock(level, INPUT, new ItemStack(Items.RAW_IRON, 64), new ItemStack(Registration.DUST_NEGARITE.get(), 32),
                     new ItemStack(Registration.DUST_POSIRITE.get(), 32), new ItemStack(Items.OAK_PLANKS, 64));
             Files.writeString(event.getServer().getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete"),
-                    "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified displays, recipe sorting, smelting, refueling, power, crafting, shield and machine coverage.\n");
+                    "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified displays, recipe sorting, smelting, refueling, power, crafting, shield, two cart end panels and machine coverage.\n");
             running = false;
-            ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: displays, smelting, refueling, sorted storage, circuits, shield and wireless; saving map");
+            ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: displays, smelting, refueling, sorted storage, circuits, shield, wireless and two cart end panels; saving map");
             event.getServer().halt(false);
         }
     }
@@ -961,12 +961,30 @@ public class TutorialWorld {
         ArienteWorld.setup.getLogger().info("TUTORIAL CITY CHECK: {} outer chunks have raised city architecture", tallCityChunks);
         require(level.isEmptyBlock(new BlockPos(63, 64, 136)) && level.isEmptyBlock(new BlockPos(208, 64, 136)),
                 "Expected void beyond the nine-chunk platform");
+        int carts = 0;
         for (Entity entity : level.getAllEntities()) {
+            if (entity instanceof FluxLevitatorEntity cart) {
+                carts++;
+                var front = cart.getHoloGuiFront();
+                var back = cart.getHoloGuiBack();
+                require(front != null && back != null && front != back, "Cart needs two distinct end panels");
+                Entity frontEntity = front.getEntity();
+                Entity backEntity = back.getEntity();
+                require(frontEntity.isAlive() && backEntity.isAlive()
+                                && frontEntity.getVehicle() == cart && backEntity.getVehicle() == cart,
+                        "Both cart panels must remain attached after saving and reloading");
+                require(Math.abs(frontEntity.position().distanceTo(backEntity.position()) - 2) < .001
+                                && frontEntity.getLookAngle().dot(backEntity.getLookAngle()) < -.999,
+                        "Cart panels must occupy opposite ends, not overlap");
+                require(cart.getPassengers().size() == 2, "Unoccupied tutorial cart must have exactly its two panels");
+                ArienteWorld.setup.getLogger().info("TUTORIAL CART CHECK: two attached panels on opposite ends");
+            }
             if (entity instanceof FluxLevitatorEntity || entity instanceof FluxShipEntity) {
                 require(entity.getX() >= 112 && entity.getX() < 160 && entity.getZ() >= 112 && entity.getZ() < 160,
                         "Vehicle left the central plaza");
             }
         }
+        require(carts == 1, "Tutorial must contain exactly one Flux Levitator");
         ArienteWorld.setup.getLogger().info("TUTORIAL CHECK: {} circuits; {} shield panels; {} registered machine types", circuits, panels, Registration.TILES.getEntries().size());
     }
 

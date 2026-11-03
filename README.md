@@ -97,7 +97,12 @@ The automation exhibit uses a closed Field Marker border with no interior marker
 The authoring run checks real power, smelting, fuel routing, sorted storage,
 crafted circuits, shield panels, display layouts and wireless signals before saving.
 Fuel barrels keep the main power exhibit running. The cart runs on
-an exposed four-bend loop; door markers sit above the walking floor. Copy the
+an exposed four-bend loop with two control holograms, one on each end. Hold the
+forward movement key (W by default) to accelerate gradually in the direction you
+face and the back movement key (S) to slow down to a stop. Release the keys to keep
+the speed; the panels can select reverse or stop instantly. Both panels are checked
+again after reloading.
+Door markers sit above the walking floor. Copy the
 save before experimenting. The authoring sources are excluded from release jars.
 Cheats are enabled in the saved world, allowing `/gamemode survival` and
 `/gamemode creative` without opening to LAN. The WELCOME display sits in front
