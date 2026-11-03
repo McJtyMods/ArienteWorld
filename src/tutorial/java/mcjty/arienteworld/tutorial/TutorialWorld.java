@@ -77,7 +77,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
@@ -90,6 +92,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /** An explicitly enabled authoring tool, never loaded by an ordinary game. */
@@ -616,31 +620,88 @@ public class TutorialWorld {
     }
 
     private static void transport(ServerLevel level) {
-        // The 1.3-block-wide cart needs an exposed rail, not a slot sunk into a full-block floor.
-        for (int x = 129; x <= 141; x++) {
-            for (int z : new int[]{146, 156}) {
-                put(level, new BlockPos(x, 65, z), Registration.FLUX_BEAM.get().defaultBlockState()
-                        .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
+        Map<BlockPos, BlockState> track = cityCircuit();
+        // Clear the entire cabin envelope before placing rails, including where towers cross the route.
+        for (BlockPos rail : track.keySet()) {
+            for (BlockPos pos : BlockPos.betweenClosed(rail.offset(-2, 0, -2), rail.offset(2, 5, 2))) {
+                put(level, pos, Blocks.AIR);
             }
         }
-        for (int z = 147; z < 156; z++) {
-            for (int x : new int[]{129, 141}) {
-                put(level, new BlockPos(x, 65, z), Registration.FLUX_BEAM.get().defaultBlockState()
-                        .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST));
+        track.forEach((pos, state) -> {
+            put(level, pos.below(), marble(MarbleColor.DARKBLUE));
+            put(level, pos, state);
+        });
+        // Slim supports and lights make the elevated city tour visible from the plaza.
+        for (BlockPos rail : track.keySet()) {
+            if (rail.getY() == 97 && (rail.getX() + rail.getZ()) % 16 == 0) {
+                for (int y = FLOOR + 1; y < rail.getY() - 1; y++) {
+                    BlockPos support = new BlockPos(rail.getX(), y, rail.getZ());
+                    if (level.isEmptyBlock(support)) {
+                        put(level, support, marble(MarbleColor.DARKBLUE));
+                    }
+                }
+                put(level, rail.below(), Registration.FLUX_GLOW.get());
             }
-        }
-        int[][] corners = {{129, 146}, {141, 146}, {141, 156}, {129, 156}};
-        Direction[] facings = {Direction.WEST, Direction.NORTH, Direction.EAST, Direction.SOUTH};
-        for (int i = 0; i < corners.length; i++) {
-            put(level, new BlockPos(corners[i][0], 65, corners[i][1]), Registration.FLUX_BEND_BEAM.get().defaultBlockState()
-                    .setValue(BlockStateProperties.HORIZONTAL_FACING, facings[i]));
         }
         FluxLevitatorEntity cart = FluxLevitatorEntity.create(level, 132.5, 65.0625, 146.5);
         level.addFreshEntity(cart);
         FluxShipEntity ship = FluxShipEntity.create(level, 135, 65, 151.5);
         level.addFreshEntity(ship);
-        label(level, 131, 65, 158, "08 / TRANSPORT", "W: accelerate", "S: slow down", "Panels: reverse/stop");
+        label(level, 133, 65, 158, "08 / TRANSPORT", "W: accelerate", "S: slow down", "Panels: reverse/stop");
         label(level, 138, 65, 158, "FLUX SHIP", "WASD moves/turns", "Space/Backspace", "Sneak: exit");
+        label(level, 137, 65, 143, "CITY CIRCUIT", "424 blocks / loop", "Climb 32 blocks", "Returns here");
+    }
+
+    private static Map<BlockPos, BlockState> cityCircuit() {
+        Map<BlockPos, BlockState> track = new LinkedHashMap<>();
+        for (int x = 129; x <= 141; x++) {
+            track.put(new BlockPos(x, 65, 146), beam(Direction.NORTH));
+        }
+        for (int z = 147; z <= 166; z++) {
+            boolean slope = z >= 158 && z <= 165;
+            track.put(new BlockPos(141, 65 + Math.max(0, Math.min(8, z - 158)), z),
+                    slope ? slope(Direction.SOUTH) : beam(Direction.EAST));
+        }
+        for (int x = 142; x <= 184; x++) {
+            boolean slope = x >= 150 && x <= 173;
+            track.put(new BlockPos(x, 73 + Math.max(0, Math.min(24, x - 150)), 166),
+                    slope ? slope(Direction.EAST) : beam(Direction.NORTH));
+        }
+        for (int z = 165; z >= 88; z--) {
+            track.put(new BlockPos(184, 97, z), beam(Direction.EAST));
+        }
+        for (int x = 183; x >= 88; x--) {
+            track.put(new BlockPos(x, 97, 88), beam(Direction.NORTH));
+        }
+        for (int z = 89; z <= 184; z++) {
+            track.put(new BlockPos(88, 97, z), beam(Direction.EAST));
+        }
+        for (int x = 89; x <= 129; x++) {
+            boolean slope = x >= 92 && x <= 123;
+            track.put(new BlockPos(x, 97 - Math.max(0, Math.min(32, x - 91)), 184),
+                    slope ? slope(Direction.WEST) : beam(Direction.NORTH));
+        }
+        for (int z = 183; z >= 147; z--) {
+            track.put(new BlockPos(129, 65, z), beam(Direction.EAST));
+        }
+        int[][] corners = {{129, 65, 146}, {141, 65, 146}, {141, 73, 166}, {184, 97, 166},
+                {184, 97, 88}, {88, 97, 88}, {88, 97, 184}, {129, 65, 184}};
+        Direction[] facings = {Direction.WEST, Direction.NORTH, Direction.SOUTH, Direction.EAST,
+                Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST};
+        for (int i = 0; i < corners.length; i++) {
+            track.put(new BlockPos(corners[i][0], corners[i][1], corners[i][2]),
+                    Registration.FLUX_BEND_BEAM.get().defaultBlockState()
+                            .setValue(BlockStateProperties.HORIZONTAL_FACING, facings[i]));
+        }
+        return track;
+    }
+
+    private static BlockState beam(Direction facing) {
+        return Registration.FLUX_BEAM.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
+    }
+
+    private static BlockState slope(Direction uphill) {
+        return Registration.FLUX_SLOPE_BEAM.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, uphill);
     }
 
     private static ItemStack guide() {
@@ -659,7 +720,9 @@ public class TutorialWorld {
                 "04 SHIELD (northeast)\n\nA working radius-3 forcefield is behind the rail. Stay outside: active shield panels hurt.\n\nUse the wireless button beside the display to switch it off before approaching the generator. Right-click the generator to change radius or redstone mode. Increase power for larger shields.",
                 "05 SECURITY (east)\n\nTake the Tutorial keycard from the welcome storage. Use it on the lock, then walk near the door. The invisible door blocks belong to the marker under the opening.\n\nThe AI Core and safe Alarm show city equipment. AI behavior belongs to the Ariente dimension; this Overworld exhibit does not spawn defenders.",
                 "06 WIRELESS (southwest)\n\nThe left wireless button controls a lamp and the nearby Wireless Lock. Walk near the door after unlocking.\n\nThe right lever supplies the transmitter; its remote receiver controls the southern lamp. These are separate pre-linked channels. Use the tablet to copy/reassign channels.",
-                "07 ELEVATOR (southeast)\n\nWalk onto the beam and choose a floor in its hologram. The upper Level Marker provides the observation-deck stop.\n\n08 TRANSPORT (south)\nBoard the cart. Hold Forward (W) to accelerate where you face, Back (S) to slow down; release to coast. Turn around and hold W to reverse gradually. Both panels also set speed or stop instantly. Movement key remaps work.",
+                "07 ELEVATOR (southeast)\n\nWalk onto the beam and choose a floor in its hologram. The upper Level Marker provides the observation-deck stop.",
+                "08 TRANSPORT (south)\n\nBoard the cart for a 424-block city circuit. The track climbs 32 blocks, tours the eastern, northern and western skyline, then descends and returns here. Slopes rise one block each; the cabin tilts with the track while its rider and panels follow it.",
+                "08 DRIVING\n\nHold Forward (W) to accelerate where you face, Back (S) to slow down; release to coast. Turn around and hold W to reverse gradually. Both panels also set speed or stop instantly. Movement key remaps work. The cart automatically slows for slopes and bends. Stay aboard for the full return to the plaza.",
                 "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCheats are enabled: /gamemode survival or /gamemode creative. Daylight, no natural mob spawning and keep-inventory are enabled for teaching. The surrounding 72 chunks use ArienteWorld city generation, including buildings, parks and levitator corridors. Copy this save before experimenting."
         }) {
             pages.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(page))));
@@ -786,7 +849,7 @@ public class TutorialWorld {
             stock(level, INPUT, new ItemStack(Items.RAW_IRON, 64), new ItemStack(Registration.DUST_NEGARITE.get(), 32),
                     new ItemStack(Registration.DUST_POSIRITE.get(), 32), new ItemStack(Items.OAK_PLANKS, 64));
             Files.writeString(event.getServer().getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete"),
-                    "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified displays, recipe sorting, smelting, refueling, power, crafting, shield, two cart end panels and machine coverage.\n");
+                    "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified displays, recipe sorting, smelting, refueling, power, crafting, shield, 424-block sloped city circuit with rider in both directions, two cart end panels and machine coverage.\n");
             running = false;
             ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: displays, smelting, refueling, sorted storage, circuits, shield, wireless and two cart end panels; saving map");
             event.getServer().halt(false);
@@ -977,6 +1040,7 @@ public class TutorialWorld {
                                 && frontEntity.getLookAngle().dot(backEntity.getLookAngle()) < -.999,
                         "Cart panels must occupy opposite ends, not overlap");
                 require(cart.getPassengers().size() == 2, "Unoccupied tutorial cart must have exactly its two panels");
+                verifyCityCircuit(level, cart);
                 ArienteWorld.setup.getLogger().info("TUTORIAL CART CHECK: two attached panels on opposite ends");
             }
             if (entity instanceof FluxLevitatorEntity || entity instanceof FluxShipEntity) {
@@ -986,6 +1050,65 @@ public class TutorialWorld {
         }
         require(carts == 1, "Tutorial must contain exactly one Flux Levitator");
         ArienteWorld.setup.getLogger().info("TUTORIAL CHECK: {} circuits; {} shield panels; {} registered machine types", circuits, panels, Registration.TILES.getEntries().size());
+    }
+
+    private static void verifyCityCircuit(ServerLevel level, FluxLevitatorEntity cart) {
+        Map<BlockPos, BlockState> track = cityCircuit();
+        Map<BlockPos, BlockPos> columns = new LinkedHashMap<>();
+        track.forEach((pos, state) -> {
+            require(level.getBlockState(pos).equals(state), "Missing city circuit beam at " + pos);
+            columns.put(new BlockPos(pos.getX(), 0, pos.getZ()), pos);
+        });
+        require(track.size() == 424, "Unexpected city circuit length: " + track.size());
+        CompoundTag parked = cart.saveWithoutId(new CompoundTag());
+        var rider = FakePlayerFactory.getMinecraft(level);
+        try {
+            for (int speed : new int[]{5, 80, -5, -80}) {
+                cart.load(parked.copy());
+                rider.startRiding(cart, true);
+                cart.changeSpeed(speed);
+                Set<BlockPos> bends = new HashSet<>();
+                Set<BlockPos> slopes = new HashSet<>();
+                boolean returned = false;
+                for (int tick = 0; tick < 6000; tick++) {
+                    cart.tick();
+                    cart.positionRider(rider);
+                    cart.positionRider(cart.getHoloGuiFront().getEntity());
+                    cart.positionRider(cart.getHoloGuiBack().getEntity());
+                    BlockPos rail = columns.get(BlockPos.containing(cart.getX(), 0, cart.getZ()));
+                    require(rail != null && cart.getSpeed() == speed,
+                            "City circuit blocked or derailed at speed " + speed + ": " + cart.position());
+                    var projected = cart.getPos(cart.getX(), cart.getY(), cart.getZ());
+                    require(projected != null && Math.abs(projected.y - cart.getY()) < .0001,
+                            "City circuit height does not follow the track: " + cart.position());
+                    require(rider.getVehicle() == cart && rider.distanceToSqr(cart) < 1,
+                            "City circuit rider left the cabin");
+                    Entity front = cart.getHoloGuiFront().getEntity();
+                    Entity back = cart.getHoloGuiBack().getEntity();
+                    require(Math.abs(front.distanceTo(back) - 2) < .001,
+                            "City circuit control panels left the cabin ends");
+                    if (track.get(rail).is(Registration.FLUX_BEND_BEAM.get())) {
+                        bends.add(rail);
+                    } else if (track.get(rail).is(Registration.FLUX_SLOPE_BEAM.get())) {
+                        slopes.add(rail);
+                    }
+                    if (bends.size() == 8 && slopes.size() == 64
+                            && cart.position().distanceToSqr(new Vec3(132.5, 65.0625, 146.5)) < 1) {
+                        returned = true;
+                        break;
+                    }
+                }
+                require(returned, "City tour did not return to the station at speed " + speed
+                        + ": bends=" + bends.size() + ", slopes=" + slopes.size() + ", pos=" + cart.position());
+                rider.stopRiding();
+                ArienteWorld.setup.getLogger().info("TUTORIAL CIRCUIT CHECK: 424 blocks, 64 slopes, 8 bends, rider returned at speed {}", speed);
+            }
+        } finally {
+            rider.stopRiding();
+            cart.load(parked);
+            cart.positionRider(cart.getHoloGuiFront().getEntity());
+            cart.positionRider(cart.getHoloGuiBack().getEntity());
+        }
     }
 
     private static void require(boolean condition, String message) {

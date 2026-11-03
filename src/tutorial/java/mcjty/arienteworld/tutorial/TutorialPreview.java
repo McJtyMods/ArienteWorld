@@ -8,6 +8,7 @@ import mcjty.ariente.blocks.utility.door.DoorMarkerTile;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
+import mcjty.ariente.entities.levitator.FluxLevitatorEntity;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.core.BlockPos;
@@ -34,7 +35,8 @@ public class TutorialPreview {
 
     private static final String[] SCENES = {"Tutorial-city", "Tutorial-plaza", "Tutorial-bend",
             "Tutorial-beams", "Tutorial-elevator", "Tutorial-cockpit", "Tutorial-displays", "Tutorial-automation", "Tutorial-filter", "Tutorial-welcome", "Tutorial-power", "Tutorial-construction", "Tutorial-forcefield", "Tutorial-security",
-            "Tutorial-outline-displays", "Tutorial-module-left", "Tutorial-module-right", "Tutorial-alarm"};
+            "Tutorial-outline-displays", "Tutorial-module-left", "Tutorial-module-right", "Tutorial-alarm",
+            "Tutorial-city-circuit", "Tutorial-slope-rider", "Tutorial-slope-cockpit"};
     private static int scene = Integer.getInteger("ariente.tutorial.scene", 0);
     private static int ticks;
     private static boolean started;
@@ -73,7 +75,21 @@ public class TutorialPreview {
             mc.options.simulationDistance().set(5);
             prepare(mc);
         }
-        if (!ready || ++ticks < 160) {
+        if (!ready || ++ticks < (scene == 20 ? 30 : 160)) {
+            if (ready && scene >= 19 && ticks > 20) {
+                if (!(mc.player.getVehicle() instanceof FluxLevitatorEntity cart) || mc.player.distanceToSqr(cart) >= 1) {
+                    throw new IllegalStateException("Tutorial slope preview rider left the cabin");
+                }
+                if (scene == 19) {
+                    var front = cart.getHoloGuiFront();
+                    var back = cart.getHoloGuiBack();
+                    var head = mc.player.getEyePosition().subtract(cart.position().add(0, .375, 0));
+                    if (front == null || back == null || Math.abs(head.dot(front.getEntity().position()
+                            .subtract(back.getEntity().position()).normalize())) >= .95) {
+                        throw new IllegalStateException("Tutorial slope preview rider's head reached an end wall");
+                    }
+                }
+            }
             return;
         }
         if (scene == 9 && !mc.player.hasPermissions(2)) {
@@ -97,11 +113,11 @@ public class TutorialPreview {
     private static void prepare(Minecraft mc) {
         int current = scene;
         var playerId = mc.player.getUUID();
-        mc.options.setCameraType(current == 5 ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON);
+        mc.options.setCameraType(current == 5 || current == 19 ? CameraType.THIRD_PERSON_BACK : CameraType.FIRST_PERSON);
         mc.getSingleplayerServer().execute(() -> {
             var player = mc.getSingleplayerServer().getPlayerList().getPlayer(playerId);
             player.stopRiding();
-            player.setGameMode((current == 5 || current == 9) ? GameType.CREATIVE : GameType.SPECTATOR);
+            player.setGameMode((current == 5 || current == 9 || current >= 19) ? GameType.CREATIVE : GameType.SPECTATOR);
             switch (current) {
                 case 0 -> player.teleportTo(player.serverLevel(), 236, 183, 236, 135, 40);
                 case 1 -> player.teleportTo(player.serverLevel(), 178, 116, 185, 139, 42);
@@ -171,6 +187,21 @@ public class TutorialPreview {
                 case 15 -> player.teleportTo(player.serverLevel(), 118.8, 65.6, 130.5, -154, 6);
                 case 16 -> player.teleportTo(player.serverLevel(), 124.5, 65.6, 130.5, 142, 6);
                 case 17 -> player.teleportTo(player.serverLevel(), 154.5, 65.5, 138.5, 180, 10);
+                case 18 -> player.teleportTo(player.serverLevel(), 226, 145, 224, 135, 33);
+                case 19, 20 -> {
+                    var carts = player.serverLevel().getEntitiesOfClass(FluxLevitatorEntity.class,
+                            new AABB(64, 60, 64, 208, 110, 208));
+                    if (carts.size() != 1) {
+                        throw new IllegalStateException("Tutorial slope preview needs its parked cart");
+                    }
+                    FluxLevitatorEntity cart = carts.get(0);
+                    cart.setPos(160.5, 83.5625, 166.5);
+                    cart.setDeltaMovement(0, 0, 0);
+                    cart.changeSpeed(current == 20 ? 30 : 0);
+                    player.teleportTo(player.serverLevel(), cart.getX(), cart.getY(), cart.getZ(),
+                            current == 19 ? 0 : -90, current == 19 ? 10 : -45);
+                    player.startRiding(cart, true);
+                }
                 default -> throw new IllegalStateException("Unknown Tutorial preview scene");
             }
             ready = true;

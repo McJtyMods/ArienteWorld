@@ -97,7 +97,11 @@ The automation exhibit uses a closed Field Marker border with no interior marker
 The authoring run checks real power, smelting, fuel routing, sorted storage,
 crafted circuits, shield panels, display layouts and wireless signals before saving.
 Fuel barrels keep the main power exhibit running. The cart runs on
-an exposed four-bend loop with two control holograms, one on each end. Hold the
+an exposed 424-block circuit with eight bends and 64 sloped beams. It climbs from
+Y=65 to Y=97, tours the eastern, northern and western city skyline, then descends
+and returns to the plaza station. The cabin, rider and two end control holograms
+follow the inclines. The authoring and reload checks drive the complete circuit
+with a rider in both directions, at slow and maximum speed settings. Hold the
 forward movement key (W by default) to accelerate gradually in the direction you
 face and the back movement key (S) to slow down to a stop. Release the keys to keep
 the speed; the panels can select reverse or stop instantly. Both panels are checked
@@ -145,6 +149,9 @@ Use `-Ptutorial_scene=6` to start at the display booth, or `-Ptutorial_scene=8`
 to start at the category-filter panel. Start at `-Ptutorial_scene=9` to check
 the spawn view, both gamemode commands, the power monitors, construction,
 forcefield controls and the keycard door.
+Start at `-Ptutorial_scene=18` for the city circuit, a mounted slope view and
+a moving cockpit view. The last two scenes also check that the client rider
+stays inside the cart.
 
 To check the automation field renderer at close range, put a disposable copy of
 Tutorial under `build/verification/autofield-vanilla/saves/Tutorial` and run
