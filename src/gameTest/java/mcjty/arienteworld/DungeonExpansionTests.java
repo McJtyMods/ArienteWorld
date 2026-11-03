@@ -1,12 +1,17 @@
 package mcjty.arienteworld;
 
 import mcjty.ariente.blocks.utility.ElevatorTile;
+import mcjty.ariente.display.DisplayBaseTile;
+import mcjty.ariente.display.DisplayGeometry;
+import mcjty.ariente.display.DisplayModuleItem;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.dimension.CityFeature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.phys.AABB;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Map;
@@ -18,6 +23,8 @@ import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.Palette;
 import mcjty.arienteworld.dimension.ArienteLandscapeCity;
 import mcjty.arienteworld.dimension.DungeonInteriors;
+import mcjty.arienteworld.dimension.DungeonDisplays;
+import mcjty.arienteworld.cities.Transform;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -178,6 +185,33 @@ public class DungeonExpansionTests {
         ElevatorTile restored = new ElevatorTile(elevator.getBlockPos(), elevator.getBlockState());
         restored.load(elevator.saveWithoutMetadata());
         helper.assertTrue(restored.getHeight() == 23, "Elevator travel height must persist");
+        int displays = 0;
+        for (var entry : part.getTeInfo().entrySet()) {
+            if (!(entry.getValue().get("AlienText") instanceof String text)) {
+                continue;
+            }
+            BlockPos pos = origin.offset(entry.getKey());
+            DisplayBaseTile display = (DisplayBaseTile) level.getBlockEntity(pos);
+            helper.assertTrue(display != null && display.modules().size() == 1, "Generated consoles need an installed module");
+            var module = display.modules().get(0);
+            helper.assertTrue(module.stack().is(Registration.DISPLAY_ALIEN_TEXT.get())
+                            && DisplayGeometry.fits(display, module.x(), module.y(), module.size()),
+                    "The alien module must fit its generated display");
+            helper.assertTrue(DisplayModuleItem.config(module.stack()).getString("Text").equals(text),
+                    "Generated symbols must reach the module item");
+            DisplayBaseTile saved = new DisplayBaseTile(pos, display.getBlockState());
+            saved.load(display.saveWithoutMetadata());
+            helper.assertTrue(saved.modules().size() == 1
+                            && DisplayModuleItem.config(saved.modules().get(0).stack()).equals(DisplayModuleItem.config(module.stack())),
+                    "Alien glyphs and color must survive a world reload");
+            level.destroyBlock(pos, true);
+            long recovered = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(1)).stream()
+                    .filter(drop -> drop.getItem().is(Registration.DISPLAY_ALIEN_TEXT.get())
+                            && DisplayModuleItem.config(drop.getItem()).equals(DisplayModuleItem.config(module.stack()))).count();
+            helper.assertTrue(recovered == 1, "Breaking a ruin console must salvage exactly one configured alien module");
+            displays++;
+        }
+        helper.assertTrue(displays > 0, "Control desks must include alien displays");
         helper.succeed();
     }
 
@@ -493,21 +527,81 @@ public class DungeonExpansionTests {
             BuildingPart part = AssetRegistries.PARTS.get("building" + i);
             helper.assertTrue(part != null && part.getSliceCount() > 26, "Missing taller skyline variant");
         }
+        Palette cityPalette = AssetRegistries.PALETTES.get(ArienteLandscapeCity.CITY_PALETTE);
+        int cityDisplays = 0;
+        int undecoratedBuildings = 0;
+        for (int i = 1; i <= 26; i++) {
+            BuildingPart authored = AssetRegistries.PARTS.get("building" + i);
+            String before = authored.writeToJSon().toString();
+            BuildingPart decorated = authored.createCopy(authored.getName());
+            DungeonDisplays.decorate(decorated, cityPalette, 42, 8, 8);
+            BuildingPart repeated = authored.createCopy(authored.getName());
+            DungeonDisplays.decorate(repeated, cityPalette, 42, 8, 8);
+            helper.assertTrue(decorated.writeToJSon().equals(repeated.writeToJSon()), "Building consoles must be deterministic");
+            helper.assertTrue(authored.writeToJSon().toString().equals(before), "Building consoles must preserve the shared template");
+            int count = (int) decorated.getTeInfo().values().stream().filter(data -> data.containsKey("AlienText")).count();
+            if (count > 0 && cityDisplays == 0) {
+                verifyAlienConsoles(helper, decorated, cityPalette, new BlockPos(132000, 170, 132000), Transform.MIRROR_90_X);
+            }
+            helper.assertTrue(count <= 1, "City buildings should have at most one alien console");
+            cityDisplays += count;
+            undecoratedBuildings += count == 0 ? 1 : 0;
+        }
+        helper.assertTrue(cityDisplays > 0 && undecoratedBuildings > 0, "Only some city buildings should receive alien consoles");
         for (String plan : new String[]{"city0_0", "city0_1", "city1_1", "city1_2", "city2_1", "city3_1", "city4_1", "station"}) {
             Palette palette = AssetRegistries.PALETTES.get(plan);
             boolean different = false;
+            boolean alienDisplays = false;
             for (var parts : AssetRegistries.CITYPLANS.get(plan).getPartPalette().values()) {
                 BuildingPart part = AssetRegistries.PARTS.get(parts.getPalette().get(0));
                 String original = part.writeToJSon().toString();
                 for (int seed = 0; seed < 8; seed++) {
                     BuildingPart variant = DungeonInteriors.vary(part, palette, seed, 8, 8);
                     different |= !original.equals(variant.writeToJSon().toString());
-                    helper.assertTrue(part.getTeInfo().equals(variant.getTeInfo()), "Equipment settings changed");
+                    part.getTeInfo().forEach((pos, data) -> helper.assertTrue(data.equals(variant.getTeInfo().get(pos)), "Authored equipment settings changed"));
+                    for (var entry : variant.getTeInfo().entrySet()) {
+                        if (!part.getTeInfo().containsKey(entry.getKey())) {
+                            BlockPos pos = entry.getKey();
+                            helper.assertTrue(entry.getValue().get("AlienText") instanceof String
+                                            && palette.getPalette().get(variant.getC(pos.getX(), pos.getY(), pos.getZ())).is(Registration.DISPLAY_BASE.get()),
+                                    "Additional equipment must be an alien console");
+                            if (plan.equals("city4_1") && !alienDisplays) {
+                                verifyAlienConsoles(helper, variant, palette, new BlockPos(132032, 170, 132000), Transform.ROTATE_90);
+                            }
+                            alienDisplays = true;
+                        }
+                    }
                     helper.assertTrue(part.getSliceCount() == variant.getSliceCount(), "Dungeon joins changed height");
                 }
             }
             helper.assertTrue(different, "No visible alternate for " + plan);
+            helper.assertTrue(!plan.equals("city3_1") && !plan.equals("city4_1") || alienDisplays,
+                    "Underground and floating dungeons need alien displays");
         }
         helper.succeed();
+    }
+
+    private static void verifyAlienConsoles(GameTestHelper helper, BuildingPart part, Palette palette, BlockPos origin, Transform transform) {
+        var level = helper.getLevel();
+        level.getChunkAt(origin);
+        CityFeature.placePart(level, origin, part, palette, transform);
+        for (var entry : part.getTeInfo().entrySet()) {
+            if (!(entry.getValue().get("AlienText") instanceof String text)) {
+                continue;
+            }
+            BlockPos pos = origin.offset(transform.transform(entry.getKey()));
+            DisplayBaseTile display = (DisplayBaseTile) level.getBlockEntity(pos);
+            helper.assertTrue(display != null && display.modules().size() == 1, "Rotated city and floating consoles must contain a module");
+            var module = display.modules().get(0);
+            helper.assertTrue(DisplayGeometry.fits(display, module.x(), module.y(), module.size())
+                            && DisplayModuleItem.config(module.stack()).getString("Text").equals(text),
+                    "Rotated alien consoles must preserve their glyphs and fit their screen");
+            BlockPos front = pos.relative(DisplayGeometry.facing(display));
+            for (int y = -1; y <= 1; y++) {
+                helper.assertTrue(level.getBlockState(front.offset(0, y, 0)).isAir(), "Alien consoles must leave clear standing room");
+            }
+            helper.assertTrue(level.getBlockState(front.below(2)).isCollisionShapeFullBlock(level, front.below(2)),
+                    "Alien consoles must face a supported floor");
+        }
     }
 }

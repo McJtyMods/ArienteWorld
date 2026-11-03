@@ -40,6 +40,10 @@ def main():
         if path.stem == 'city5_1':
             palette['palette'] += [{'char': key(len(MATERIALS) + i), 'block': block}
                                   for i, block in enumerate(CUBE_MATERIALS)]
+        if path.stem in ('city3_1', 'city4_1', 'city5_1', 'landscapecities'):
+            palette['palette'] = [p for p in palette['palette'] if p['char'] not in ('@n', '@s', '@w', '@e')]
+            palette['palette'] += [{'char': '@' + facing[0], 'block': 'ariente:display_base@facing=' + facing}
+                                   for facing in ('north', 'south', 'west', 'east')]
         if path.stem == 'landscapecities':
             data = [a for a in data if not (a['type'] == 'part' and
                     ((a['name'].startswith('building') and int(a['name'][8:]) > 13) or

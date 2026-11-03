@@ -1,4 +1,5 @@
 1.20-0.0.31-alpha:
+- Some city buildings, floating dungeon rooms, huge cube control desks and underground console banks now have alien glyph displays. Salvage their unreadable Alien Text Modules by recovering them from the display or breaking its base; they have no blueprint or crafting recipe.
 - Replaced obsolete Autofeed module blueprints in city loot with Energy Holder blueprints for the shared equipment power supply.
 - Vanilla mobs no longer spawn naturally in Ariente biomes outside cities.
 - Soldiers and guards can carry two-handed Energy Lances and fire lasers. Lances and their blueprints are rare finds in storage cubes.

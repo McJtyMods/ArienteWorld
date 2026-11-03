@@ -27646,6 +27646,22 @@
       {
         "char": "!y",
         "block": "ariente:storage@facing=west"
+      },
+      {
+        "char": "@n",
+        "block": "ariente:display_base@facing=north"
+      },
+      {
+        "char": "@s",
+        "block": "ariente:display_base@facing=south"
+      },
+      {
+        "char": "@w",
+        "block": "ariente:display_base@facing=west"
+      },
+      {
+        "char": "@e",
+        "block": "ariente:display_base@facing=east"
       }
     ]
   }

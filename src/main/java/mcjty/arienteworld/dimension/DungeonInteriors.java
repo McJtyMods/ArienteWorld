@@ -61,6 +61,7 @@ public final class DungeonInteriors {
             int corridorStyle = Math.floorMod(chunkX + chunkZ + (int) (seed ^ (seed >>> 32)), 4);
             CubeDetails.decorate(part, random, corridorStyle);
         }
+        DungeonDisplays.decorate(part, palette, seed, chunkX, chunkZ);
         return part;
     }
 

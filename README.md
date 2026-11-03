@@ -53,6 +53,12 @@ volume for a future boss; no boss is included. Underground halls gain seeded
 console banks, cooling stacks and machinery islands, while ships, stations and
 smaller dungeons can use alternate illuminated hull detailing.
 
+Some city buildings and floating dungeon rooms, as well as huge cube control
+desks and underground console banks, have alien glyph displays. Their decorative
+Alien Text Modules have no crafting recipe or blueprint.
+Sneak-right-click a module or break its display base to salvage it, preserving its
+symbols and color for use on another display.
+
 Surface dungeon approaches grade both high and low terrain toward their entrances.
 Authored empty spaces clear natural vegetation without removing the ground beneath them.
 

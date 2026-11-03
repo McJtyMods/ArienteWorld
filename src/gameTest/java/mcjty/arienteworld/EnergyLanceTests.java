@@ -133,6 +133,43 @@ public class EnergyLanceTests {
     }
 
     @GameTest(template = "empty")
+    public static void stationarySoldierLanceStaysBelowItsHead(GameTestHelper helper) {
+        Vec3 origin = clearFiringLane(helper);
+        SoldierEntity soldier = Registration.ENTITY_SOLDIER.get().create(helper.getLevel());
+        soldier.setNoAi(true);
+        soldier.moveTo(origin.x, origin.y, origin.z, 0, 0);
+        soldier.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Registration.ENERGY_LANCE.get()));
+        for (HumanoidArm arm : HumanoidArm.values()) {
+            soldier.setLeftHanded(arm == HumanoidArm.LEFT);
+            for (float bodyYaw : new float[]{0, 90, 180, -90}) {
+                soldier.setYRot(bodyYaw);
+                for (float headYaw : new float[]{0, 90, 180, -90}) {
+                    soldier.setYHeadRot(headYaw);
+                    soldier.setOldPosAndRot();
+                    soldier.yHeadRotO = headYaw;
+                    for (float partialTick : new float[]{0, .5f, 1}) {
+                        Vec3 eye = soldier.getEyePosition(partialTick);
+                        Vec3 forward = soldier.getViewVector(partialTick);
+                        LanceAim aim = LanceAim.calculate(soldier, eye, forward, bodyYaw);
+                        Vec3 offset = aim.muzzle().subtract(eye);
+                        helper.assertTrue(offset.y < -.2 && offset.dot(forward) > 1,
+                                "A stationary soldier's lance must stay below its eyes and forward when head and body face different ways");
+                        Vec3 right = new Vec3(-forward.z, 0, forward.x).normalize();
+                        helper.assertTrue((offset.dot(right) > 0) == (arm == HumanoidArm.RIGHT),
+                                "The muzzle must stay on the main-hand side of the soldier's aim");
+                    }
+                }
+            }
+        }
+        for (Vec3 vertical : new Vec3[]{new Vec3(0, 1, 0), new Vec3(0, -1, 0)}) {
+            Vec3 right = LanceAim.rightVector(vertical, 90);
+            helper.assertTrue(Math.abs(right.length() - 1) < .0001 && Math.abs(right.dot(vertical)) < .0001,
+                    "Vertical aim needs a finite perpendicular weapon frame");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void lanceHitsForThirtyPercentMoreAndStopsAtWalls(GameTestHelper helper) {
         Player player = helper.makeMockSurvivalPlayer();
         Vec3 origin = clearFiringLane(helper);
@@ -164,11 +201,13 @@ public class EnergyLanceTests {
         BlockPos wall = BlockPos.containing(player.getEyePosition().add(2, 0, 0));
         helper.getLevel().setBlockAndUpdate(wall, Blocks.STONE.defaultBlockState());
         LaserEntity blocked = LaserEntity.createLanceShot(helper.getLevel(), player, new Vec3(1, 0, 0), 16.9F);
+        Vec3 blockedMuzzle = blocked.position();
         for (int tick = 0; tick < 5 && !blocked.isRemoved(); tick++) {
             blocked.tick();
         }
         helper.assertTrue(blocked.isRemoved() && blocked.getX() < wall.getX() + 2,
-                "A lance laser must be consumed by a solid wall");
+                "A lance laser must be consumed by a solid wall: muzzle=" + blockedMuzzle + ", final=" + blocked.position()
+                        + ", direction=" + blocked.getBeamDirection() + ", wall=" + wall + ", state=" + helper.getLevel().getBlockState(wall));
         helper.succeed();
     }
 
@@ -227,8 +266,8 @@ public class EnergyLanceTests {
         }
         var constructor = (ConstructorTile) helper.getLevel().getBlockEntity(bench);
         var output = constructor.createGui("", Ariente.guiHandler.getComponentRegistry()).findChild("outputslots").orElseThrow();
-        output.hit(player, null, 2, 6);
-        output.hit(player, null, 2, 6);
+        output.hit(player, null, 2, 1.5);
+        output.hit(player, null, 2, 1.5);
         helper.assertTrue(player.getInventory().countItem(Registration.ENERGY_LANCE.get()) == 1,
                 "The actual Constructor control must craft a lance from its blueprint");
         helper.assertTrue(ItemStack.matches(blueprint, library.getItems().getStackInSlot(0)), "Crafting must retain the reusable blueprint");

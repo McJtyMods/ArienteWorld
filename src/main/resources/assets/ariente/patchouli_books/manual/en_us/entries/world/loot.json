@@ -11,6 +11,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Alien displays",
+      "text": "Some city buildings, floating dungeon rooms, huge cube control desks and underground console banks carry displays filled with unreadable alien symbols.$(br2)Sneak-right-click an installed Alien Text Module to recover it, or break its display base to drop it. Its symbols and color survive recovery and can decorate a display at home.$(br2)There is no blueprint or crafting recipe for these modules. They are souvenirs rather than useful readings. Look in newly generated ruins for them."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Sort your key cards",
       "text": "Soldiers can drop city cards, but permissions vary. Keep door access, storage access and forcefield immunity cards until you have checked them.$(br2)A city name identifies the destination, not every permission.$(br2)The card from the final AI Core is your storage-access reward. Use the Ariente chapter’s Key Cards entry if a lock rejects you."
     }

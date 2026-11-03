@@ -2,6 +2,7 @@ package mcjty.arienteworld.dimension;
 
 import mcjty.ariente.api.ICityEquipment;
 import mcjty.ariente.api.IStorageTile;
+import mcjty.ariente.display.DisplayBaseTile;
 import mcjty.arienteworld.ai.CityAI;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import mcjty.ariente.api.MarbleColor;
@@ -280,7 +281,9 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                     Map<String, Object> data = part.getTeInfo().get(new BlockPos(x, y, z));
                     if (data != null) {
                         BlockEntity blockEntity = level.getBlockEntity(pos);
-                        if (blockEntity instanceof ICityEquipment equipment) {
+                        if (blockEntity instanceof DisplayBaseTile display && data.get("AlienText") instanceof String) {
+                            DungeonDisplays.configure(display, data);
+                        } else if (blockEntity instanceof ICityEquipment equipment) {
                             Map<String, Object> settings = new HashMap<>(data);
                             BlockState mimic = null;
                             if (!(data.get("mimicState") instanceof String) && data.get("mimic") instanceof String id) {

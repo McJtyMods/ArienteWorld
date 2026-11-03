@@ -267,6 +267,11 @@ public class ArienteLandscapeCity {
 
         if (part != null) {
             BuildingPart buildingPart = AssetRegistries.PARTS.get(part.getKey());
+            if (part.getKey().startsWith("building")) {
+                buildingPart = buildingPart.createCopy(part.getKey());
+                DungeonDisplays.decorate(buildingPart, AssetRegistries.PALETTES.get(CITY_PALETTE),
+                        primer.getLevel().getSeed(), chunkX, chunkZ);
+            }
             primer.placePart(CITY_PALETTE, buildingPart, part.getValue(), 0, yOffset, 0);
             start += buildingPart.getSliceCount();
         }

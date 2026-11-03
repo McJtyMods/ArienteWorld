@@ -95,6 +95,9 @@ public class LanceAlignmentClientChecks {
             forward = soldier.getTarget().getEyePosition(partialTick).subtract(eye);
         }
         LanceAim shot = LanceAim.calculate(holder, eye, forward, Mth.rotLerp(partialTick, holder.yRotO, holder.getYRot()));
+        if (holder instanceof SoldierEntity && Math.abs(forward.y) < .01) {
+            require(shot.muzzle().y < eye.y, "A stationary soldier's lance must stay below its head even before body and head rotations align");
+        }
         float scale = firstPerson ? .75F : 1;
         Matrix4f toWorld = new Matrix4f(worldToClip).invert()
                 .mul(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix());
