@@ -87,6 +87,7 @@ Existing worlds are protected unless `--replace` is supplied. For example,
 `python3 tools/create_tutorial.py --verify --replace --saves ../workspace/run/saves`
 replaces the installed Tutorial after verification succeeds, without a backup.
 All registered block-entity types are represented, including multipart nodes.
+The automation exhibit uses a closed Field Marker border with no interior markers.
 The authoring run checks real power, smelting, fuel routing, sorted storage,
 crafted circuits, shield panels, display layouts and wireless signals before saving.
 Fuel barrels keep the main power exhibit running. The cart runs on

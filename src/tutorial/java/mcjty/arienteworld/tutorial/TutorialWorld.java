@@ -295,9 +295,12 @@ public class TutorialWorld {
         put(level, FIELD, Registration.AUTOMATION_FIELD.get());
         AutoFieldTile field = (AutoFieldTile) level.getBlockEntity(FIELD);
         field.setHeight(7);
-        for (int x = 114; x <= 126; x++) {
+        for (int x = 113; x <= 126; x++) {
             for (int z = 113; z <= 121; z++) {
-                part(level, new BlockPos(x, 65, z), Registration.FIELD_MARKER.get().defaultBlockState(), PartSlot.DOWN);
+                BlockPos pos = new BlockPos(x, 65, z);
+                if ((x == 113 || x == 126 || z == 113 || z == 121) && !pos.equals(FIELD)) {
+                    part(level, pos, Registration.FIELD_MARKER.get().defaultBlockState(), PartSlot.DOWN);
+                }
             }
         }
         supply(level, FIELD);
@@ -649,7 +652,7 @@ public class TutorialWorld {
         for (String page : new String[]{
                 "Welcome to Tutorial!\n\nA 9 x 9 chunk city platform in the void. The central 3 x 3 chunks contain the teaching stations.\n\nStart north at Power, then follow the numbered displays. The Holo Storage beside this lectern contains tools and the full manual.",
                 "01 POWER (north)\n\nEach generator has eight matching tanks and a fuel barrel feeding a hopper. Blue = Negarite; red = Posirite. Each tank adds 1,000 flux/tick.\n\nThe combiner takes 6,000 of each and outputs 5,880 of each to the buried yellow network. The glass hatch shows its route.",
-                "02 ITEMS (northwest)\n\nPut up to four item types in the 2x2 input cube. Output nodes EXTRACT; input nodes INSERT. A sensor enables extraction when items are present.\n\nSmeltables go to the Smelter. Its own fuel towers and overhead bus supply power. Both raw ores and dust can be added: smelted fuel dust feeds its matching generator.",
+                "02 ITEMS (northwest)\n\nThe field uses only a closed marker border; the inside needs no markers.\n\nPut up to four item types in the 2x2 input cube. Output nodes EXTRACT; input nodes INSERT. A sensor enables extraction when items are present.\n\nSmeltables go to the Smelter. Its fuel towers and overhead bus supply power. Both raw ores and dust can be added: smelted dust refuels the matching generator.",
                 "02 SORTING\n\nNon-smeltables go to Wood, Ingots or Various holo cubes. Categories follow current furnace recipes and item tags. Fuel dust is excluded from storage.\n\nLogs smelt to charcoal; planks go to Wood. If the smelter or destination fills, items wait safely in the input. Add more supplies to keep processing. The welcome storage has sample batches.",
                 "10 DISPLAYS (west of center)\n\nThree independent joined screens show transparent cyan, solid pale green and invisible amber surfaces. Each is four bases wide and three blocks tall.\n\nCompare text sizes, a power meter, numbers, live history, storage lists and item grids. Click a base or module to configure; hold right-click and drag to rearrange modules.",
                 "03 CRAFTING (west)\n\nTake four ingredients from the Storage Cube into YOUR inventory. Open the manual Constructor and double-click the circuit blueprint.\n\nThe Auto Constructor has its own ingredients, power and an adjacent Blueprint Storage. Inspect its circuit outputs. Extra materials are in the Ariente Storage.",
@@ -868,6 +871,17 @@ public class TutorialWorld {
                 .filter(module -> module.stack().is(Registration.DISPLAY_POWER.get())).count();
         require(powerModules == 4, "Power station needs four live generator monitors");
         require(PowerReceiverSupport.getPowerAvailable(level, FIELD, true) > 0, "Automation field has no real flux supply");
+        for (int x = 113; x <= 126; x++) {
+            for (int z = 113; z <= 121; z++) {
+                BlockPos pos = new BlockPos(x, 65, z);
+                if (!pos.equals(FIELD)) {
+                    boolean marker = level.getBlockEntity(pos) instanceof MultipartTE multipart
+                            && multipart.getParts().values().stream().anyMatch(part -> part.getState().is(Registration.FIELD_MARKER.get()));
+                    require(marker == (x == 113 || x == 126 || z == 113 || z == 121),
+                            "Tutorial must have markers only on its closed border at " + pos);
+                }
+            }
+        }
         require(PowerReceiverSupport.getPowerAvailable(level, SHIELD, true) > 0, "Shield has no real flux supply");
         require(PowerReceiverSupport.getPowerAvailable(level, SMELTER, true) > 0, "Smelter has no independent power supply");
         require(count(level, WOOD, Items.OAK_PLANKS) >= 2, "Planks did not reach wood storage");
