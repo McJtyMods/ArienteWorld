@@ -1,5 +1,6 @@
 package mcjty.arienteworld.entities.scout;
 
+import mcjty.arienteworld.ai.CityAISystem;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityTools;
@@ -12,7 +13,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Base queries use the generation seed, without generating or loading destination chunks. */
+/** Base queries use the generation seed and known core locations, without loading destination chunks. */
 public class ScoutRoutes {
 
     public record FlightPlan(ChunkPos destination, List<Vec3> waypoints) {
@@ -21,6 +22,11 @@ public class ScoutRoutes {
     public static boolean canLaunchFrom(City city) {
         return !city.getPlan().isUnderground()
                 && city.getPlan().getPlan().stream().mapToInt(row -> (int) row.chars().filter(c -> c != ' ').count()).sum() >= 9;
+    }
+
+    public static boolean isOperationalBase(ServerLevel level, ChunkPos center) {
+        return CityTools.isCityCenter(level.getSeed(), center.x, center.z)
+                && CityAISystem.getCityAISystem(level).getCityAI(center).hasOperationalCore();
     }
 
     public static List<City> nearbyBases(ServerLevel level, ChunkPos around, int cells) {
@@ -50,7 +56,7 @@ public class ScoutRoutes {
 
     public static FlightPlan create(ServerLevel level, ChunkPos from, Vec3 start, RandomSource random) {
         List<City> destinations = nearbyBases(level, from, 2).stream()
-                .filter(city -> !city.getCenter().equals(from)).toList();
+                .filter(city -> !city.getCenter().equals(from) && isOperationalBase(level, city.getCenter())).toList();
         if (!destinations.isEmpty() && random.nextInt(4) != 0) {
             City destination = destinations.get(random.nextInt(destinations.size()));
             Vec3 finish = aboveBase(level, destination);

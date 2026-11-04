@@ -7,7 +7,7 @@
     {
       "type": "patchouli:text",
       "title": "Patrols from large bases",
-      "text": "Larger surface and floating bases regularly launch a Flux Ship with a soldier at the controls. These scouts travel to another base or make a broad survey loop home.$(br2)This is separate from ordinary monster spawning. Lighting the ground does not prevent launches. Scouts start at least 128 horizontal blocks from players, and defeated base AIs stop sending them.$(br2)Only two scouts may stay near you. Further ships break off and take another route.$(br2)Scouts cruise about fourteen blocks above terrain, climbing over obstacles and banking through turns."
+      "text": "Larger surface and floating bases regularly launch a Flux Ship with a soldier at the controls. These scouts travel to another base or make a broad survey loop home.$(br2)This is separate from ordinary monster spawning. Lighting the ground does not prevent launches. Scouts start at least 128 horizontal blocks from players, and a base needs at least one intact AI core to send them. New destinations also need an intact core.$(br2)Only two scouts may stay near you. Further ships break off and take another route.$(br2)Scouts cruise about fourteen blocks above terrain, climbing over obstacles and banking through turns."
     },
     {
       "type": "patchouli:text",
@@ -17,7 +17,7 @@
     {
       "type": "patchouli:text",
       "title": "Passing traffic",
-      "text": "A ship reaching its destination leaves when players are far away. If you are nearby, it starts another flight instead.$(br2)First launch opportunities begin within a second. Bases up to 896 blocks away are considered, prioritizing those ahead of your flight path, with a default repeat delay of 10 to 20 seconds. Clear space and the two-scout limit still apply."
+      "text": "A ship reaching its destination leaves when players are far away. If you are nearby and the base still has an AI core, it starts another flight instead. If the destination loses its last core while a patrol is en route, that patrol completes its assigned journey, then leaves service without starting another flight there.$(br2)First launch opportunities begin within a second. Bases up to 896 blocks away are considered, prioritizing those ahead of your flight path, with a default repeat delay of 10 to 20 seconds. Clear space and the two-scout limit still apply."
     },
     {
       "type": "patchouli:text",

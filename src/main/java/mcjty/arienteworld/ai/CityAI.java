@@ -162,6 +162,7 @@ public class CityAI implements ICityAI {
             world.addFreshEntity(entityitem);
             setAlarmType(world, AlarmType.DEAD);
         }
+        aiCores.remove(pos);
     }
 
     // Return true if we potentially have to save the city system state
@@ -199,6 +200,38 @@ public class CityAI implements ICityAI {
     @Override
     public boolean isDead(Level world) {
         return !hasValidCoreExcept(world, null);
+    }
+
+    /** Unlike isDead(), patrol eligibility requires evidence of a real core, even before city initialization. */
+    public boolean hasOperationalCore() {
+        boolean changed = aiCores.removeIf(pos -> level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) != null
+                && !(level.getBlockEntity(pos) instanceof IAICoreTile));
+        if (aiCores.isEmpty()) {
+            List<String> pattern = city.getPlan().getPlan();
+            int width = pattern.get(0).length();
+            int depth = pattern.size();
+            for (int x = center.x - width / 2; x < center.x - width / 2 + width; x++) {
+                for (int z = center.z - depth / 2; z < center.z - depth / 2 + depth; z++) {
+                    var chunk = level.getChunkSource().getChunkNow(x, z);
+                    if (chunk == null) {
+                        continue;
+                    }
+                    int bottom = getLowestHeight(x, z);
+                    int top = bottom + CityTools.getBuildingParts(level.getSeed(), city, x, z).stream()
+                            .mapToInt(BuildingPart::getSliceCount).sum();
+                    for (BlockPos pos : chunk.getBlockEntitiesPos()) {
+                        if (pos.getY() >= bottom && pos.getY() < top && level.getBlockEntity(pos) instanceof IAICoreTile) {
+                            changed |= aiCores.add(pos.immutable());
+                        }
+                    }
+                }
+            }
+        }
+        if (changed) {
+            CityAISystem.getCityAISystem(level).saveSystem();
+        }
+        // Remember verified cores in unloaded chunks; breaking a core removes that record immediately.
+        return !aiCores.isEmpty();
     }
 
     // Check if there is still a valid AI core except for the input parameter

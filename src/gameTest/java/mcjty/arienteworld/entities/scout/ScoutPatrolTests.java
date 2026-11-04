@@ -4,6 +4,8 @@ import com.mojang.authlib.GameProfile;
 import mcjty.ariente.entities.LaserEntity;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.arienteworld.ArienteWorld;
+import mcjty.arienteworld.ai.CityAI;
+import mcjty.arienteworld.ai.CityAISystem;
 import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityTools;
@@ -16,6 +18,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,6 +46,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static mcjty.ariente.setup.Registration.ENTITY_LASER;
+import static mcjty.ariente.setup.Registration.AICORE;
 
 @GameTestHolder(ArienteWorld.MODID)
 @PrefixGameTestTemplate(false)
@@ -217,12 +221,19 @@ public class ScoutPatrolTests {
             helper.assertTrue(ScoutRoutes.canLaunchFrom(new City(new ChunkPos(8, 8), plan, "fixture")) == expected,
                     "Only larger outdoor bases should launch scouts: " + plan.getName());
         }
-        Vec3 start = new Vec3(136, 220, 136);
+        ServerLevel level = helper.getLevel();
+        City origin = ScoutRoutes.nearbyBases(level, new ChunkPos(8, 8), 2).stream()
+                .filter(ScoutRoutes::canLaunchFrom).findFirst().orElseThrow();
+        City destination = ScoutRoutes.nearbyBases(level, origin.getCenter(), 2).stream()
+                .filter(city -> !city.getCenter().equals(origin.getCenter())).findFirst().orElseThrow();
+        BlockPos originCore = installCore(level, origin);
+        BlockPos destinationCore = installCore(level, destination);
+        Vec3 start = ScoutRoutes.aboveBase(level, origin);
         boolean travel = false;
         boolean survey = false;
         for (int seed = 0; seed < 30; seed++) {
-            var route = ScoutRoutes.create(helper.getLevel(), new ChunkPos(8, 8), start, RandomSource.create(seed * 198491317L));
-            if (route.destination().equals(new ChunkPos(8, 8))) {
+            var route = ScoutRoutes.create(level, origin.getCenter(), start, RandomSource.create(seed * 198491317L));
+            if (route.destination().equals(origin.getCenter())) {
                 survey = true;
                 helper.assertTrue(route.waypoints().size() == 9 && route.waypoints().get(8).equals(start),
                         "Local patrols must make a broad loop back to their origin");
@@ -230,9 +241,13 @@ public class ScoutPatrolTests {
                 travel = true;
                 helper.assertTrue(CityTools.isCityCenter(helper.getLevel().getSeed(), route.destination().x, route.destination().z),
                         "Travel routes must end at a real seed-selected base");
+                helper.assertTrue(route.destination().equals(destination.getCenter()),
+                        "Travel routes must choose the base with an actual operating core");
             }
         }
         helper.assertTrue(travel && survey, "Scouts need both inter-base flights and local survey loops");
+        level.removeBlock(originCore, false);
+        level.removeBlock(destinationCore, false);
         helper.succeed();
     }
 
@@ -375,10 +390,13 @@ public class ScoutPatrolTests {
         FluxShipEntity observed = ship(helper);
         observed.tickCount = 1;
         SoldierEntity pilot = (SoldierEntity) observed.getControllingPassenger();
+        City arrival = ScoutRoutes.nearbyBases(level, new ChunkPos(8, 8), 2).get(0);
+        BlockPos core = installCore(level, arrival);
+        observed.setPos(ScoutRoutes.aboveBase(level, arrival));
         ServerPlayer spectator = player(level, observed.position().add(20, 0, 0));
         spectator.setGameMode(GameType.CREATIVE);
         try {
-            pilot.startScout(new ScoutPilot(pilot.getScoutPilot().getHome(), new ScoutRoutes.FlightPlan(new ChunkPos(24, 8), List.of())));
+            pilot.startScout(new ScoutPilot(pilot.getScoutPilot().getHome(), new ScoutRoutes.FlightPlan(arrival.getCenter(), List.of())));
             pilot.controlShip(observed);
             helper.assertTrue(!observed.isRemoved() && !pilot.isRemoved()
                             && !pilot.getScoutPilot().save().getList("route", Tag.TAG_COMPOUND).isEmpty(),
@@ -397,6 +415,7 @@ public class ScoutPatrolTests {
         } finally {
             level.players().remove(spectator);
             cleanup(observed);
+            level.removeBlock(core, false);
         }
         helper.succeed();
     }
@@ -476,6 +495,7 @@ public class ScoutPatrolTests {
             Vec3 center = ScoutRoutes.aboveBase(level, base);
             ServerPlayer player = player(level, center.add(64, 0, 0));
             List<FluxShipEntity> fleet = new ArrayList<>();
+            Map<BlockPos, BlockState> coreStates = new HashMap<>();
             boolean natural = level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING);
             try {
                 level.getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false, level.getServer());
@@ -494,8 +514,26 @@ public class ScoutPatrolTests {
                 helper.assertTrue(second != null, "A second nearby scout is allowed");
                 fleet.add(second);
                 helper.assertTrue(ScoutPatrols.launch(level, base, fleet, List.of(player)) == null, "A third nearby launch must be rejected");
+                fleet.forEach(ScoutPatrolTests::cleanup);
+                fleet.clear();
+                CityAI ai = CityAISystem.getCityAISystem(level).getCityAI(chunk);
+                CompoundTag state = new CompoundTag();
+                ai.writeToNBT(state);
+                ListTag cores = state.getList("cores", Tag.TAG_COMPOUND);
+                helper.assertTrue(!cores.isEmpty(), "The successful launch must be tied to actual generated cores");
+                for (int i = 0; i < cores.size(); i++) {
+                    BlockPos pos = NbtUtils.readBlockPos(cores.getCompound(i));
+                    coreStates.put(pos, level.getBlockState(pos));
+                    level.destroyBlock(pos, false);
+                }
+                // Reproduce a base whose core disappeared before its city AI initialized.
+                ai.readFromNBT(new CompoundTag());
+                helper.assertTrue(!ai.isDead(level) && ScoutPatrols.hasCapacity(center, fleet, List.of(player))
+                                && ScoutPatrols.launch(level, base, fleet, List.of(player)) == null,
+                        "A real coreless base must not launch, even with spare traffic capacity and assumed-alive AI state");
             } finally {
                 fleet.forEach(ScoutPatrolTests::cleanup);
+                coreStates.forEach((pos, state) -> level.setBlockAndUpdate(pos, state));
                 level.players().remove(player);
                 level.getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(natural, level.getServer());
                 ScoutNavigation.releaseLaunch(level, chunk);
@@ -548,6 +586,14 @@ public class ScoutPatrolTests {
         soldier.startRiding(ship, true);
         ship.positionRider(soldier);
         return ship;
+    }
+
+    private static BlockPos installCore(ServerLevel level, City city) {
+        ChunkPos center = city.getCenter();
+        BlockPos pos = new BlockPos(center.getMinBlockX() + 8,
+                CityTools.getLowestHeight(level, city, center.x, center.z) + 1, center.getMinBlockZ() + 8);
+        level.setBlockAndUpdate(pos, AICORE.get().defaultBlockState());
+        return pos;
     }
 
     private static ServerPlayer player(ServerLevel level, Vec3 position) {

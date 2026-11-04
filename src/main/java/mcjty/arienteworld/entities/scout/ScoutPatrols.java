@@ -228,6 +228,10 @@ public class ScoutPatrols extends SavedData {
             ScoutNavigation.prepareLaunch(level, city.getCenter());
             return null;
         }
+        if (!ScoutRoutes.isOperationalBase(level, city.getCenter())) {
+            ScoutNavigation.releaseLaunch(level, city.getCenter());
+            return null;
+        }
         int roof = level.getMinBuildHeight();
         // Include the whole hull and launch clearance; neighboring roof spires can be taller than the center column.
         for (int x = -6; x <= 6; x += 3) {

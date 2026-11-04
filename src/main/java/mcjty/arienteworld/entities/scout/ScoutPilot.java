@@ -24,7 +24,7 @@ import java.util.UUID;
 public class ScoutPilot {
 
     public enum Phase {
-        PATROL, SETUP, ATTACK, EGRESS, SEARCH, DIVERT
+        PATROL, SETUP, ATTACK, EGRESS, SEARCH, DIVERT, RETIRING
     }
 
     public static final int MEMORY_TICKS = 20 * 60;
@@ -89,9 +89,15 @@ public class ScoutPilot {
             divert(ship, level.players());
         }
         phaseTicks++;
-        if (phase == Phase.DIVERT) {
-            if (now >= divertUntil && !ScoutPatrols.playerNear(level, ship.position(), ScoutPatrols.TRAFFIC_RADIUS)) {
-                newRoute(level, ship);
+        if (phase == Phase.DIVERT || phase == Phase.RETIRING) {
+            if (phase == Phase.RETIRING && !ScoutPatrols.playerNear(level, ship.position(), 288)) {
+                retire(soldier, ship);
+                return;
+            }
+            if (phase == Phase.DIVERT && now >= divertUntil
+                    && !ScoutPatrols.playerNear(level, ship.position(), ScoutPatrols.TRAFFIC_RADIUS)) {
+                // Resume the assigned flight, including a destination whose core was destroyed while en route.
+                changePhase(Phase.PATROL);
             } else {
                 if (ship.position().distanceToSqr(maneuver) < 30 * 30) {
                     maneuver = ship.position().add(Vec3.directionFromRotation(-5, ship.getYRot()).scale(256));
@@ -246,6 +252,12 @@ public class ScoutPilot {
                 retire(soldier, ship);
                 return;
             }
+            if (!ScoutRoutes.isOperationalBase((ServerLevel) ship.level(), destination)) {
+                // Finish the flight without launching another patrol from a defeated base or vanishing in view.
+                divert(ship, ship.level().players());
+                changePhase(Phase.RETIRING);
+                return;
+            }
             newRoute((ServerLevel) ship.level(), ship);
         }
         Vec3 next = route.get(waypoint);
@@ -271,7 +283,7 @@ public class ScoutPilot {
     }
 
     public void divert(FluxShipEntity ship, List<? extends Player> players) {
-        if (phase == Phase.DIVERT) {
+        if (phase == Phase.DIVERT || phase == Phase.RETIRING) {
             return;
         }
         double score = -Double.MAX_VALUE;

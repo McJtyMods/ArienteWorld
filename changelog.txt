@@ -1,4 +1,5 @@
 1.20-0.0.31-alpha:
+- Scout patrols now require a surviving AI core at their launch base and newly chosen destinations. Flights already heading to a captured base finish their journey and retire on arrival. Patrol frequency and traffic limits are unchanged.
 - Scouts now patrol much closer to the terrain and bank visibly through turns. Defeated pilots leave ships to descend for recovery instead of removing them, and release their base for replacement patrols.
 - Scout patrols launch much more frequently, with rapid first encounters, 10–20 second repeat opportunities and bases considered up to 896 blocks away from a flying player. Existing default settings and old cooldowns upgrade automatically; the two-scout limit remains in effect.
 - Large surface and floating bases occasionally launch soldier-piloted scout ships on inter-base or circular patrols. Scouts make hull-aimed laser attack runs against visible ground or flying players, search their last sighting for one minute after losing sight, and resume their route once the pursuit ends. Solid cover stops fire, nearby patrols are limited to two, and excess ships divert. Launch frequency is server configurable.
