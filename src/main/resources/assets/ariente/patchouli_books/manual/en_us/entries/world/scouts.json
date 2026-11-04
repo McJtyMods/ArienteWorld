@@ -1,0 +1,28 @@
+{
+  "name": "Scout Ships",
+  "icon": "ariente:flux_ship",
+  "category": "ariente:arienteworld",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Patrols from large bases",
+      "text": "Larger surface and floating bases regularly launch a Flux Ship with a soldier at the controls. These scouts travel to another base or make a broad survey loop home.$(br2)This is separate from ordinary monster spawning. Lighting the ground does not prevent launches. Scouts start at least 128 horizontal blocks from players, and defeated base AIs stop sending them.$(br2)Only two scouts may stay near you. Further ships break off and take another route.$(br2)Scouts cruise about fourteen blocks above terrain, climbing over obstacles and banking through turns."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Take cover",
+      "text": "A scout that spots you abandons its patrol to attack. It climbs and takes distance, turns the entire ship to aim its front cannon, then dives through a firing pass and pulls away for another run.$(br2)Scouts can also engage flying players and lead moving targets. The hull is indestructible, but half of a laser hit reaches the pilot. Defeat the pilot and the ship gently descends, ready to recover.$(br2)Solid roofs and walls break its sight and stop its shots. It searches near your last sighting rather than following hidden movement. Stay unseen for a full minute to make it resume its route."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Passing traffic",
+      "text": "A ship reaching its destination leaves when players are far away. If you are nearby, it starts another flight instead.$(br2)First launch opportunities begin within a second. Bases up to 896 blocks away are considered, prioritizing those ahead of your flight path, with a default repeat delay of 10 to 20 seconds. Clear space and the two-scout limit still apply."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Patrol frequency",
+      "text": "Scouts do not launch in Peaceful mode. Server owners can disable them with ai.scoutPatrols or adjust repeat delays with ai.scoutLaunchIntervalSeconds in the world's arienteworld-server.toml.$(br2)Existing worlds adopt the faster default and clear old launch waits automatically. Nondefault repeat intervals are preserved."
+    }
+  ]
+}

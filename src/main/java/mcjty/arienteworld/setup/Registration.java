@@ -64,6 +64,7 @@ public class Registration {
             .build("master_soldier"));
     public static final RegistryObject<EntityType<SoldierEntity>> ENTITY_SOLDIER = ENTITIES.register("soldier", () -> EntityType.Builder.of(SoldierEntity::new, MobCategory.MONSTER)
             .sized(0.6F, 1.95F)
+            .clientTrackingRange(16)
             .setShouldReceiveVelocityUpdates(false)
             .build("soldier"));
     public static final RegistryObject<EntityType<SentinelDroneEntity>> ENTITY_SENTINEL_DRONE = ENTITIES.register("ariente_sentinel_drone", () -> EntityType.Builder.of(SentinelDroneEntity::new, MobCategory.MISC)

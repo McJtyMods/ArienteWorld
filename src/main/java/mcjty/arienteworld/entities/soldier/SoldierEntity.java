@@ -2,6 +2,8 @@ package mcjty.arienteworld.entities.soldier;
 
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.config.LootConfiguration;
+import mcjty.ariente.entities.fluxship.FluxShipEntity;
+import mcjty.arienteworld.entities.scout.ScoutPilot;
 import mcjty.ariente.api.*;
 import mcjty.ariente.items.KeyCardItem;
 import mcjty.ariente.items.EnergyLanceItem;
@@ -9,6 +11,7 @@ import mcjty.ariente.items.armor.PowerSuit;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ModSounds;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.sounds.SoundEvent;
@@ -50,7 +53,7 @@ import javax.annotation.Nullable;
 
 import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
 
-public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldImmunity, ISoldier, RangedAttackMob {
+public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldImmunity, ISoldier, RangedAttackMob, IFluxShipPilot {
 
     private static final EntityDataAccessor<Boolean> ARMS_RAISED = SynchedEntityData.defineId(SoldierEntity.class, EntityDataSerializers.BOOLEAN);
 
@@ -60,6 +63,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
     // If this entity is controlled by a city then this will be set
     protected ChunkPos cityCenter;
     protected SoldierBehaviourType behaviourType = SoldierBehaviourType.SOLDIER_FIGHTER;
+    private ScoutPilot scoutPilot;
 
     public SoldierEntity(EntityType<? extends Monster> type, Level worldIn) {
         super(type, worldIn);
@@ -70,6 +74,30 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
         entity.cityCenter = cityCenter;
         entity.behaviourType = behaviourType;
         return entity;
+    }
+
+    public void startScout(ScoutPilot pilot) {
+        scoutPilot = pilot;
+        setNoAi(true);
+        setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+    }
+
+    @Nullable
+    public ScoutPilot getScoutPilot() {
+        return scoutPilot;
+    }
+
+    @Override
+    public void controlShip(FluxShipEntity ship) {
+        if (scoutPilot != null) {
+            scoutPilot.tick(this, ship);
+        }
+    }
+
+    @Override
+    public boolean shouldFireShipLaser(FluxShipEntity ship) {
+        return scoutPilot != null && scoutPilot.shouldFire(this, ship);
     }
 
     public static boolean checkSoldierSpawnRules(EntityType<? extends SoldierEntity> type, ServerLevelAccessor level,
@@ -88,6 +116,10 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
     @Override
     public void tick() {
         super.tick();
+        if (!level().isClientSide && scoutPilot != null && !(getVehicle() instanceof FluxShipEntity)) {
+            scoutPilot = null;
+            setNoAi(false);
+        }
         if (!level().isClientSide && isAlive() && cityCenter != null) {
             ICityAISystem aiSystem = ArienteWorld.arienteWorldImplementation.getCityAISystem(level());
             ICityAI cityAI = aiSystem.getCityAI(cityCenter);
@@ -141,7 +173,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
     // Guards don't despawn. Spawning and despawning is managed by the cities
     @Override
     public boolean requiresCustomPersistence() {
-        return behaviourType == SoldierBehaviourType.SOLDIER_GUARD;
+        return scoutPilot != null || behaviourType == SoldierBehaviourType.SOLDIER_GUARD;
     }
 
     @Override
@@ -256,6 +288,9 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
             compound.putInt("cityZ", cityCenter.z);
         }
         compound.putInt("behaviour", behaviourType.ordinal());
+        if (scoutPilot != null) {
+            compound.put("scoutPilot", scoutPilot.save());
+        }
     }
 
     @Override
@@ -265,6 +300,10 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
             cityCenter = new ChunkPos(compound.getInt("cityX"), compound.getInt("cityZ"));
         }
         behaviourType = SoldierBehaviourType.values()[compound.getInt("behaviour")];
+        scoutPilot = null;
+        if (compound.contains("scoutPilot", Tag.TAG_COMPOUND)) {
+            startScout(ScoutPilot.load(compound.getCompound("scoutPilot")));
+        }
     }
 
     @Override
