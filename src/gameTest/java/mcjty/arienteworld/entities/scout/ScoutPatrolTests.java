@@ -68,9 +68,9 @@ public class ScoutPatrolTests {
                 ship.tick();
             }
             ScoutPatrols.loadedScouts(helper.getLevel());
-            helper.assertTrue(!ship.isRemoved() && ship.getDeltaMovement().y < -.049
+            helper.assertTrue(!ship.isRemoved() && ship.getDeltaMovement().y < -.199
                             && !ship.getPersistentData().getBoolean(ScoutPatrols.SCOUT_SHIP),
-                    "A dead pilot must leave a recoverable ship gently descending, including while its corpse is seated");
+                    "A dead pilot must leave a recoverable ship descending at four blocks per second, including while its corpse is seated");
             helper.assertTrue(scheduler.heartbeat(home, UUID.randomUUID(), helper.getLevel().getGameTime()),
                     "A defeated patrol must release its base for replacement launches");
         } finally {
@@ -432,7 +432,7 @@ public class ScoutPatrolTests {
             double high = 16;
             for (int i = 0; i < 40; i++) {
                 double time = (low + high) / 2;
-                if (center.add(velocity.scale(time)).distanceTo(muzzle) > time * 8) {
+                if (center.add(velocity.scale(time)).distanceTo(muzzle) > time * 9.6) {
                     low = time;
                 } else {
                     high = time;

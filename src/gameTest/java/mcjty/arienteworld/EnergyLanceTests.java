@@ -191,6 +191,8 @@ public class EnergyLanceTests {
         helper.getLevel().addFreshEntity(target);
         LaserEntity shot = LaserEntity.createLanceShot(helper.getLevel(), player, new Vec3(1, 0, 0), EnergyLanceItem.getShotDamage(player));
         try {
+            helper.assertTrue(Math.abs(shot.getDeltaMovement().length() - 1.8) < .0001,
+                    "A lance shot must launch 20% faster, at 1.8 blocks per tick");
             for (int tick = 0; tick < 8 && !shot.isRemoved(); tick++) {
                 shot.tick();
             }

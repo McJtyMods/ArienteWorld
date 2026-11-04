@@ -68,7 +68,7 @@ public class EquipmentRegressionTests {
     public static void budgetToggleAndHotkeyState(GameTestHelper helper) {
         Player player = poweredPlayer(helper);
         ItemStack chest = gear(Registration.POWERSUIT_CHEST.get(), ArmorUpgradeType.FLIGHT,
-                ArmorUpgradeType.FORCEFIELD, ArmorUpgradeType.HOVER);
+                ArmorUpgradeType.FORCEFIELD, ArmorUpgradeType.HOVER, ArmorUpgradeType.ARMOR);
         player.setItemSlot(EquipmentSlot.CHEST, chest);
         tick(chest, player, 2);
         helper.assertTrue(!ModuleSupport.hasWorkingUpgrade(chest, ArmorUpgradeType.FLIGHT)
