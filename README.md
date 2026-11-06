@@ -66,10 +66,26 @@ consoles, with seeded fence frames, eye-level lights and different overhead
 profiles on each corridor floor. Cross ends have ramped platforms, balconies
 and horizontal/vertical technology spires. The outer halls keep their white ribs
 but use dark floors and ceilings, inset flux lighting and hanging details.
+Ten fixed guards and five Master Soldiers defend the room decks, with 48 mobile
+reinforcement posts spread across all six room decks. Solo alerts sustain 8–12
+soldiers and 3–5 combat drones, slightly above the underground installation's
+7–10 soldiers and 2–4 drones. Reinforcement Master Soldier and power armor chances
+are 10% and 35%; 25% of those armored reinforcements receive a forcefield.
 Four main-floor sections reserve a 24×24×30 clear
 volume for a future boss; no boss is included. Underground halls gain seeded
 console banks, cooling stacks and machinery islands, while ships, stations and
 smaller dungeons can use alternate illuminated hull detailing.
+
+Dungeon loot favors learning to craft equipment: each Powersuit piece's blueprint
+has twice the weight of its rare finished piece, with equal weights for the four
+pieces. Sabre and Lance blueprint/item pairs follow the same two-to-one ratio.
+The cube retains four guaranteed rewards per cache and includes all four armor
+pieces and their blueprints. Other caches still roll each slot at 70%, with item
+amounts including the configured maximum. Lance item chances per occupied slot
+rise from 0.1% in small outposts to 0.5% in the cube, with twice those chances for
+their blueprints. Random blueprints retain their shared Constructor recipe pool.
+Landscape building caches use their shared loot pool even without tile metadata;
+skyline variants retain their original building's cache count.
 
 Some city buildings and floating dungeon rooms, as well as huge cube control
 desks and underground console banks, have alien glyph displays. Their decorative

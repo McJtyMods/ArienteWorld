@@ -1042,7 +1042,7 @@ public class CityAI implements ICityAI {
                 if (l.getMaxAmount() <= 1) {
                     amount = 1;
                 } else {
-                    amount = 1 + random.nextInt(l.getMaxAmount() - 1);
+                    amount = 1 + random.nextInt(l.getMaxAmount());
                 }
                 ResourceLocation id = l.getId();
                 te.setLoot(id, i, l.isBlueprint(), amount, l.getMeta());

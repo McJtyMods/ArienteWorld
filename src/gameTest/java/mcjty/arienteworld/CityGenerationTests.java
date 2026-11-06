@@ -12,6 +12,8 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import mcjty.arienteworld.entities.drone.SentinelDroneEntity;
+import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import mcjty.ariente.api.IAICoreTile;
 import mcjty.ariente.api.ICityEquipment;
 import mcjty.ariente.api.ISignalChannel;
@@ -43,6 +45,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -339,6 +342,7 @@ public class CityGenerationTests {
         if (plan.getName().equals("city5_1")) {
             helper.assertTrue(storageCount >= 4 && lootStacks >= storageCount * 4,
                     "Cube caches must contain four guaranteed end-game rewards");
+            verifyCubeDefenses(helper, level, city, ai, core);
         }
         ArienteWorld.setup.getLogger().info("City {} has {} authored storage cubes and {} loot stacks", plan.getName(), storageCount, lootStacks);
         if (plan.getName().equals("city0_1") || plan.getName().equals("city5_1")) {
@@ -373,6 +377,41 @@ public class CityGenerationTests {
         }
         ArienteWorld.setup.getLogger().info("Verified city {} at {}, {} ({} blocks)", plan.getName(),
                 city.getCenter().getMiddleBlockX(), city.getCenter().getMiddleBlockZ(), blocks);
+    }
+
+    private static void verifyCubeDefenses(GameTestHelper helper, ServerLevel level, City city, CityAI ai, AICoreTile core) {
+        CompoundTag state = new CompoundTag();
+        ai.writeToNBT(state);
+        helper.assertTrue(state.getList("guards", Tag.TAG_COMPOUND).size() == 10,
+                "Cube must initialize ten fixed guards without filling the future boss arena");
+        helper.assertTrue(state.getList("masterSoldierPositions", Tag.TAG_COMPOUND).size() == 5,
+                "Cube must initialize five fixed master soldiers");
+        helper.assertTrue(state.getList("soldierPositions", Tag.TAG_COMPOUND).size() == 48,
+                "Every room deck must contribute usable reinforcement positions");
+        AABB bounds = new AABB(core.getBlockPos()).inflate(180);
+        long guards = level.getEntitiesOfClass(SoldierEntity.class, bounds).stream()
+                .filter(soldier -> city.getCenter().equals(soldier.getCityCenter())
+                        && soldier.getBehaviourType() == SoldierBehaviourType.SOLDIER_GUARD).count();
+        helper.assertTrue(guards == 10, "The generated markers must create real fixed guards");
+        FakePlayer player = new FakePlayer(level, new GameProfile(UUID.randomUUID(), "cube-defense-test"));
+        player.moveTo(core.getBlockPos().getX() + .5, core.getBlockPos().getY() + 6, core.getBlockPos().getZ() + .5);
+        ai.alertCity(player);
+        for (int tick = 0; tick < 20; tick++) {
+            ai.tick(core);
+        }
+        var reinforcements = level.getEntitiesOfClass(SoldierEntity.class, bounds,
+                soldier -> soldier.isReinforcementFor(city.getCenter()));
+        helper.assertTrue(reinforcements.size() >= 8 && reinforcements.size() <= 12,
+                "Cube alert must produce an actual eight-to-twelve soldier wave");
+        reinforcements.forEach(SoldierEntity::discard);
+        for (int tick = 0; tick < 20; tick++) {
+            ai.tick(core);
+        }
+        helper.assertTrue(level.getEntitiesOfClass(SoldierEntity.class, bounds,
+                        soldier -> soldier.isReinforcementFor(city.getCenter())).size() >= 8,
+                "Cube must replace defeated mobile troops while its core survives");
+        ai.pacify(level);
+        player.discard();
     }
 
     private static void verifySentinelAlert(GameTestHelper helper, ServerLevel level, City city, CityAI ai, AICoreTile core) {

@@ -278,6 +278,10 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                     if (state.hasBlockEntity() && !hasBlockEntity(state)) {
                         level.getChunk(pos).removeBlockEntity(pos);
                     }
+                    if (palette.getName().equals(ArienteLandscapeCity.CITY_PALETTE)
+                            && hasBlockEntity(state) && level.getBlockEntity(pos) instanceof IStorageTile storage) {
+                        CityAI.fillLoot(AssetRegistries.CITYPLANS.get("landscapecities"), storage);
+                    }
                     Map<String, Object> data = part.getTeInfo().get(new BlockPos(x, y, z));
                     if (data != null) {
                         BlockEntity blockEntity = level.getBlockEntity(pos);
@@ -298,9 +302,6 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                             equipment.load(settings);
                             if (mimic != null && blockEntity instanceof IFacadeSupport facade) {
                                 facade.setMimicBlock(mimic);
-                            }
-                            if (palette.getName().equals(ArienteLandscapeCity.CITY_PALETTE) && equipment instanceof IStorageTile storage) {
-                                CityAI.fillLoot(AssetRegistries.CITYPLANS.get("landscapecities"), storage);
                             }
                             blockEntity.setChanged();
                         } else if (blockEntity instanceof SpawnerBlockEntity spawner && data.get("mob") instanceof String mob) {

@@ -7,7 +7,7 @@
     {
       "type": "patchouli:text",
       "title": "Bring discoveries home",
-      "text": "Blueprints unlock patterns without being consumed. Store them beside a Constructor to make equipment back at base.$(br2)Some upgrades are found directly as loot. Check Storage Cubes and keep room for unfamiliar modules.$(br2)Build a fuel supply and improve your gear before tackling the largest complexes."
+      "text": "Blueprints unlock patterns without being consumed. Store them beside a Constructor to make equipment back at base.$(br2)Powersuit blueprints are twice as common as matching finished armor in dungeon caches. Sabre and Lance blueprints are also easier to find than the weapons. You still need the ingredients to craft them.$(br2)Some upgrades are loot-only. Keep room for unfamiliar modules."
     },
     {
       "type": "patchouli:text",

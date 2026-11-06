@@ -32,14 +32,14 @@
         "id": "ariente:energy_lance",
         "meta": 0,
         "max": 1,
-        "chance": 0.005,
+        "chance": 0.01275304,
         "blueprint": false
       },
       {
         "id": "ariente:energy_lance",
         "meta": 0,
         "max": 1,
-        "chance": 0.01,
+        "chance": 0.02550607,
         "blueprint": true
       },
       {
@@ -101,7 +101,7 @@
         "id": "ariente:energy_sabre",
         "meta": 0,
         "max": 1,
-        "chance": 0.1,
+        "chance": 0.05,
         "blueprint": false
       },
       {
@@ -168,13 +168,6 @@
         "chance": 0.1
       },
       {
-        "id": "ariente:module_energy",
-        "meta": 0,
-        "max": 1,
-        "chance": 0.1,
-        "blueprint": true
-      },
-      {
         "id": "ariente:module_forcefield",
         "meta": 0,
         "max": 1,
@@ -211,6 +204,41 @@
       },
       {
         "id": "ariente:flux_levitator",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.1,
+        "blueprint": true
+      },
+      {
+        "id": "ariente:powersuit_head",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.05,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:powersuit_chest",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.05,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:powersuit_legs",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.05,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:powersuit_feet",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.05,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:energy_sabre",
         "meta": 0,
         "max": 1,
         "chance": 0.1,

@@ -29,14 +29,14 @@
         "id": "ariente:energy_lance",
         "meta": 0,
         "max": 1,
-        "chance": 0.005,
+        "chance": 0.00106228,
         "blueprint": false
       },
       {
         "id": "ariente:energy_lance",
         "meta": 0,
         "max": 1,
-        "chance": 0.01,
+        "chance": 0.00212456,
         "blueprint": true
       },
       {
@@ -83,6 +83,13 @@
         "meta": 0,
         "max": 1,
         "chance": 0.05
+      },
+      {
+        "id": "ariente:energy_sabre",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.025,
+        "blueprint": false
       }
     ],
     "partpalette": [

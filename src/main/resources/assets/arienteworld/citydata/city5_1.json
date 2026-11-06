@@ -4,27 +4,27 @@
     "name": "city5_1",
     "city": true,
     "palette": "city5_1",
-    "sentinels": "4-6",
+    "sentinels": "5-7",
     "sentinelDistance": 40,
     "sentinelRelHeight": 20,
-    "dronesMinimum1": 1,
-    "dronesMinimum2": 3,
-    "dronesMinimumN": 6,
-    "dronesWaveMax1": 3,
-    "dronesWaveMax2": 6,
-    "dronesWaveMaxN": 12,
+    "dronesMinimum1": 3,
+    "dronesMinimum2": 5,
+    "dronesMinimumN": 9,
+    "dronesWaveMax1": 5,
+    "dronesWaveMax2": 10,
+    "dronesWaveMaxN": 18,
     "droneHeightOffset": 50,
-    "soldiersMinimum1": 4,
-    "soldiersMinimum2": 6,
-    "soldiersMinimumN": 10,
-    "soldiersWaveMax1": 7,
-    "soldiersWaveMax2": 12,
-    "soldiersWaveMaxN": 25,
+    "soldiersMinimum1": 8,
+    "soldiersMinimum2": 12,
+    "soldiersMinimumN": 18,
+    "soldiersWaveMax1": 12,
+    "soldiersWaveMax2": 23,
+    "soldiersWaveMaxN": 35,
     "soldierSabreDamage": 32.0,
     "droneLaserDamage": 24.0,
-    "masterChance": 0.05,
-    "powerArmorChance": 0.2,
-    "forcefieldChance": 0.1,
+    "masterChance": 0.1,
+    "powerArmorChance": 0.35,
+    "forcefieldChance": 0.25,
     "underground": false,
     "floating": false,
     "loot": [
@@ -32,14 +32,14 @@
         "id": "ariente:energy_lance",
         "meta": 0,
         "max": 1,
-        "chance": 0.005,
+        "chance": 0.11167513,
         "blueprint": false
       },
       {
         "id": "ariente:energy_lance",
         "meta": 0,
         "max": 1,
-        "chance": 0.01,
+        "chance": 0.22335025,
         "blueprint": true
       },
       {
@@ -81,7 +81,7 @@
         "id": "ariente:powersuit_chest",
         "meta": 0,
         "max": 1,
-        "chance": 1,
+        "chance": 0.75,
         "blueprint": true
       },
       {
@@ -110,6 +110,62 @@
         "meta": 0,
         "max": 1,
         "chance": 2,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:powersuit_head",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.75,
+        "blueprint": true
+      },
+      {
+        "id": "ariente:powersuit_head",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.375,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:powersuit_chest",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.375,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:powersuit_legs",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.75,
+        "blueprint": true
+      },
+      {
+        "id": "ariente:powersuit_legs",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.375,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:powersuit_feet",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.75,
+        "blueprint": true
+      },
+      {
+        "id": "ariente:powersuit_feet",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.375,
+        "blueprint": false
+      },
+      {
+        "id": "ariente:enhanced_energy_sabre",
+        "meta": 0,
+        "max": 1,
+        "chance": 0.5,
         "blueprint": false
       }
     ],
@@ -27662,6 +27718,18 @@
       {
         "char": "@e",
         "block": "ariente:display_base@facing=east"
+      },
+      {
+        "char": "^g",
+        "block": "arienteworld:guard_dummy@facing=south"
+      },
+      {
+        "char": "^s",
+        "block": "arienteworld:soldier_dummy@facing=south"
+      },
+      {
+        "char": "^m",
+        "block": "arienteworld:master_soldier_dummy@facing=south"
       }
     ]
   }

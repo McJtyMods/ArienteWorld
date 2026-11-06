@@ -33,6 +33,11 @@
       "type": "patchouli:text",
       "title": "Master Soldiers",
       "text": "Master Soldiers are tough, regenerate health, and resist fire and magic. Bring a reliable weapon and a retreat plan.$(br2)An Enhanced Energy Sabre with a working Inhibit module suppresses their regeneration and strips beneficial effects. Fire alone will not solve this fight.$(br2)Check your modules and both fuel supplies before engaging."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Huge cube defenses",
+      "text": "The huge cube has fixed guards and Master Soldiers on its room decks, with mobile reinforcements on every deck.$(br2)Its alert waves are a little stronger than those of an underground installation. Expect more armored reinforcements and keep a route back to cover.$(br2)Lighting stops natural patrols, but does not stop guards or AI reinforcements. Defeat the AI Core to end its organized defense."
     }
   ]
 }

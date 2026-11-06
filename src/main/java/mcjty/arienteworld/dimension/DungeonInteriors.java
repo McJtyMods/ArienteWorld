@@ -62,6 +62,7 @@ public final class DungeonInteriors {
             CubeDetails.decorate(part, random, corridorStyle);
         }
         DungeonDisplays.decorate(part, palette, seed, chunkX, chunkZ);
+        CubeDefenses.decorate(part, palette, chunkX, chunkZ);
         return part;
     }
 

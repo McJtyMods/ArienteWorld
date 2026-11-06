@@ -27,14 +27,14 @@
         "id": "ariente:energy_lance",
         "meta": 0,
         "max": 1,
-        "chance": 0.005,
+        "chance": 0.00107322,
         "blueprint": false
       },
       {
         "id": "ariente:energy_lance",
         "meta": 0,
         "max": 1,
-        "chance": 0.01,
+        "chance": 0.00214644,
         "blueprint": true
       },
       {

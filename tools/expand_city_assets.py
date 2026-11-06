@@ -44,6 +44,11 @@ def main():
             palette['palette'] = [p for p in palette['palette'] if p['char'] not in ('@n', '@s', '@w', '@e')]
             palette['palette'] += [{'char': '@' + facing[0], 'block': 'ariente:display_base@facing=' + facing}
                                    for facing in ('north', 'south', 'west', 'east')]
+        if path.stem == 'city5_1':
+            palette['palette'] = [p for p in palette['palette'] if p['char'] not in ('^g', '^s', '^m')]
+            palette['palette'] += [{'char': '^' + symbol, 'block': 'arienteworld:' + name + '@facing=south'}
+                                   for symbol, name in [('g', 'guard_dummy'), ('s', 'soldier_dummy'),
+                                                        ('m', 'master_soldier_dummy')]]
         if path.stem == 'landscapecities':
             data = [a for a in data if not (a['type'] == 'part' and
                     ((a['name'].startswith('building') and int(a['name'][8:]) > 13) or
