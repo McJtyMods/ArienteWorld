@@ -1,6 +1,7 @@
 package mcjty.arienteworld.setup;
 
 import mcjty.arienteworld.ArienteWorld;
+import mcjty.arienteworld.entities.boss.CoreGuardianRenderer;
 import mcjty.arienteworld.entities.darkbat.DarkbatRender;
 import mcjty.arienteworld.entities.drone.DroneRender;
 import mcjty.arienteworld.entities.drone.SentinelDroneRender;
@@ -18,6 +19,7 @@ public class ClientSetup {
 
     @SubscribeEvent
     public static void entityRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(Registration.ENTITY_CORE_GUARDIAN.get(), CoreGuardianRenderer::new);
         event.registerEntityRenderer(Registration.ENTITY_DARKBAT.get(), DarkbatRender::new);
         event.registerEntityRenderer(Registration.ENTITY_DRONE.get(), DroneRender.FACTORY);
         event.registerEntityRenderer(Registration.ENTITY_SENTINEL_DRONE.get(), SentinelDroneRender.FACTORY);

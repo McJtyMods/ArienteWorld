@@ -27,5 +27,9 @@
   "entity.arienteworld.ariente_sentinel_drone": "Sentinel Drone",
   "entity.arienteworld.soldier": "Soldier",
   "entity.arienteworld.master_soldier": "Master Soldier",
-  "entity.arienteworld.darkbat": "Darkbat"
+  "entity.arienteworld.darkbat": "Darkbat",
+  "entity.arienteworld.core_guardian": "Core Guardian",
+  "message.arienteworld.core_guardian_protection": "Defeat the Core Guardian before destroying this AI Core.",
+  "death.attack.arienteworld.core_lightning": "%1$s was overloaded by %2$s",
+  "death.attack.arienteworld.core_lightning.player": "%1$s was overloaded by %2$s"
 }

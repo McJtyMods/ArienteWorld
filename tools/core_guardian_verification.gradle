@@ -1,0 +1,29 @@
+// Focused checks in disposable saves. See PORTING.txt for preparing the optional client world.
+gradle.afterProject { p ->
+    if (p.name == 'ArienteWorld') {
+        def client = p.hasProperty('guardian_client')
+        def fixture = p.findProperty('guardian_fixture') ?: (client ? 'core-guardian-client' : 'core-guardian-server')
+        if (!(fixture ==~ /[a-zA-Z0-9_-]+/)) {
+            throw new GradleException('Invalid guardian fixture name')
+        }
+        p.sourceSets.gameTest.java.setIncludes(client
+                ? ['mcjty/arienteworld/client/CoreGuardianClientChecks.java']
+                : ['mcjty/arienteworld/CoreGuardianTests.java', 'mcjty/arienteworld/PowerArmorBalanceTests.java',
+                   'mcjty/arienteworld/DefenderCombatTests.java'])
+        if (client) {
+            p.minecraft.runs.client {
+                mods.arienteworld.source(p.sourceSets.gameTest)
+                workingDirectory p.file("build/verification/${fixture}")
+                property 'arienteworld.guardianClientCheck', 'true'
+                args '--quickPlaySingleplayer', 'GuardianCheck', '--width', '1280', '--height', '800'
+            }
+            p.tasks.withType(JavaExec).configureEach {
+                if (name == 'runClient') dependsOn p.tasks.named('gameTestClasses')
+            }
+        } else {
+            p.minecraft.runs.gameTestServer {
+                workingDirectory p.file("build/verification/${fixture}")
+            }
+        }
+    }
+}

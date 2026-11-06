@@ -877,3 +877,39 @@ Phase 4 - Integrate, validate and prepare release (automated checkpoint; release
   Exit: both handoffs and the gameplay guide reflect tested behavior and any
   deliberate original limitations; release readiness is supported by a real
   playthrough and integration evidence, not compilation alone.
+
+CORE GUARDIAN (1.20.1)
+======================
+The city5_1 central core creates one persistent Core Guardian eight blocks above
+it, without waiting for all nine-by-nine city chunks to load. City SavedData
+records its UUID and permanent defeat independently of normal city initialization.
+A defeat unlocks the core; mining and explosions cannot bypass a living guardian.
+The guardian has 800 health, 12 armor and a tracked vanilla boss bar. It favors
+ranged attacks and pursues players within its home area. After losing sight it
+searches for a firing position near the last sighting for up to 20 seconds without
+a shot, then returns home. Firing renews pursuit; brief peeks alone do not. It holds
+a useful firing position when returning home would hide the player again.
+Lightning has a 100-tick interval and a 30-tick charge warning.
+Each working power armor module grounds 10% of the 30-damage overload. The active
+personal forcefield grounds another third: full powered armor takes 18 damage,
+or 12 with the field. Ordinary armor, Protection and Resistance do not ground it; shields cannot block it.
+Cube defenders patrol the upper interior cross. Existing defenders stranded in
+lower rooms relocate once to clear patrol space; this migration marker is saved
+on the entity. Flight controllers check collisions and handle zero-distance goals.
+
+Focused checks, workspace root with Java 17 (use a fresh fixture name):
+  ./gradlew :ArienteWorld:runGameTestServer -Pariente_runs -I ArienteWorld/tools/core_guardian_verification.gradle -Pguardian_fixture=core-guardian-final
+This runs CoreGuardianTests plus the existing defender and power armor balance
+checks. It covers generated-core placement, permanent defeat/reload, mining and
+explosion protection, armor balance on all three combat difficulties, cover,
+patrol movement, old defender migration, returning home, routing around cover,
+pursuit timeout after unsuccessful peeks and renewing pursuit after firing.
+
+Optional visual check in a disposable save:
+Copy the fresh server fixture's world/level.dat into
+build/verification/core-guardian-client/saves/GuardianCheck/level.dat, then run:
+  ./gradlew :ArienteWorld:runClient -Pariente_runs -I ArienteWorld/tools/core_guardian_verification.gradle -Pguardian_client
+The fixture equips a powered suit, visits a generated cube, captures normal,
+charging and lightning screenshots, then exits. It heals the test player each
+tick; it must never be enabled in a player save. Screenshots stay under the
+client fixture directory. No verification classes enter the release jar.

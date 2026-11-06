@@ -26,7 +26,7 @@ public final class CubeDefenses {
         }
         int dx = (chunkX & 15) - 4;
         int dz = (chunkZ & 15) - 4;
-        // The future boss arena keeps its entire reserved volume clear.
+        // Keep the reserved arena volume clear.
         if (lower && dx >= 2 && dx <= 3 && dz >= 2 && dz <= 3) {
             return;
         }

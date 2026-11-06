@@ -11,6 +11,16 @@
     },
     {
       "type": "patchouli:text",
+      "title": "The Core Guardian",
+      "text": "The huge surface cube has one $(thing)Core Guardian$(): a translucent energy sphere hovering above its central AI Core and forcefield generator. Its boss bar tracks the fight.$(br2)The core resists mining and explosions until the guardian dies. Each cube has only one guardian: it never respawns, even after leaving and returning."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Surviving the Lightning",
+      "text": "The guardian charges its lightning before striking and needs a clear view. Cover interrupts its lightning, but it will search your last seen position for up to 20 seconds without a shot before retreating. Bring healing.$(br2)Ordinary armor cannot ground the overload: even Protection IV netherite will not survive a direct strike at normal maximum health. A full, powered suit with working armor modules survives; adding an active forcefield reduces each strike to six hearts. Keep your suit powered."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Claim the rewards",
       "text": "Hold the final core's storage card and right-click each matching Storage Cube to unlock it, then put the card away to use the cube. This also works on the huge surface cube's wall caches; soldier cards may only grant door access.$(br2)Keep blueprints, fuel and modules. Captured generators need your fuel once their remaining dust runs out.$(br2)Secure your return route before moving a large haul."
     }

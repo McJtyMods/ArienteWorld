@@ -4,12 +4,14 @@ import net.minecraft.util.RandomSource;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.ariente.api.*;
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.ariente.setup.Registration;
+import mcjty.arienteworld.ai.CityAI;
 import mcjty.arienteworld.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.control.MoveControl;
+import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.FlyingMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
@@ -34,7 +36,6 @@ import javax.annotation.Nullable;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.AABB;
 
 import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
 
@@ -50,7 +51,7 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
     public DroneEntity(EntityType<? extends FlyingMob> type, Level worldIn) {
         super(type, worldIn);
         this.xpReward = 5;
-        this.moveControl = new DroneMoveHelper(this);
+        this.moveControl = new DroneMoveControl(this);
     }
 
     public static DroneEntity create(Level world, ChunkPos cityCenter) {
@@ -61,6 +62,11 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
 
     public ChunkPos getCityCenter() {
         return cityCenter;
+    }
+
+    @Override
+    protected PathNavigation createNavigation(Level level) {
+        return new FlyingPathNavigation(this, level);
     }
 
     @Override
@@ -316,6 +322,9 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
          */
         @Override
         public boolean canUse() {
+            if (!parentEntity.getNavigation().isDone()) {
+                return false;
+            }
             MoveControl controller = this.parentEntity.getMoveControl();
 
             if (!controller.hasWanted()) {
@@ -352,65 +361,17 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
                 // City controls movement
                 ICityAISystem aiSystem = ArienteWorld.arienteWorldImplementation.getCityAISystem(parentEntity.level());
                 ICityAI cityAI = aiSystem.getCityAI(parentEntity.cityCenter);
-                BlockPos pos = cityAI.requestNewDronePosition(parentEntity.level(), parentEntity.getTarget());
+                BlockPos pos = cityAI instanceof CityAI ai && ai.isLargeCube()
+                        ? ai.requestCubePatrolPosition(parentEntity)
+                        : cityAI.requestNewDronePosition(parentEntity.level(), parentEntity.getTarget());
                 if (pos != null) {
-                    this.parentEntity.getMoveControl().setWantedPosition(pos.getX(), pos.getY(), pos.getZ(), 2.0D);
-                }
-            }
-        }
-    }
-
-    static class DroneMoveHelper extends MoveControl {
-        private final DroneEntity parentEntity;
-        private int courseChangeCooldown;
-
-        public DroneMoveHelper(DroneEntity drone) {
-            super(drone);
-            this.parentEntity = drone;
-        }
-
-        @Override
-        public void tick() {
-            if (this.operation == Operation.MOVE_TO) {
-                double d0 = this.wantedX - this.parentEntity.getX();
-                double d1 = this.wantedY - this.parentEntity.getY();
-                double d2 = this.wantedZ - this.parentEntity.getZ();
-                double d3 = d0 * d0 + d1 * d1 + d2 * d2;
-
-                if (this.courseChangeCooldown-- <= 0) {
-                    this.courseChangeCooldown += this.parentEntity.getRandom().nextInt(5) + 2;
-                    d3 = Math.sqrt(d3);
-
-                    if (this.isNotColliding(this.wantedX, this.wantedY, this.wantedZ, d3)) {
-                        double motionX = this.parentEntity.getDeltaMovement().x;
-                        double motionY = this.parentEntity.getDeltaMovement().y;
-                        double motionZ = this.parentEntity.getDeltaMovement().z;
-                        motionX += d0 / d3 * 0.1D;
-                        motionY += d1 / d3 * 0.1D;
-                        motionZ += d2 / d3 * 0.1D;
-                        parentEntity.setDeltaMovement(motionX, motionY, motionZ);
+                    if (DroneMoveControl.canFlyTo(parentEntity, Vec3.atBottomCenterOf(pos))) {
+                        parentEntity.getMoveControl().setWantedPosition(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 2.0D);
                     } else {
-                        this.operation = Operation.WAIT;
+                        parentEntity.getNavigation().moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 2.0D);
                     }
                 }
             }
-        }
-
-        /**
-         * Checks if entity bounding box is not colliding with terrain
-         */
-        private boolean isNotColliding(double x, double y, double z, double p_179926_7_) {
-            double d0 = (x - this.parentEntity.getX()) / p_179926_7_;
-            double d1 = (y - this.parentEntity.getY()) / p_179926_7_;
-            double d2 = (z - this.parentEntity.getZ()) / p_179926_7_;
-            AABB axisalignedbb = this.parentEntity.getBoundingBox();
-
-            for (int i = 1; i < p_179926_7_; ++i) {
-                axisalignedbb = axisalignedbb.move(d0, d1, d2);
-
-            }
-
-            return true;
         }
     }
 }

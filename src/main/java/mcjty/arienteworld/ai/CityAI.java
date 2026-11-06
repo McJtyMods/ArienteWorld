@@ -1,6 +1,8 @@
 package mcjty.arienteworld.ai;
 
 import mcjty.arienteworld.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.entities.boss.CoreGuardianEntity;
+import mcjty.arienteworld.entities.drone.DroneMoveControl;
 import mcjty.arienteworld.entities.drone.SentinelDroneEntity;
 import mcjty.arienteworld.entities.drone.DroneEntity;
 import mcjty.arienteworld.entities.ArienteMobs;
@@ -11,6 +13,8 @@ import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.ariente.Ariente;
 import mcjty.hologui.api.IHoloGuiEntity;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.state.properties.RailShape;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
@@ -60,6 +64,9 @@ import static mcjty.ariente.setup.Registration.POWERSUIT_LEGS;
 
 public class CityAI implements ICityAI {
 
+    private UUID guardianId;
+    private boolean guardianDead;
+
     private int levitator = -1;
     private int levitatorTicker = 20;
     private BlockPos levitatorPrevPos;
@@ -108,6 +115,83 @@ public class CityAI implements ICityAI {
 
     public ChunkPos getCenter() {
         return center;
+    }
+
+    public boolean isLargeCube() {
+        return city != null && city.getPlan().getName().equals("city5_1");
+    }
+
+    public boolean isCoreProtected() {
+        return isLargeCube() && !guardianDead;
+    }
+
+    /** Run from a loaded core, without requiring the entire nine-chunk-wide complex to tick. */
+    public void ensureGuardian(BlockPos core) {
+        if (!isCoreProtected() || guardianId != null || EditMode.isEditing(level, center)) {
+            return;
+        }
+        CoreGuardianEntity guardian = Registration.ENTITY_CORE_GUARDIAN.get().create(level);
+        guardian.bindToCore(center, core);
+        if (level.noCollision(guardian) && level.addFreshEntity(guardian)) {
+            guardianId = guardian.getUUID();
+            CityAISystem.getCityAISystem(level).saveSystem();
+        }
+    }
+
+    public void guardianDefeated(UUID id) {
+        if (id.equals(guardianId)) {
+            guardianDead = true;
+            CityAISystem.getCityAISystem(level).saveSystem();
+        }
+    }
+
+    private void initializeCubePatrol(Mob mob, int floor) {
+        if (mob.getPersistentData().getBoolean("arienteworldCubePatrol")) {
+            return;
+        }
+        double dx = Math.abs(mob.getX() - center.getMiddleBlockX());
+        double dz = Math.abs(mob.getZ() - center.getMiddleBlockZ());
+        boolean inPatrolArea = mob.getY() >= floor + 33 && mob.getY() <= floor + 56
+                && dx <= 52 && dz <= 52 && (dx <= 5 || dz <= 5);
+        if (!inPatrolArea) {
+            // Older cube defenders were directed below solid floors. Relocate them once, preserving the entity.
+            for (int attempt = 0; attempt < 24; attempt++) {
+                Vec3 destination = new Vec3(center.getMiddleBlockX() + 0.5 + random.nextInt(7) - 3,
+                        floor + 36 + random.nextInt(16), center.getMiddleBlockZ() + 0.5 + random.nextInt(7) - 3);
+                if (level.hasChunkAt(BlockPos.containing(destination))
+                        && level.noCollision(mob, mob.getBoundingBox().move(destination.subtract(mob.position())))) {
+                    mob.setPos(destination);
+                    mob.setDeltaMovement(Vec3.ZERO);
+                    mob.getNavigation().stop();
+                    inPatrolArea = true;
+                    break;
+                }
+            }
+        }
+        if (inPatrolArea) {
+            mob.getPersistentData().putBoolean("arienteworldCubePatrol", true);
+        }
+    }
+
+    @Nullable
+    public BlockPos requestCubePatrolPosition(Mob mob) {
+        int cx = center.getMiddleBlockX();
+        int cz = center.getMiddleBlockZ();
+        int floor = CityTools.getCityHeight(level, city);
+        initializeCubePatrol(mob, floor);
+        // The upper cross-shaped interior is open; the surrounding wings contain stacked rooms.
+        for (int attempt = 0; attempt < 24; attempt++) {
+            int along = random.nextInt(97) - 48;
+            int across = random.nextInt(7) - 3;
+            boolean eastWest = random.nextBoolean();
+            BlockPos pos = new BlockPos(cx + (eastWest ? along : across), floor + 36 + random.nextInt(18),
+                    cz + (eastWest ? across : along));
+            if (DroneMoveControl.canFlyTo(mob, Vec3.atBottomCenterOf(pos))) {
+                return pos;
+            }
+        }
+        // Route around a temporary obstruction to return to the open cross.
+        return new BlockPos(cx, floor + 42, cz);
     }
 
     private int getLowestHeight(int chunkX, int chunkZ) {
@@ -170,6 +254,9 @@ public class CityAI implements ICityAI {
     public boolean tick(BlockEntity tile) {
         if (EditMode.isEditing(tile.getLevel(), center)) {
             return false;
+        }
+        if (tile instanceof IAICoreTile core) {
+            ensureGuardian(core.getCorePos());
         }
         if (!areChunksLoaded()) {
             return false;
@@ -755,7 +842,7 @@ public class CityAI implements ICityAI {
         // Too few drones. Spawn a new one
         LivingEntity entity = DroneEntity.create(world, center);
         int cx = center.x * 16 + 8;
-        int cy = height;
+        int cy = isLargeCube() ? CityTools.getCityHeight(level, city) + 36 : height;
         int cz = center.z * 16 + 8;
         entity.setPos(cx, cy, cz);
         world.addFreshEntity(entity);
@@ -855,7 +942,7 @@ public class CityAI implements ICityAI {
         int cy = droneHeight;
         int cz = center.z * 16 + 8;
 
-        float angle = angleI * 360.0f / 12;
+        double angle = angleI * Math.PI * 2 / 12;
         float distance = plan.getSentinelDistance();
         cx = (int) (cx + Math.cos(angle) * distance);
         cz = (int) (cz + Math.sin(angle) * distance);
@@ -1146,7 +1233,7 @@ public class CityAI implements ICityAI {
     private void createSentinel(Level world, int i, int height) {
         LivingEntity entity = SentinelDroneEntity.create(world, i, center);
         int cx = center.x * 16 + 8;
-        int cy = height;
+        int cy = isLargeCube() ? CityTools.getCityHeight(level, city) + 36 : height;
         int cz = center.z * 16 + 8;
         entity.setPos(cx, cy, cz);
         world.addFreshEntity(entity);
@@ -1165,6 +1252,8 @@ public class CityAI implements ICityAI {
     }
 
     public void readFromNBT(CompoundTag nbt) {
+        guardianId = nbt.hasUUID("guardianId") ? nbt.getUUID("guardianId") : null;
+        guardianDead = nbt.getBoolean("guardianDead");
         initialized = nbt.getBoolean("initialized");
         settings = null;
         readSetFromNBT(nbt.getList("cores", Tag.TAG_COMPOUND), aiCores);
@@ -1200,6 +1289,10 @@ public class CityAI implements ICityAI {
     }
 
     public void writeToNBT(CompoundTag compound) {
+        if (guardianId != null) {
+            compound.putUUID("guardianId", guardianId);
+        }
+        compound.putBoolean("guardianDead", guardianDead);
         compound.putBoolean("initialized", initialized);
         compound.put("cores", writeSetToNBT(aiCores));
         if (initialized) {

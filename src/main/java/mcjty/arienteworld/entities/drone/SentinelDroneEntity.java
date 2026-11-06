@@ -2,7 +2,7 @@ package mcjty.arienteworld.entities.drone;
 
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.ariente.api.*;
-import mcjty.ariente.setup.Registration;
+import mcjty.arienteworld.ai.CityAI;
 import mcjty.arienteworld.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
@@ -11,6 +11,8 @@ import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.control.MoveControl;
+import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
@@ -25,7 +27,6 @@ import net.minecraft.world.level.BlockGetter;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.world.phys.AABB;
 
 import static mcjty.arienteworld.setup.Registration.ENTITY_SENTINEL_DRONE;
 
@@ -40,7 +41,7 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
         super(type, worldIn);
 
         this.xpReward = 5;
-        this.moveControl = new SentinelDroneMoveHelper(this);
+        this.moveControl = new DroneMoveControl(this);
     }
 
     public static SentinelDroneEntity create(Level world, int sentinelId, ChunkPos cityCenter) {
@@ -89,6 +90,11 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
             cityAI.playerSpotted((Player) entitylivingbaseIn);
             aiSystem.saveSystem();
         }
+    }
+
+    @Override
+    protected PathNavigation createNavigation(Level level) {
+        return new FlyingPathNavigation(this, level);
     }
 
     @Override
@@ -256,6 +262,9 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
          */
         @Override
         public boolean canUse() {
+            if (!parentEntity.getNavigation().isDone()) {
+                return false;
+            }
             MoveControl controller = this.parentEntity.getMoveControl();
 
             if (!controller.hasWanted()) {
@@ -287,59 +296,16 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
             }
             ICityAISystem aiSystem = ArienteWorld.arienteWorldImplementation.getCityAISystem(parentEntity.level());
             ICityAI cityAI = aiSystem.getCityAI(parentEntity.cityCenter);
-            BlockPos pos = cityAI.requestNewSentinelPosition(parentEntity.level(), parentEntity.sentinelId);
+            BlockPos pos = cityAI instanceof CityAI ai && ai.isLargeCube()
+                    ? ai.requestCubePatrolPosition(parentEntity)
+                    : cityAI.requestNewSentinelPosition(parentEntity.level(), parentEntity.sentinelId);
             if (pos != null) {
-                this.parentEntity.getMoveControl().setWantedPosition(pos.getX(), pos.getY(), pos.getZ(), 2.0D);
-            }
-        }
-    }
-
-    static class SentinelDroneMoveHelper extends MoveControl {
-        private final SentinelDroneEntity parentEntity;
-        private int courseChangeCooldown;
-
-        public SentinelDroneMoveHelper(SentinelDroneEntity drone) {
-            super(drone);
-            this.parentEntity = drone;
-        }
-
-        @Override
-        public void tick() {
-            if (this.operation == Operation.MOVE_TO) {
-                double d0 = this.wantedX - this.parentEntity.getX();
-                double d1 = this.wantedY - this.parentEntity.getY();
-                double d2 = this.wantedZ - this.parentEntity.getZ();
-                double d3 = d0 * d0 + d1 * d1 + d2 * d2;
-
-                if (this.courseChangeCooldown-- <= 0) {
-                    this.courseChangeCooldown += this.parentEntity.getRandom().nextInt(5) + 2;
-                    d3 = Math.sqrt(d3);
-
-                    if (this.isNotColliding(this.wantedX, this.wantedY, this.wantedZ, d3)) {
-                        Vec3 motion = this.parentEntity.getDeltaMovement();
-                        this.parentEntity.setDeltaMovement(motion.add(d0 / d3 * 0.1D, d1 / d3 * 0.1D, d2 / d3 * 0.1D));
-                    } else {
-                        this.operation = Operation.WAIT;
-                    }
+                if (DroneMoveControl.canFlyTo(parentEntity, Vec3.atBottomCenterOf(pos))) {
+                    parentEntity.getMoveControl().setWantedPosition(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 2.0D);
+                } else {
+                    parentEntity.getNavigation().moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 2.0D);
                 }
             }
-        }
-
-        /**
-         * Checks if entity bounding box is not colliding with terrain
-         */
-        private boolean isNotColliding(double x, double y, double z, double p_179926_7_) {
-            double d0 = (x - this.parentEntity.getX()) / p_179926_7_;
-            double d1 = (y - this.parentEntity.getY()) / p_179926_7_;
-            double d2 = (z - this.parentEntity.getZ()) / p_179926_7_;
-            AABB axisalignedbb = this.parentEntity.getBoundingBox();
-
-            for (int i = 1; i < p_179926_7_; ++i) {
-                axisalignedbb = axisalignedbb.move(d0, d1, d2);
-
-            }
-
-            return true;
         }
     }
 }

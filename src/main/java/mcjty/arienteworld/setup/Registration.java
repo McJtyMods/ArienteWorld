@@ -1,6 +1,7 @@
 package mcjty.arienteworld.setup;
 
 import mcjty.arienteworld.ModSounds;
+import mcjty.arienteworld.entities.boss.CoreGuardianEntity;
 import mcjty.arienteworld.entities.darkbat.DarkbatEntity;
 import mcjty.arienteworld.entities.drone.DroneEntity;
 import mcjty.arienteworld.entities.drone.SentinelDroneEntity;
@@ -80,6 +81,10 @@ public class Registration {
             .setShouldReceiveVelocityUpdates(false)
             .build("ariente_drone"));
 
+    public static final RegistryObject<EntityType<CoreGuardianEntity>> ENTITY_CORE_GUARDIAN = ENTITIES.register("core_guardian",
+            () -> EntityType.Builder.of(CoreGuardianEntity::new, MobCategory.MISC).sized(4, 4)
+                    .fireImmune().clientTrackingRange(8).updateInterval(1).build("core_guardian"));
+
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(ForgeRegistries.FEATURES, MODID);
     public static final RegistryObject<OverworldDungeonFeature> ENTRANCE = FEATURES.register("overworld_dungeon", OverworldDungeonFeature::new);
     public static final RegistryObject<CityFeature> CITY = FEATURES.register("city", CityFeature::new);
@@ -114,6 +119,7 @@ public class Registration {
     }
 
     private static void registerAttributes(EntityAttributeCreationEvent event) {
+        event.put(ENTITY_CORE_GUARDIAN.get(), CoreGuardianEntity.registerAttributes().build());
         event.put(ENTITY_DARKBAT.get(), DarkbatEntity.registerAttributes().build());
         event.put(ENTITY_SOLDIER.get(), SoldierEntity.registerAttributes().build());
         event.put(ENTITY_MASTER_SOLDIER.get(), MasterSoldierEntity.registerAttributes().build());
