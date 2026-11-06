@@ -71,8 +71,15 @@ reinforcement posts spread across all six room decks. Solo alerts sustain 8–12
 soldiers and 3–5 combat drones, slightly above the underground installation's
 7–10 soldiers and 2–4 drones. Reinforcement Master Soldier and power armor chances
 are 10% and 35%; 25% of those armored reinforcements receive a forcefield.
-Four main-floor sections reserve a 24×24×30 clear
-volume for a future boss; no boss is included. Underground halls gain seeded
+Four main-floor sections retain a 24×24×30 clear hall. A Core Guardian protects
+the central AI Core. Beside the core and forcefield generator, one lowest-tier
+Holo Storage Cube holds 24 guaranteed stacks of conquered Overworld spoils:
+netherite, Nether Stars, Ghast Tears, a Totem of Undying, precious materials,
+four enchanted books, Fortune/Silk Touch diamond pickaxes and four potion variants.
+Defeat the guardian and break the core for its storage-access card. The trophy
+cache fills once, preserves its item data and does not replenish on reload.
+Its vanilla loot table is `data/arienteworld/loot_tables/chests/conquered_overworld.json`.
+Underground halls gain seeded
 console banks, cooling stacks and machinery islands, while ships, stations and
 smaller dungeons can use alternate illuminated hull detailing.
 

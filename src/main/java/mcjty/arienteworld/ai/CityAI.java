@@ -11,6 +11,7 @@ import mcjty.arienteworld.entities.drone.ISentinel;
 import mcjty.arienteworld.entities.drone.IDrone;
 import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.ariente.Ariente;
+import mcjty.ariente.blocks.storagecube.StorageCubeTile;
 import mcjty.hologui.api.IHoloGuiEntity;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
@@ -21,6 +22,7 @@ import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityPlan;
 import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.cities.Loot;
+import mcjty.arienteworld.cities.StructureLoot;
 import mcjty.arienteworld.config.AIConfiguration;
 import mcjty.arienteworld.setup.Registration;
 import mcjty.arienteworld.dimension.EditMode;
@@ -1094,6 +1096,9 @@ public class CityAI implements ICityAI {
 
     @Override
     public void fillLoot(IStorageTile te) {
+        if (te instanceof StorageCubeTile storage && StructureLoot.fill(storage)) {
+            return;
+        }
         CityPlan plan = city.getPlan();
         fillLoot(plan, te);
     }

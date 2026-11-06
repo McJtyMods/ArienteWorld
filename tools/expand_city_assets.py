@@ -45,10 +45,18 @@ def main():
             palette['palette'] += [{'char': '@' + facing[0], 'block': 'ariente:display_base@facing=' + facing}
                                    for facing in ('north', 'south', 'west', 'east')]
         if path.stem == 'city5_1':
-            palette['palette'] = [p for p in palette['palette'] if p['char'] not in ('^g', '^s', '^m')]
+            palette['palette'] = [p for p in palette['palette'] if p['char'] not in ('^g', '^s', '^m', '^t')]
             palette['palette'] += [{'char': '^' + symbol, 'block': 'arienteworld:' + name + '@facing=south'}
                                    for symbol, name in [('g', 'guard_dummy'), ('s', 'soldier_dummy'),
                                                         ('m', 'master_soldier_dummy')]]
+            palette['palette'].append({'char': '^t', 'block': 'ariente:holo_storage_1'})
+            core = next(a for a in data if a['type'] == 'part' and a['name'] == 'c5_C1')
+            row = core['slices'][27][8]
+            core['slices'][27][8] = row[:14] + '^t' + row[16:]
+            core['tedata'] = [entry for entry in core.get('tedata', [])
+                              if (entry['x'], entry['y'], entry['z']) != (7, 27, 8)]
+            core['tedata'].append({'x': 7, 'y': 27, 'z': 8, 'values': [
+                {'key': 'lootTable', 'string': 'arienteworld:chests/conquered_overworld'}]})
         if path.stem == 'landscapecities':
             data = [a for a in data if not (a['type'] == 'part' and
                     ((a['name'].startswith('building') and int(a['name'][8:]) > 13) or

@@ -2,6 +2,7 @@ package mcjty.arienteworld.dimension;
 
 import mcjty.ariente.api.ICityEquipment;
 import mcjty.ariente.api.IStorageTile;
+import mcjty.ariente.blocks.storagecube.StorageCubeTile;
 import mcjty.ariente.display.DisplayBaseTile;
 import mcjty.arienteworld.ai.CityAI;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -13,6 +14,7 @@ import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.cities.Palette;
+import mcjty.arienteworld.cities.StructureLoot;
 import mcjty.arienteworld.cities.Transform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -300,6 +302,9 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                                 settings.put("mimic", ForgeRegistries.BLOCKS.getKey(mimic.getBlock()).toString());
                             }
                             equipment.load(settings);
+                            if (blockEntity instanceof StorageCubeTile storage && data.get("lootTable") instanceof String table) {
+                                StructureLoot.setLootTable(storage, new ResourceLocation(table));
+                            }
                             if (mimic != null && blockEntity instanceof IFacadeSupport facade) {
                                 facade.setMimicBlock(mimic);
                             }

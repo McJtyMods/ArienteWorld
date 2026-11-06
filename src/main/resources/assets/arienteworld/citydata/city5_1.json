@@ -8050,7 +8050,7 @@
         "                                ",
         "            S F R R             ",
         "              U J               ",
-        "                V               ",
+        "              ^tV               ",
         "            R R S S             ",
         "                                ",
         "                                ",
@@ -8232,6 +8232,17 @@
           {
             "key": "mimic",
             "string": "ariente:marble"
+          }
+        ]
+      },
+      {
+        "x": 7,
+        "y": 27,
+        "z": 8,
+        "values": [
+          {
+            "key": "lootTable",
+            "string": "arienteworld:chests/conquered_overworld"
           }
         ]
       }
@@ -27730,6 +27741,10 @@
       {
         "char": "^m",
         "block": "arienteworld:master_soldier_dummy@facing=south"
+      },
+      {
+        "char": "^t",
+        "block": "ariente:holo_storage_1"
       }
     ]
   }

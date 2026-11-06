@@ -18,6 +18,11 @@
       "type": "patchouli:text",
       "title": "Sort your key cards",
       "text": "Soldiers can drop city cards, but permissions vary. Keep door access, storage access and forcefield immunity cards until you have checked them.$(br2)A city name identifies the destination, not every permission.$(br2)The card from the final AI Core is your storage-access reward. Use the Ariente chapter’s Key Cards entry if a lock rejects you."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Conquered Overworld spoils",
+      "text": "The huge cube keeps a Holo Storage Cube beside its central AI Core and forcefield generator. Its 24 reward stacks are spoils from the Overworld: Netherite Ingots, Nether Stars, Ghast Tears, a Totem of Undying, enchanted books and diamond pickaxes, potions and other valuables.$(br2)Defeat the Core Guardian, then break the AI Core for the storage-access card. These trophies do not replenish after collection."
     }
   ]
 }
