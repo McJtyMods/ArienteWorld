@@ -1012,7 +1012,7 @@ public class CityAI implements ICityAI {
     }
 
     public static void fillLoot(CityPlan plan, IStorageTile te) {
-        if (plan.getName().equals("city5_1")) {
+        if (plan.getName().equals("city5_1") || plan.getName().equals("city0_0")) {
             GenericTileEntity tile = (GenericTileEntity) te;
             Random cache = new Random(((ServerLevel) tile.getLevel()).getSeed() ^ tile.getBlockPos().asLong());
             List<Loot> rewards = plan.getLoot();

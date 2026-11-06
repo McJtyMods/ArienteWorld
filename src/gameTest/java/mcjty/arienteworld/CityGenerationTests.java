@@ -1,6 +1,8 @@
 package mcjty.arienteworld;
 
 import com.mojang.authlib.GameProfile;
+import mcjty.ariente.Ariente;
+import mcjty.ariente.blocks.storagecube.StorageCubeTile;
 import mcjty.arienteworld.entities.drone.EntityAIScanForPlayer;
 import mcjty.ariente.blocks.utility.StorageTile;
 import mcjty.ariente.items.BlueprintItem;
@@ -49,6 +51,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -60,6 +63,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import static mcjty.ariente.setup.Registration.HOLO_STORAGE_1;
+import static mcjty.ariente.setup.Registration.HOLO_STORAGE_2;
+import static mcjty.ariente.setup.Registration.HOLO_STORAGE_3;
+import static mcjty.ariente.setup.Registration.KEY_CARD;
 import static mcjty.ariente.setup.Registration.NETCABLE;
 import static mcjty.ariente.setup.Registration.BLUEPRINT;
 
@@ -134,6 +141,56 @@ public class CityGenerationTests {
         throw new AssertionError("Could not find a city using " + plan.getName());
     }
 
+    @GameTest(template = "empty", timeoutTicks = 400)
+    public static void holoStorageUsesCityLootAndSecurity(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel().getServer().getLevel(DimensionRegister.DIMENSION);
+        FixtureData fixtures = level.getDataStorage().computeIfAbsent(FixtureData::load, FixtureData::new, "ariente_city_test_fixtures");
+        int fixtureZ = -5368 - fixtures.iteration++ * 256;
+        fixtures.setDirty();
+        City city = findCity(level.getSeed(), AssetRegistries.CITYPLANS.get("city0_0"), fixtureZ);
+        ChunkPos chunk = city.getCenter();
+        level.getChunk(chunk.x, chunk.z);
+        int floor = CityTools.getLowestHeight(level, city, chunk.x, chunk.z);
+        List<StorageCubeTile> cubes = new ArrayList<>();
+        List<Block> tiers = List.of(HOLO_STORAGE_1.get(),
+                HOLO_STORAGE_2.get(), HOLO_STORAGE_3.get());
+        for (int i = 0; i < tiers.size(); i++) {
+            BlockPos pos = new BlockPos(chunk.getMinBlockX() + 4 + i, floor + 1, chunk.getMinBlockZ() + 8);
+            level.setBlockAndUpdate(pos, tiers.get(i).defaultBlockState());
+            cubes.add((StorageCubeTile) level.getBlockEntity(pos));
+        }
+        AICoreTile core = level.getChunk(chunk.x, chunk.z).getBlockEntitiesPos().stream().map(level::getBlockEntity)
+                .filter(tile -> tile instanceof AICoreTile).map(tile -> (AICoreTile) tile).findFirst().orElseThrow();
+        CityAI ai = CityAISystem.getCityAISystem(level).getCityAI(chunk);
+        ai.tick(core);
+        ItemStack card = new ItemStack(KEY_CARD.get());
+        Ariente.arienteSystem.addSecurity(card, ai.getStorageKeyId());
+        for (StorageCubeTile cube : cubes) {
+            helper.assertTrue(cube.isLocked() && ai.getStorageKeyId().equals(cube.getKeyId()),
+                    "Every holo tier must receive the active city's storage lock and key");
+            for (int slot = 0; slot < 4; slot++) {
+                helper.assertTrue(!cube.getItems().getStackInSlot(slot).isEmpty(), "City setup fills holo storage with loot");
+            }
+            StorageCubeTile restored = new StorageCubeTile(cube.getBlockPos(), cube.getBlockState());
+            restored.load(cube.saveWithoutMetadata());
+            helper.assertTrue(restored.isLocked() && cube.getKeyId().equals(restored.getKeyId()), "City security survives saving");
+            helper.assertTrue(ItemStack.matches(cube.getItems().getStackInSlot(0), restored.getItems().getStackInSlot(0)),
+                    "Security data must preserve the saved inventory");
+            StorageCubeTile client = new StorageCubeTile(cube.getBlockPos(), cube.getBlockState());
+            client.handleUpdateTag(cube.getUpdateTag());
+            helper.assertTrue(client.isLocked(), "Clients receive the lock state without an inventory snapshot");
+            cube.acceptKeyCard(new ItemStack(KEY_CARD.get()));
+            helper.assertTrue(cube.isLocked(), "An unrelated card cannot unlock city storage");
+            cube.acceptKeyCard(card);
+            helper.assertTrue(!cube.isLocked(), "The city's storage card unlocks holo storage");
+            ItemStack loot = cube.getItems().getStackInSlot(0).copy();
+            cube.setup(ai, level, false);
+            helper.assertTrue(!cube.isLocked() && ItemStack.matches(loot, cube.getItems().getStackInSlot(0)),
+                    "Reloading city equipment must neither relock nor refill storage");
+        }
+        helper.succeed();
+    }
+
     private static void verifyCity(GameTestHelper helper, ServerLevel level, City city) {
         CityPlan plan = city.getPlan();
         int width = plan.getPlan().get(0).length();
@@ -206,6 +263,19 @@ public class CityGenerationTests {
         ai.tick(core);
         helper.assertTrue(ai.getStorageKeyId() != null && !ai.getStorageKeyId().isEmpty(), "City must initialize its security");
         helper.assertTrue(((IAICoreTile) core).getCityName().equals(city.getName()), "Core must receive its city name");
+        if (plan.getName().equals("city0_0")) {
+            List<StorageTile> caches = level.getChunk(city.getCenter().x, city.getCenter().z).getBlockEntities().values().stream()
+                    .filter(tile -> tile instanceof StorageTile).map(tile -> (StorageTile) tile).toList();
+            helper.assertTrue(caches.size() == 1 && caches.get(0).getGridSize() == 2,
+                    "The small outpost must contain one 2x2 storage cache");
+            StorageTile cache = caches.get(0);
+            for (int slot = 0; slot < 4; slot++) {
+                helper.assertTrue(!cache.getTotalStack(slot).isEmpty(), "Outpost cache must always contain loot");
+            }
+            helper.assertTrue(cache.isLocked() && ai.getStorageKeyId().equals(cache.getKeyId()),
+                    "Outpost supplies must use the city's storage security");
+            helper.assertTrue(!level.getBlockState(core.getBlockPos().above(3)).isAir(), "Outpost core must have a canopy");
+        }
         CompoundTag saved = new CompoundTag();
         ai.writeToNBT(saved);
         CityAI restored = new CityAI(level, city.getCenter());
