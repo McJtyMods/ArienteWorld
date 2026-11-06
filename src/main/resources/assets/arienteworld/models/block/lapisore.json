@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "arienteworld:blocks/ores/lapisore"
+    "all": "arienteworld:block/ores/lapisore"
   }
 }

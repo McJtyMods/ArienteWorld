@@ -110,7 +110,7 @@ public class PopulationTests {
             }
         }
         var features = level.registryAccess().registryOrThrow(Registries.PLACED_FEATURE);
-        for (String name : List.of("blue_tree", "blue_tree_tall", "dark_tree", "dark_tree_tall", "glow_tree", "variant_tree", "huge_blue_tree")) {
+        for (String name : List.of("blue_tree", "blue_tree_tall", "dark_tree", "dark_tree_tall", "glow_tree", "variant_tree", "huge_blue_tree", "spiral_tree")) {
             var tree = features.get(new ResourceLocation(ArienteWorld.MODID, name + "_shape"));
             helper.assertTrue(!tree.place(level, level.getChunkSource().getGenerator(), RandomSource.create(123), origin),
                     name + " must not grow on an authored city floor");

@@ -3,7 +3,7 @@
   "defaults": {
     "model": "cube_all",
     "textures": {
-      "all": "arienteworld:blocks/ores/siliconore"
+      "all": "arienteworld:block/ores/siliconore"
     }
   },
   "variants": {

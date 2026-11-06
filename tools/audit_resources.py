@@ -53,15 +53,26 @@ def main():
             for child in value:
                 blockstate_models(child)
 
+    # Model textures belong under block/ or item/ so vanilla discovers them.
+    def model_texture(identifier):
+        reference(identifier, 'textures', '.png')
+        namespace, separator, path = identifier.partition(':')
+        if separator and namespace == NAMESPACE and not path.startswith(('block/', 'item/')):
+            errors.append(f'Model texture outside vanilla atlas directories: {identifier}')
+
     for name, doc in docs.items():
         if '/models/' in name:
             if 'parent' in doc:
                 reference(doc['parent'], 'models', '.json')
             for texture in doc.get('textures', {}).values():
                 if not texture.startswith('#'):
-                    reference(texture, 'textures', '.png')
+                    model_texture(texture)
         if '/blockstates/' in name:
             blockstate_models(doc)
+            # Legacy Forge blockstates can also supply model texture variables.
+            for texture in doc.get('defaults', {}).get('textures', {}).values():
+                if not texture.startswith('#'):
+                    model_texture(texture)
         if name.endswith('/sounds.json'):
             for event in doc.values():
                 for sound in event.get('sounds', []):
@@ -120,6 +131,12 @@ def main():
             names = jar.namelist()
             if len(names) != len(set(names)):
                 errors.append('Duplicate jar entries')
+            for name in names:
+                if name.endswith('/'):
+                    continue
+                if name.startswith(f'assets/{NAMESPACE}/textures/blocks/') or (
+                        name == 'assets/minecraft/atlases/blocks.json' and name not in files):
+                    errors.append(f'Obsolete resource in jar: {name}')
             for name, path in files.items():
                 if name not in names or jar.read(name) != path.read_bytes():
                     errors.append(f'Jar resource missing or stale: {name}')

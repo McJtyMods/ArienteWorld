@@ -101,7 +101,7 @@ public class DarkbatTests {
         var type = Registration.ENTITY_DARKBAT.get();
         level.getServer().setDifficulty(Difficulty.NORMAL, true);
         var biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
-        for (String biome : new String[]{"plains", "hills", "ocean", "forest", "rough", "city"}) {
+        for (String biome : new String[]{"plains", "hills", "ocean", "forest", "rough", "city", "swamp"}) {
             var spawns = biomes.get(new ResourceLocation(ArienteWorld.MODID, "ariente_" + biome))
                     .getMobSettings().getMobs(MobCategory.MONSTER).unwrap();
             helper.assertTrue(spawns.stream().anyMatch(entry -> entry.type == type && entry.minCount == 1 && entry.maxCount == 1)

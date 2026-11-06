@@ -79,15 +79,16 @@ public class ArienteChunkGenerator extends ChunkGenerator {
                 biomes[x + z * 10] = source.getLayout().get(chunkX * 4 - 2 + x, chunkZ * 4 - 2 + z);
             }
         }
-        gen.terrain.generate(chunkX, chunkZ, buffer, biomes);
-        gen.islands.setBlocksInChunk(chunkX, chunkZ, buffer);
-        generateFeatures(gen, buffer, chunkX, chunkZ, true);
         BiomeProfile[] surface = new BiomeProfile[256];
         for (int z = 0; z < 16; z++) {
             for (int x = 0; x < 16; x++) {
                 surface[x + z * 16] = source.getLayout().get(chunkX * 4 + (x >> 2), chunkZ * 4 + (z >> 2));
             }
         }
+        gen.terrain.generate(chunkX, chunkZ, buffer, biomes);
+        gen.terrain.generateSwamp(chunkX, chunkZ, buffer, surface);
+        gen.islands.setBlocksInChunk(chunkX, chunkZ, buffer);
+        generateFeatures(gen, buffer, chunkX, chunkZ, true);
         gen.terrain.replaceBiomeBlocks(chunkX, chunkZ, buffer, surface);
         generateFeatures(gen, buffer, chunkX, chunkZ, false);
         terrain.put(key, buffer);

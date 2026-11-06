@@ -3,7 +3,7 @@
   "defaults": {
     "model": "cube_all",
     "textures": {
-      "all": "arienteworld:blocks/ores/platinumore"
+      "all": "arienteworld:block/ores/platinumore"
     }
   },
   "variants": {

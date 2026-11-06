@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "arienteworld:block/plants/talldarkgrass_bottom"
+  }
+}

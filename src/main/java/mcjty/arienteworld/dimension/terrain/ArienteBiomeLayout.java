@@ -4,7 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.minecraft.world.level.ChunkPos;
 
-/** Original six-biome selection and seven seeded zoom layers, sampled in quart coordinates. */
+/** Equally weighted biome selection and seven seeded zoom layers, sampled in quart coordinates. */
 public class ArienteBiomeLayout {
 
     private final Layer layer;
@@ -69,7 +69,7 @@ public class ArienteBiomeLayout {
 
         private int sample(int x, int z) {
             if (parent == null) {
-                return new LayerRandom(seed, x, z).next(6);
+                return new LayerRandom(seed, x, z).next(BiomeProfile.VALUES.length);
             }
             int px = x >> 1;
             int pz = z >> 1;

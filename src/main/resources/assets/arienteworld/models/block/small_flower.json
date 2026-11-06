@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cross",
   "textures": {
-    "cross": "arienteworld:blocks/plants/smallflower"
+    "cross": "arienteworld:block/plants/smallflower"
   }
 }

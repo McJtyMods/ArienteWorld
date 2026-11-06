@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "arienteworld:blocks/plants/blueleaves"
+    "all": "arienteworld:block/plants/blueleaves"
   }
 }

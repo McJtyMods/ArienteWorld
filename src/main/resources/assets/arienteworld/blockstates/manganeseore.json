@@ -3,7 +3,7 @@
   "defaults": {
     "model": "cube_all",
     "textures": {
-      "all": "arienteworld:blocks/ores/manganeseore"
+      "all": "arienteworld:block/ores/manganeseore"
     }
   },
   "variants": {

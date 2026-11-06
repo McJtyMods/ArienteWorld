@@ -10,7 +10,8 @@
         "arienteworld:ariente_ocean",
         "arienteworld:ariente_forest",
         "arienteworld:ariente_rough",
-        "arienteworld:ariente_city"
+        "arienteworld:ariente_city",
+        "arienteworld:ariente_swamp"
       ]
     }
   }

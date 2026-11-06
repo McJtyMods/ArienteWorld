@@ -3,7 +3,7 @@
   "defaults": {
     "model": "cube_all",
     "textures": {
-      "all": "arienteworld:blocks/ores/negarite"
+      "all": "arienteworld:block/ores/negarite"
     }
   },
   "variants": {

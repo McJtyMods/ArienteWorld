@@ -1,4 +1,5 @@
 {
+  "biome.arienteworld.ariente_swamp": "Ariente Swamp",
   "block.arienteworld.guard_dummy": "Guard Dummy",
   "block.arienteworld.soldier_dummy": "Soldier Dummy",
   "block.arienteworld.glowlog": "Glowing Log",
@@ -8,6 +9,7 @@
   "block.arienteworld.darkleaves": "Dark Leaves",
   "block.arienteworld.black_bush": "Black Bush",
   "block.arienteworld.dark_grass": "Dark Grass",
+  "block.arienteworld.tall_dark_grass": "Tall Dark Grass",
   "block.arienteworld.small_flower": "Small Flower",
   "block.arienteworld.lapisore": "Lapis Ore",
   "block.arienteworld.glowstoneore": "Glowstone Ore",

@@ -32,6 +32,7 @@ public class ClientSetup {
             ItemBlockRenderTypes.setRenderLayer(Registration.DARKLEAVES.get(), RenderType.cutoutMipped());
             ItemBlockRenderTypes.setRenderLayer(Registration.BLACKBUSH.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(Registration.DARKGRASS.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(Registration.TALLDARKGRASS.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(Registration.SMALLFLOWER.get(), RenderType.cutout());
         });
     }

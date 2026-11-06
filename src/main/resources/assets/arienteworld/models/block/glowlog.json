@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:block/cube_column",
   "textures": {
-    "end": "arienteworld:blocks/plants/glowlog_top",
-    "side": "arienteworld:blocks/plants/glowlog"
+    "end": "arienteworld:block/plants/glowlog_top",
+    "side": "arienteworld:block/plants/glowlog"
   }
 }

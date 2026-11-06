@@ -3,7 +3,7 @@
   "defaults": {
     "model": "cube_all",
     "textures": {
-      "all": "arienteworld:blocks/ores/silverore"
+      "all": "arienteworld:block/ores/silverore"
     }
   },
   "variants": {

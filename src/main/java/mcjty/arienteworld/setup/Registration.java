@@ -20,6 +20,8 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import mcjty.arienteworld.dimension.CityFeature;
 import mcjty.arienteworld.dimension.FlowerHeightPlacement;
+import mcjty.arienteworld.dimension.SwampBiomePlacement;
+import mcjty.arienteworld.dimension.features.SpiralTreeFeature;
 import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import mcjty.arienteworld.blocks.DummyBlock;
@@ -31,9 +33,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.DoubleHighBlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.material.MapColor;
@@ -79,9 +83,11 @@ public class Registration {
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(ForgeRegistries.FEATURES, MODID);
     public static final RegistryObject<OverworldDungeonFeature> ENTRANCE = FEATURES.register("overworld_dungeon", OverworldDungeonFeature::new);
     public static final RegistryObject<CityFeature> CITY = FEATURES.register("city", CityFeature::new);
+    public static final RegistryObject<SpiralTreeFeature> SPIRAL_TREE = FEATURES.register("spiral_tree", SpiralTreeFeature::new);
 
     public static final DeferredRegister<PlacementModifierType<?>> PLACEMENTS = DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, MODID);
     public static final RegistryObject<PlacementModifierType<FlowerHeightPlacement>> FLOWER_HEIGHT = PLACEMENTS.register("flower_height", () -> () -> FlowerHeightPlacement.CODEC);
+    public static final RegistryObject<PlacementModifierType<SwampBiomePlacement>> SWAMP_BIOME = PLACEMENTS.register("swamp_biome", () -> () -> SwampBiomePlacement.CODEC);
 
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
@@ -159,6 +165,10 @@ public class Registration {
 
     public static final RegistryObject<BlockArientePlant> DARKGRASS = BLOCKS.register("dark_grass", BlockArientePlant::new);
     public static final RegistryObject<Item> DARKGRASS_ITEM = ITEMS.register("dark_grass", () -> new BlockItem(DARKGRASS.get(), createStandardProperties()));
+
+    public static final RegistryObject<DoublePlantBlock> TALLDARKGRASS = BLOCKS.register("tall_dark_grass", () -> new DoublePlantBlock(Block.Properties.of()
+            .mapColor(MapColor.PLANT).noCollission().instabreak().replaceable().sound(SoundType.GRASS)));
+    public static final RegistryObject<Item> TALLDARKGRASS_ITEM = ITEMS.register("tall_dark_grass", () -> new DoubleHighBlockItem(TALLDARKGRASS.get(), createStandardProperties()));
 
     public static final RegistryObject<BlockArientePlant> SMALLFLOWER = BLOCKS.register("small_flower", BlockArientePlant::new);
     public static final RegistryObject<Item> SMALLFLOWER_ITEM = ITEMS.register("small_flower", () -> new BlockItem(SMALLFLOWER.get(), createStandardProperties()));

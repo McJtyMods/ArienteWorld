@@ -8,6 +8,8 @@ import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.data.loot.LootTableProvider;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.DoublePlantBlock;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraftforge.common.data.BlockTagsProvider;
 import net.minecraftforge.common.data.ExistingFileHelper;
@@ -40,7 +42,13 @@ public class DataGenerators {
         @Override
         protected void generate() {
             // Keep the existing authored drops, including leaves and editor markers.
-            getKnownBlocks().forEach(this::dropSelf);
+            getKnownBlocks().forEach(block -> {
+                if (block instanceof DoublePlantBlock) {
+                    add(block, createSinglePropConditionTable(block, DoublePlantBlock.HALF, DoubleBlockHalf.LOWER));
+                } else {
+                    dropSelf(block);
+                }
+            });
         }
 
         @Override

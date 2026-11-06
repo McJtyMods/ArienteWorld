@@ -6,6 +6,20 @@ HoloGui and McJtyLib; The One Probe is optional.
 
 Ariente biomes do not spawn vanilla mobs, including outside cities.
 
+Half of tree placement attempts in plains, forests and swamps choose the alien
+spiral tree: a corkscrew blue-log trunk with three staggered rings of blue leaves.
+The other half retain the existing tree mix. This applies to newly generated
+chunks. Inspect an individual tree on dirt or grass with
+`/place feature arienteworld:spiral_tree`.
+
+The dimension has seven equally weighted biomes: plains, hills, ocean, forest,
+rough terrain, city and Ariente Swamp. The swamp has frequent shallow pools,
+scattered alien trees and dense black bushes and dark grass, with occasional
+small flowers. Two-block-tall dark grass with three top appearances grows only in
+swamps; it can also be collected and replanted elsewhere. Blue-purple fog blends
+at biome boundaries and limits distant terrain visibility. Find the swamp with
+`/execute in arienteworld:ariente run locate biome arienteworld:ariente_swamp`.
+
 Soldiers and occasional master soldiers spawn naturally in city biomes and inside
 all dungeon types, including underground halls and the huge cube, at light levels
 of 11 or lower. Natural patrols use the normal hostile mob cap and spawning distances
@@ -28,6 +42,10 @@ Players must leave the off hand empty to fire a lance.
 See [PORTING.txt](PORTING.txt) for development status, build instructions,
 verification commands and release gates, and the
 [gameplay guide](../Ariente/ARIENTE_GUIDE.md) for the current systems and controls.
+
+Block textures use `assets/arienteworld/textures/block/` and model references
+such as `arienteworld:block/plants/darkgrass`. Minecraft discovers these textures
+automatically; new block textures need no atlas entry.
 
 Newly generated cities include 26 building types and 18 parks. The added skyline
 variants retain the original bases and equipment and add stepped technological
@@ -79,7 +97,7 @@ Darkbats are rare, solitary outdoor predators using the phantom's circling and
 diving attacks. They are 60% larger than a phantom, have 40 health and deal 12
 melee damage on Normal difficulty. They target visible survival players
 immediately, independently of insomnia, and do not burn in daylight.
-They can spawn in the plains, hills, ocean, forest and rough biomes at any light
+They can spawn in the plains, hills, ocean, forest, rough and swamp biomes at any light
 level, under open sky, outside city biomes and dungeon footprints. Only one in
 64 otherwise valid spawn attempts passes. Natural spawning also stops when any
 non-spectator player within 128 horizontal blocks of the spawn already has three

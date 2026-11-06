@@ -6,7 +6,8 @@ public enum BiomeProfile {
     OCEAN("ariente_ocean", -1, .1f),
     FOREST("ariente_forest", .125f, .05f),
     ROUGH("ariente_rough", .25f, .5f),
-    CITY("ariente_city", .125f, .05f);
+    CITY("ariente_city", .125f, .05f),
+    SWAMP("ariente_swamp", -.125f, .025f);
 
     public static final BiomeProfile[] VALUES = values();
     private final String id;

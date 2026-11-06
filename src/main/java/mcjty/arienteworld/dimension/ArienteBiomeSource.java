@@ -3,6 +3,7 @@ package mcjty.arienteworld.dimension;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import mcjty.arienteworld.dimension.terrain.ArienteBiomeLayout;
+import mcjty.arienteworld.dimension.terrain.BiomeProfile;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
@@ -21,8 +22,8 @@ public class ArienteBiomeSource extends BiomeSource {
     private ArienteBiomeLayout layout = new ArienteBiomeLayout(0);
 
     public ArienteBiomeSource(List<Holder<Biome>> biomes) {
-        if (biomes.size() != 6) {
-            throw new IllegalArgumentException("Ariente requires its six biomes in the original order");
+        if (biomes.size() != BiomeProfile.VALUES.length) {
+            throw new IllegalArgumentException("Ariente requires " + BiomeProfile.VALUES.length + " biomes in profile order");
         }
         this.biomes = List.copyOf(biomes);
     }

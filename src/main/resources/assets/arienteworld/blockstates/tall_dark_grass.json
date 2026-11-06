@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "half=lower": {
+      "model": "arienteworld:block/tall_dark_grass_bottom"
+    },
+    "half=upper": [
+      {
+        "model": "arienteworld:block/tall_dark_grass_top1"
+      },
+      {
+        "model": "arienteworld:block/tall_dark_grass_top2"
+      },
+      {
+        "model": "arienteworld:block/tall_dark_grass_top3"
+      }
+    ]
+  }
+}

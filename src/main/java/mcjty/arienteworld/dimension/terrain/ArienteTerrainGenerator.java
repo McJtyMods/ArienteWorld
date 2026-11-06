@@ -20,6 +20,7 @@ public class ArienteTerrainGenerator {
     private NoiseGeneratorOctaves noiseGen2;
     private NoiseGeneratorOctaves noiseGen3;
     private NoiseGeneratorPerlin surfaceNoise;
+    private NoiseGeneratorPerlin swampNoise;
 
     // A NoiseGeneratorOctaves used in generating terrain
     private NoiseGeneratorOctaves noiseGen6;
@@ -57,6 +58,7 @@ public class ArienteTerrainGenerator {
         NoiseGeneratorOctaves noiseGen5 = new NoiseGeneratorOctaves(rand, 10);
         this.noiseGen6 = new NoiseGeneratorOctaves(rand, 16);
         NoiseGeneratorOctaves mobSpawnerNoise = new NoiseGeneratorOctaves(rand, 8);
+        this.swampNoise = new NoiseGeneratorPerlin(rand, 1);
     }
 
     private void generateHeightmap(int chunkX4, int chunkY4, int chunkZ4, BiomeProfile[] biomesForGeneration) {
@@ -215,6 +217,25 @@ public class ArienteTerrainGenerator {
                         d3 += d7;
                         d4 += d8;
                     }
+                }
+            }
+        }
+    }
+
+    /** Shape the low swamp before floating islands and surface decoration are added. */
+    public void generateSwamp(int chunkX, int chunkZ, TerrainBuffer primer, BiomeProfile[] biomesIn) {
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                if (biomesIn[x + z * 16] != BiomeProfile.SWAMP) {
+                    continue;
+                }
+                // World coordinates keep the pools continuous across chunk boundaries.
+                double wetness = swampNoise.getValue((chunkX * 16 + x) / 18.0, (chunkZ * 16 + z) / 18.0);
+                int floor = wetness < -.35 ? 60 : wetness < .05 ? 61 : wetness < .45 ? 63 : 64;
+                for (int y = 2; y < 256; y++) {
+                    BlockState state = y <= floor ? baseBlock
+                            : y < 63 ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+                    primer.setBlockState(x, y, z, state);
                 }
             }
         }
