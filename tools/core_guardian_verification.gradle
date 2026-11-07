@@ -6,9 +6,12 @@ gradle.afterProject { p ->
         if (!(fixture ==~ /[a-zA-Z0-9_-]+/)) {
             throw new GradleException('Invalid guardian fixture name')
         }
+        // Do not load stale classes from unrelated checks compiled into the default output.
+        p.sourceSets.gameTest.java.destinationDirectory.set(p.layout.buildDirectory.dir("verification/${fixture}/test-classes"))
         p.sourceSets.gameTest.java.setIncludes(client
                 ? ['mcjty/arienteworld/client/CoreGuardianClientChecks.java']
-                : ['mcjty/arienteworld/CoreGuardianTests.java', 'mcjty/arienteworld/PowerArmorBalanceTests.java',
+                : ['mcjty/arienteworld/CoreGuardianTests.java', 'mcjty/arienteworld/UndergroundDungeonTests.java',
+                   'mcjty/arienteworld/PowerArmorBalanceTests.java',
                    'mcjty/arienteworld/DefenderCombatTests.java'])
         if (client) {
             p.minecraft.runs.client {

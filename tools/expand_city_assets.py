@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild additive skyline variants from the original 13 buildings and nine parks."""
+"""Rebuild skyline variants, dungeon palettes and authored underground access."""
 import copy
 import json
 from pathlib import Path
@@ -29,6 +29,133 @@ CUBE_DECK_RAILS = [('n', 'tech_fence', 'north=true,south=true'),
                    ('w', 'marble_fence', 'east=true,west=true'),
                    ('b', 'blue_glass_fence', 'north=true,south=true'),
                    ('c', 'blue_glass_fence', 'east=true,west=true')]
+UNDERGROUND_CEILING = [('p', 'ariente:marbletech_variation1@facing=down'),
+                       ('b', 'ariente:marble@color=blue'),
+                       ('n', 'ariente:slope@facing=north_up'),
+                       ('s', 'ariente:slope@facing=south_up'),
+                       ('w', 'ariente:slope@facing=west_up'),
+                       ('e', 'ariente:slope@facing=east_up'),
+                       ('t', 'ariente:tech_fence@east=true,west=true'),
+                       ('l', 'ariente:wireless_lock@facing=east'),
+                       ('i', 'ariente:invisible_door@facing=west'),
+                       ('g', 'ariente:blue_glass_fence@north=true,south=true')]
+
+
+def underground_palette(palette):
+    palette['palette'] = [p for p in palette['palette'] if not p['char'].startswith('~')]
+    palette['palette'] += [{'char': '~' + symbol, 'block': block} for symbol, block in UNDERGROUND_CEILING]
+    for entry in palette['palette']:
+        if entry['char'] == 'm ':
+            entry['block'] = 'ariente:flatlight@facing=down'
+
+
+def underground_access(data):
+    """Author the visible guardian entrance and its shared wireless-button gate.
+
+    Coordinates span the four-by-four cellar; Y is relative to its floor at world Y=4.
+    """
+    parts = {entry['name']: entry for entry in data if entry['type'] == 'part'}
+
+    def block(x, y, z, material):
+        part = parts['c3_1_' + chr(ord('a') + (z // 16) * 4 + x // 16)]
+        row = part['slices'][y][z % 16]
+        offset = (x % 16) * 2
+        part['slices'][y][z % 16] = row[:offset] + material + row[offset + 2:]
+
+    def equipment(x, y, z, values):
+        part = parts['c3_1_' + chr(ord('a') + (z // 16) * 4 + x // 16)]
+        position = (x % 16, y, z % 16)
+        part['tedata'] = [entry for entry in part['tedata']
+                          if (entry['x'], entry['y'], entry['z']) != position]
+        part['tedata'].append({'x': position[0], 'y': y, 'z': position[2], 'values': values})
+
+    # Four-wide stairs rise five blocks from the central floor onto the existing balcony.
+    for x in range(16, 24):
+        for z in range(22, 28):
+            for y in range(7, 18):
+                block(x, y, z, '  ')
+    for x in range(18, 23):
+        tread = 29 - x
+        for z in range(23, 27):
+            for y in range(7, tread):
+                block(x, y, z, '!2')
+            block(x, tread, z, 'o ')
+        for z in (22, 27):
+            for y in range(7, tread):
+                block(x, y, z, '!2')
+            block(x, tread, z, '!3')
+            block(x, tread + 1, z, '~t')
+    for x in range(14, 18):
+        for z in range(23, 27):
+            for y in range(7, 12):
+                block(x, y, z, '!2')
+            for y in range(12, 16):
+                block(x, y, z, '  ')
+    for x in (16, 17):
+        for z in (22, 27):
+            for y in range(7, 11):
+                block(x, y, z, '!2')
+            block(x, 11, z, '!3')
+            block(x, 12, z, '~t')
+    # The obvious stair entrance stays locked until the same wireless button is used.
+    for z in (22, 27):
+        for y in range(11, 17):
+            block(15, y, z, '!3' if y in (13, 15) else '!a')
+    for z in range(22, 28):
+        block(15, 16, z, '~p')
+        block(16, 16, z, '!a')
+    for z in range(23, 27):
+        block(15, 12, z, '!v')
+        equipment(15, 12, z, [{'key': 'locked', 'boolean': True}])
+        for y in range(13, 16):
+            block(15, y, z, '~i')
+    # Gate the northern entrance as well, so the old tower route cannot bypass the button.
+    for z in (5, 6):
+        equipment(15, 12, z, [{'key': 'locked', 'boolean': True}])
+        for y in (13, 14):
+            block(15, y, z, '~i')
+    for z in (4, 5):
+        equipment(48, 7, z, [{'key': 'locked', 'boolean': True}])
+    for z in (4, 22):
+        block(16, 13, z, '~l')
+        equipment(16, 13, z, [{'key': 'channel', 'integer': 2}])
+    # Continuous window panes preserve the view without gaps between isolated fence posts.
+    for z in range(59, 62):
+        for y in range(16, 19):
+            block(14, y, z, '~g')
+    # Blue floor strips connect the central hall, stairs, balcony and core chamber.
+    for x in range(23, 32):
+        for z in (24, 25):
+            block(x, 6, z, '!3' if x in (23, 27, 31) else '!a')
+    for x in range(11, 18):
+        for z in (24, 25):
+            block(x, 11, z, '!3' if x in (14, 17) else '!a')
+    for z in range(27, 59):
+        block(12, 11, z, '!3' if z % 8 == 7 else '!a')
+
+    # Move the same wireless control/channel up beside the locked tower entrance.
+    control = parts['c3_1_c']
+    values = next(entry['values'] for entry in control['tedata']
+                  if (entry['x'], entry['y'], entry['z']) in ((14, 2, 4), (15, 8, 8)))
+    control['tedata'] = [entry for entry in control['tedata']
+                         if (entry['x'], entry['y'], entry['z']) not in ((14, 2, 4), (15, 8, 8))]
+    control['tedata'].append({'x': 15, 'y': 8, 'z': 8, 'values': values})
+    block(46, 2, 4, '  ')
+    block(47, 8, 8, 'W ')
+    block(47, 9, 8, 'y ')
+    # Keep the alarm and guard in this room, clear of the highlighted control.
+    block(47, 8, 6, '  ')
+    block(47, 8, 12, 'N ')
+    block(46, 7, 7, '  ')
+    block(46, 7, 11, 'L ')
+    for y in range(7, 10):
+        for z in range(7, 10):
+            block(48, y, z, '~p' if z == 8 else '!a')
+    for z in (7, 9):
+        block(48, 8, z, '!3')
+    for x in (45, 46):
+        for z in range(7, 10):
+            block(x, 6, z, '!3' if x == 45 and z != 8 else '!a')
 
 
 def key(index):
@@ -43,6 +170,9 @@ def main():
         palette = next(a for a in data if a['type'] == 'palette')
         palette['palette'] = [p for p in palette['palette'] if not p['char'].startswith('!')]
         palette['palette'] += [{'char': key(i), 'block': block} for i, block in enumerate(MATERIALS)]
+        if path.stem == 'city3_1':
+            underground_palette(palette)
+            underground_access(data)
         if path.stem == 'city5_1':
             palette['palette'] += [{'char': key(len(MATERIALS) + i), 'block': block}
                                   for i, block in enumerate(CUBE_MATERIALS)]

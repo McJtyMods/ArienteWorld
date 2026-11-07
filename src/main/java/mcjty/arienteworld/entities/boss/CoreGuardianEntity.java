@@ -85,9 +85,13 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     }
 
     public void bindToCore(ChunkPos center, BlockPos core) {
+        bindToCity(center, core.above(8));
+    }
+
+    public void bindToCity(ChunkPos center, BlockPos home) {
         cityCenter = center;
-        home = core.above(8).immutable();
-        setPos(Vec3.atBottomCenterOf(home));
+        this.home = home.immutable();
+        setPos(Vec3.atBottomCenterOf(this.home));
     }
 
     @Nullable

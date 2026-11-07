@@ -63,6 +63,9 @@ public final class DungeonInteriors {
                 CubeDetails.decorate(part, random, corridorStyle);
             }
         }
+        if (name.equals("c3_1_top")) {
+            UndergroundCeiling.decorate(part, palette, chunkX, chunkZ);
+        }
         DungeonDisplays.decorate(part, palette, seed, chunkX, chunkZ);
         CubeDefenses.decorate(part, palette, chunkX, chunkZ);
         if (name.startsWith("c5_")) {
@@ -248,6 +251,10 @@ public final class DungeonInteriors {
             for (int z : new int[]{3, 10}) {
                 int theme = random.nextInt(3);
                 int height = 3 + random.nextInt(6);
+                if (UndergroundAccess.isReserved(part, x, z) || UndergroundAccess.isReserved(part, x + 2, z)
+                        || UndergroundAccess.isReserved(part, x, z + 2) || UndergroundAccess.isReserved(part, x + 2, z + 2)) {
+                    continue;
+                }
                 for (int floor = 0; floor < part.getSliceCount() - height - 1; floor++) {
                     boolean fits = true;
                     for (int dx = 0; dx < 3; dx++) {

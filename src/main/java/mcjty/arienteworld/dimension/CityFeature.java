@@ -3,6 +3,7 @@ package mcjty.arienteworld.dimension;
 import mcjty.ariente.api.ICityEquipment;
 import mcjty.ariente.api.IStorageTile;
 import mcjty.ariente.blocks.storagecube.StorageCubeTile;
+import mcjty.ariente.blocks.utility.door.DoorMarkerTile;
 import mcjty.ariente.display.DisplayBaseTile;
 import mcjty.arienteworld.ai.CityAI;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -292,6 +293,8 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                         BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof DisplayBaseTile display && data.get("AlienText") instanceof String) {
                             DungeonDisplays.configure(display, data);
+                        } else if (blockEntity instanceof DoorMarkerTile door && data.get("locked") instanceof Boolean locked) {
+                            door.setLocked(locked);
                         } else if (blockEntity instanceof ICityEquipment equipment) {
                             Map<String, Object> settings = new HashMap<>(data);
                             BlockState mimic = null;

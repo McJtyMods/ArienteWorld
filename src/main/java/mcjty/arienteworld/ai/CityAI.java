@@ -131,8 +131,12 @@ public class CityAI implements ICityAI {
         return city != null && city.getPlan().getName().equals("city5_1");
     }
 
+    private boolean isUndergroundDungeon() {
+        return city != null && city.getPlan().getName().equals("city3_1");
+    }
+
     public boolean isCoreProtected() {
-        return isLargeCube() && !guardianDead;
+        return (isLargeCube() || isUndergroundDungeon()) && !guardianDead;
     }
 
     /** Run from a loaded core, without requiring the entire nine-chunk-wide complex to tick. */
@@ -140,8 +144,16 @@ public class CityAI implements ICityAI {
         if (!isCoreProtected() || guardianId != null || EditMode.isEditing(level, center)) {
             return;
         }
+        // Dungeon-local (8,14,40) clears the western hall's railing beside the lower core chamber.
+        // Either core owns the same encounter.
+        BlockPos home = isUndergroundDungeon()
+                ? new BlockPos(center.getMinBlockX() - 24, CityTools.getCityHeight(level, city) - 22, center.getMinBlockZ() + 8)
+                : core.above(8);
+        if (!level.hasChunkAt(home)) {
+            return;
+        }
         CoreGuardianEntity guardian = Registration.ENTITY_CORE_GUARDIAN.get().create(level);
-        guardian.bindToCore(center, core);
+        guardian.bindToCity(center, home);
         if (level.noCollision(guardian) && level.addFreshEntity(guardian)) {
             guardianId = guardian.getUUID();
             CityAISystem.getCityAISystem(level).saveSystem();

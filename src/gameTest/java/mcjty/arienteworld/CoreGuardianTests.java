@@ -122,15 +122,66 @@ public class CoreGuardianTests {
         ai.writeToNBT(saved);
         helper.assertTrue(saved.hasUUID("guardianId"), "A loaded core must spawn its guardian before the entire cube is loaded");
         UUID id = saved.getUUID("guardianId");
-        helper.runAfterDelay(20, () -> verifyEncounter(helper, level, core, ai, id));
+        helper.runAfterDelay(20, () -> {
+            verifyEncounter(helper, level, core, core.above(8), ai, id);
+            helper.succeed();
+        });
     }
 
-    private static void verifyEncounter(GameTestHelper helper, ServerLevel level, BlockPos core, CityAI ai, UUID id) {
+    @GameTest(template = "empty", timeoutTicks = 1200)
+    public static void undergroundCoresShareGuardianInWesternHall(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel().getServer().getLevel(DimensionRegister.DIMENSION);
+        City city = findCity(level, 22008, "city3_1");
+        ChunkPos center = city.getCenter();
+        BlockPos origin = new BlockPos(center.getMinBlockX() - 32, 4, center.getMinBlockZ() - 32);
+        BlockPos upperCore = origin.offset(56, 30, 7);
+        BlockPos lowerCore = origin.offset(4, 18, 59);
+        BlockPos home = origin.offset(8, 14, 40);
+        level.setChunkForced(home.getX() >> 4, home.getZ() >> 4, true);
+        for (BlockPos pos : List.of(upperCore, lowerCore, home)) {
+            level.getChunkAt(pos);
+        }
+        helper.assertTrue(level.getBlockState(upperCore).is(Registration.AICORE.get())
+                        && level.getBlockState(lowerCore).is(Registration.AICORE.get()),
+                "Both authored underground cores must be present");
+        CityAI ai = CityAISystem.getCityAISystem(level).getCityAI(center);
+        ai.ensureGuardian(upperCore);
+        ai.ensureGuardian(lowerCore);
+        CompoundTag saved = new CompoundTag();
+        ai.writeToNBT(saved);
+        helper.assertTrue(saved.hasUUID("guardianId"), "Either loaded core must start the hall encounter");
+        UUID id = saved.getUUID("guardianId");
+        helper.runAfterDelay(20, () -> {
+            try {
+                verifyUndergroundEncounter(helper, level, upperCore, lowerCore, home, ai, id);
+                helper.succeed();
+            } finally {
+                level.setChunkForced(home.getX() >> 4, home.getZ() >> 4, false);
+            }
+        });
+    }
+
+    private static void verifyUndergroundEncounter(GameTestHelper helper, ServerLevel level, BlockPos upperCore,
+                                                  BlockPos lowerCore, BlockPos home, CityAI ai, UUID id) {
+        CoreGuardianEntity guardian = (CoreGuardianEntity) level.getEntity(id);
+        helper.assertTrue(guardian != null, "The spawned guardian must be registered when its chunk starts ticking");
+        helper.assertTrue(home.equals(guardian.getHome()) && level.noCollision(guardian),
+                "The guardian must fit in the long western room beside the lower core");
+        helper.assertTrue(level.getEntitiesOfClass(CoreGuardianEntity.class, new AABB(home).inflate(64)).size() == 1,
+                "Two cores must never create two guardians");
+        helper.assertTrue(CoreProtection.isProtected(level, upperCore) && CoreProtection.isProtected(level, lowerCore),
+                "Both cores must share the living guardian's protection");
+        verifyEncounter(helper, level, lowerCore, home, ai, id);
+        ai.ensureGuardian(upperCore);
+        helper.assertTrue(!CoreProtection.isProtected(level, upperCore), "Defeat must also unlock the upper core permanently");
+    }
+
+    private static void verifyEncounter(GameTestHelper helper, ServerLevel level, BlockPos core, BlockPos home, CityAI ai, UUID id) {
         CompoundTag saved = new CompoundTag();
         ai.writeToNBT(saved);
         CoreGuardianEntity guardian = (CoreGuardianEntity) level.getEntity(id);
-        helper.assertTrue(guardian != null && guardian.getHome().equals(core.above(8)) && guardian.getMaxHealth() == 800,
-                "Guardian must begin above its core and be substantially tougher than a dragon: " + guardian);
+        helper.assertTrue(guardian != null && guardian.getHome().equals(home) && guardian.getMaxHealth() == 800,
+                "Guardian must begin at its dungeon's home and be substantially tougher than a dragon: " + guardian);
         guardian.setHealth(643);
         CompoundTag entitySave = new CompoundTag();
         guardian.saveWithoutId(entitySave);
@@ -139,10 +190,10 @@ public class CoreGuardianTests {
         helper.assertTrue(restoredEntity.getHome().equals(guardian.getHome()) && restoredEntity.getHealth() == 643,
                 "Entity reload must preserve its home and remaining health");
         restoredEntity.discard();
-        CityAI restoredAI = new CityAI(level, new ChunkPos(core));
+        CityAI restoredAI = new CityAI(level, ai.getCenter());
         restoredAI.readFromNBT(saved);
         restoredAI.ensureGuardian(core);
-        helper.assertTrue(level.getEntitiesOfClass(CoreGuardianEntity.class, new AABB(core).inflate(32)).size() == 1,
+        helper.assertTrue(level.getEntitiesOfClass(CoreGuardianEntity.class, new AABB(home).inflate(32)).size() == 1,
                 "Reload must never duplicate an already spawned guardian");
         ServerPlayer player = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "guardian-core-test"));
         BlockEvent.BreakEvent mining = new BlockEvent.BreakEvent(level, core, level.getBlockState(core), player);
@@ -167,7 +218,6 @@ public class CoreGuardianTests {
         MinecraftForge.EVENT_BUS.post(unlocked);
         helper.assertTrue(!unlocked.isCanceled(), "The core must be mineable after victory");
         level.setChunkForced(core.getX() >> 4, core.getZ() >> 4, false);
-        helper.succeed();
     }
 
     @GameTest(template = "empty", timeoutTicks = 1200)
@@ -372,14 +422,18 @@ public class CoreGuardianTests {
     }
 
     private static City findCube(ServerLevel level, int firstX) {
+        return findCity(level, firstX, "city5_1");
+    }
+
+    private static City findCity(ServerLevel level, int firstX, String plan) {
         for (int i = 0; i < 1000; i++) {
             ChunkPos center = new ChunkPos(firstX + i * 16, 18008);
             City city = CityTools.getCity(level.getSeed(), center);
-            if (CityTools.isCityCenter(level.getSeed(), center.x, center.z) && city.getPlan().getName().equals("city5_1")) {
+            if (CityTools.isCityCenter(level.getSeed(), center.x, center.z) && city.getPlan().getName().equals(plan)) {
                 return city;
             }
         }
-        throw new AssertionError("No large cube found");
+        throw new AssertionError("No dungeon found for " + plan);
     }
 
     private static Player target(ServerLevel level, int equipment, boolean enchanted) {

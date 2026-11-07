@@ -883,6 +883,10 @@ CORE GUARDIAN (1.20.1)
 The city5_1 central core creates one persistent Core Guardian eight blocks above
 it, without waiting for all nine-by-nine city chunks to load. City SavedData
 records its UUID and permanent defeat independently of normal city initialization.
+The city3_1 underground complex uses the same guardian, loot and saved encounter.
+It lives above the railing in the long western hall beside the lower core chamber,
+at dungeon-local (8,14,40). Both underground cores share its protection and permanent
+defeat; loading either core cannot create an additional guardian.
 A defeat unlocks the core; mining and explosions cannot bypass a living guardian.
 The guardian has 800 health, 12 armor and a tracked vanilla boss bar. It favors
 ranged attacks and pursues players within its home area. After losing sight it
@@ -899,11 +903,32 @@ on the entity. Flight controllers check collisions and handle zero-distance goal
 
 Focused checks, workspace root with Java 17 (use a fresh fixture name):
   ./gradlew :ArienteWorld:runGameTestServer -Pariente_runs -I ArienteWorld/tools/core_guardian_verification.gradle -Pguardian_fixture=core-guardian-final
-This runs CoreGuardianTests plus the existing defender and power armor balance
-checks. It covers generated-core placement, permanent defeat/reload, mining and
+This runs CoreGuardianTests, UndergroundDungeonTests and the existing defender
+and power armor balance checks. It covers generated-core placement, permanent defeat/reload, mining and
 explosion protection, armor balance on all three combat difficulties, cover,
 patrol movement, old defender migration, returning home, routing around cover,
 pursuit timeout after unsuccessful peeks and renewing pursuit after firing.
+Underground checks also cover both generated cores sharing one encounter, the
+64-by-64 ceiling's chunk joins and inverted bevels, the flush ceiling light and
+access to the expanded alien display consoles. The ceiling repeats the authored
+six-by-eight Marble Pattern 1 panel with a two-by-four blue marble center, framed
+by inverted slopes and separated by blue ribs with glowing intersections.
+The central hall has a four-wide, blue-lit ramp staircase to a locked western
+door onto the guardian balcony. Blue floor strips continue south to the
+lower core chamber. Procedural machinery and consoles leave this route clear.
+The northern rooms and tower elevator remain an alternate route, with its wing
+entrance locked by the same button. The tower's wireless button is beside its
+locked doorway at cellar-local (47,8,8), with a
+contrasting backing and a dedicated light. Its authored signal channel remains
+2, shared by the tower, staircase and northern entrance locks. Authored door
+states and door panels start closed before AI/channel initialization. Continuous
+glass panes prevent slipping through the lower core chamber's window.
+Additional checks confirm the western partition stays closed to crouching players,
+then press the button and walk from the central hall through all four stair lanes
+and along the balcony to the core platform without jumping or flying, across eight
+seeded interiors. Switching the button off closes both entrances again.
+They also operate the relocated tower control and compare its selection
+bounds with both powered model variants in all six mounting directions.
 
 Optional visual check in a disposable save:
 Copy the fresh server fixture's world/level.dat into

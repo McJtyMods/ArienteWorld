@@ -641,8 +641,8 @@
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
-        "A p                             ",
-        "A p                             ",
+        "A p                           ~i",
+        "A p                           ~i",
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
@@ -659,8 +659,8 @@
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
-        "A p                             ",
-        "A p                             ",
+        "A p                           ~i",
+        "A p                           ~i",
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
@@ -1051,7 +1051,30 @@
       ]
     ],
     "meta": [],
-    "tedata": []
+    "tedata": [
+      {
+        "x": 15,
+        "y": 12,
+        "z": 5,
+        "values": [
+          {
+            "key": "locked",
+            "boolean": true
+          }
+        ]
+      },
+      {
+        "x": 15,
+        "y": 12,
+        "z": 6,
+        "values": [
+          {
+            "key": "locked",
+            "boolean": true
+          }
+        ]
+      }
+    ]
   },
   {
     "type": "part",
@@ -1298,7 +1321,7 @@
         "b b b b b b b b b b b b b b b b ",
         "                                ",
         "                                ",
-        "                                ",
+        "~l                              ",
         "                                ",
         "                                ",
         "                                ",
@@ -1709,7 +1732,19 @@
       ]
     ],
     "meta": [],
-    "tedata": []
+    "tedata": [
+      {
+        "x": 0,
+        "y": 13,
+        "z": 4,
+        "values": [
+          {
+            "key": "channel",
+            "integer": 2
+          }
+        ]
+      }
+    ]
   },
   {
     "type": "part",
@@ -1758,7 +1793,7 @@
         "                              b ",
         "                              R ",
         "                              R ",
-        "p p p p p p p               W q ",
+        "p p p p p p p                 q ",
         "  u b dadab p                 X ",
         "            p                 Y ",
         "            p                 Z ",
@@ -1833,9 +1868,9 @@
         "q q q q q q q q q q q q q b b b ",
         "q q q q q q q q q q q q q b b b ",
         "q q q q q q q q q q q q q b b b ",
-        "b b b b b b b b q q q q q b b b ",
-        "b b b b b b b b q q q q q b b b ",
-        "b b b b b b b b q q q q q b b b ",
+        "b b b b b b b b q q q q q !3!ab ",
+        "b b b b b b b b q q q q q !a!ab ",
+        "b b b b b b b b q q q q q !3!ab ",
         "b b b b b b b b q q q q q b b b ",
         "R R R R b b b b q q q q q b b b ",
         "U U U R b b b b q q q q q b b b ",
@@ -1851,11 +1886,11 @@
         "                                ",
         "                                ",
         "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
         "                            L   ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
         "                                ",
         "                                ",
         "                                ",
@@ -1868,13 +1903,13 @@
         "                              0 ",
         "                                ",
         "                                ",
+        "                                ",
+        "                                ",
+        "                              W ",
+        "                                ",
+        "                                ",
+        "                                ",
         "                              N ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
         "                                ",
         "                                ",
         "            7 7   7 7   7 7  a a"
@@ -1888,7 +1923,7 @@
         "                                ",
         "                                ",
         "                                ",
-        "                                ",
+        "                              y ",
         "                                ",
         "                                ",
         "                                ",
@@ -2369,17 +2404,6 @@
     "meta": [],
     "tedata": [
       {
-        "x": 14,
-        "y": 2,
-        "z": 4,
-        "values": [
-          {
-            "key": "channel",
-            "integer": 2
-          }
-        ]
-      },
-      {
         "x": 15,
         "y": 8,
         "z": 3,
@@ -2395,6 +2419,17 @@
           {
             "key": "vertical",
             "integer": 3
+          }
+        ]
+      },
+      {
+        "x": 15,
+        "y": 8,
+        "z": 8,
+        "values": [
+          {
+            "key": "channel",
+            "integer": 2
           }
         ]
       }
@@ -2540,9 +2575,9 @@
         "C                             A ",
         "C                             A ",
         "b A                           A ",
-        "b A                           A ",
-        "b A                           A ",
-        "b A                           A ",
+        "!aA                           A ",
+        "~pA                           A ",
+        "!aA                           A ",
         "b A                           A ",
         "b A                           A ",
         "b A                           A ",
@@ -2558,9 +2593,9 @@
         "                              A ",
         "                              A ",
         "b A                           A ",
-        "b A w                         A ",
-        "b A                           A ",
-        "Y A                           A ",
+        "!3A w                         A ",
+        "~pA                           A ",
+        "!3A                           A ",
         "b A                           A ",
         "X A                           A ",
         "b A                           A ",
@@ -2576,9 +2611,9 @@
         "                              A ",
         "                              A ",
         "b A                           A ",
-        "b A                           A ",
-        "b A                           A ",
-        "b A                           A ",
+        "!aA                           A ",
+        "~pA                           A ",
+        "!aA                           A ",
         "b A                           A ",
         "b A                           A ",
         "b A                           A ",
@@ -3078,6 +3113,28 @@
             "integer": 22
           }
         ]
+      },
+      {
+        "x": 0,
+        "y": 7,
+        "z": 4,
+        "values": [
+          {
+            "key": "locked",
+            "boolean": true
+          }
+        ]
+      },
+      {
+        "x": 0,
+        "y": 7,
+        "z": 5,
+        "values": [
+          {
+            "key": "locked",
+            "boolean": true
+          }
+        ]
       }
     ]
   },
@@ -3221,10 +3278,10 @@
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         !2!2",
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
@@ -3239,28 +3296,10 @@
         "A p                         p 9 ",
         "A p                         p b ",
         "A p                         p 9 ",
-        "A p                         p b ",
-        "A p                         p 9 ",
-        "A p                         p b ",
-        "A p                         p 9 ",
-        "A p                         p b ",
-        "A p                         p 9 ",
-        "A p                         p b ",
-        "A p                         p 9 ",
-        "A p                         p b "
-      ],
-      [
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p 9 ",
-        "A p                         p b ",
-        "A p                         p 9 ",
-        "A p                         p b ",
-        "A p                         p 9 ",
-        "A p                         p b ",
-        "A p                         p 9 ",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         !2!2",
         "A p                         p b ",
         "A p                         p 9 ",
         "A p                         p b ",
@@ -3272,6 +3311,20 @@
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
+        "A p                         p 9 ",
+        "A p                         p b ",
+        "A p                         p 9 ",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         p b ",
+        "A p                         p 9 ",
+        "A p                         p b ",
+        "A p                         p 9 ",
+        "A p                         p b "
+      ],
+      [
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
@@ -3279,6 +3332,10 @@
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         !2!2",
+        "A p                         !2!2",
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
@@ -3292,16 +3349,16 @@
         "A p                 q q q q p b ",
         "A p                 q q q q p G ",
         "A p                 q q q q p b ",
-        "A p                 q q q q p G ",
-        "A p                 q q q q p b ",
-        "A p                 q q q q p G ",
-        "A p                 q q q q p b ",
-        "A p                 q q q q p G ",
-        "A p                 q q q q p b ",
-        "A p                 q q q q p G ",
-        "A p                 q q q q p b ",
-        "A p                 q q q q p G ",
-        "A p                 q q q q p b "
+        "A p                 q q q q p !a",
+        "A p                 q q q q !2!2",
+        "A p                 q !a!a!a!3!a",
+        "A p                 q !a!a!a!3!a",
+        "A p                 q q q q !2!2",
+        "A p                 q q !aq p !a",
+        "A p                 q q !aq p G ",
+        "A p                 q q !aq p b ",
+        "A p                 q q !aq p G ",
+        "A p                 q q !3q p b "
       ],
       [
         "A p                 9       p b ",
@@ -3310,12 +3367,12 @@
         "A p                 9       p b ",
         "A p                 9       p G ",
         "A p                 9       p b ",
-        "A p                 9       p G ",
-        "A p                 9       p b ",
-        "A p                 9       p G ",
-        "A p                 9       p b ",
-        "A p                 9       p G ",
-        "A p                 9       p b ",
+        "A p                 9       p !a",
+        "A p                 9         !v",
+        "A p                 9         !v",
+        "A p                 9         !v",
+        "A p                 9         !v",
+        "A p                 9       p !a",
         "A p                 9       p G ",
         "A p                 9       p b ",
         "A p                 9       p G ",
@@ -3328,12 +3385,12 @@
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
+        "A p                         p !3",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                         p !3",
         "A p                         p b ",
         "A p                         p b ",
         "A p                         p b ",
@@ -3346,30 +3403,12 @@
         "A p                         p b ",
         "A p                         p p ",
         "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p b ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p b ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p b "
-      ],
-      [
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p b ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p b ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p b ",
+        "A p                         p !a",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                         p !a",
         "A p                         p p ",
         "A p                         p p ",
         "A p                         p p ",
@@ -3378,16 +3417,34 @@
       [
         "A p                         p b ",
         "A p                         p b ",
+        "A p                         p b ",
+        "A p                         p b ",
+        "A p                         p p ",
+        "A p                         p p ",
+        "A p                         p !3",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                           ~i",
+        "A p                         p !3",
+        "A p                         p p ",
+        "A p                         p p ",
+        "A p                         p p ",
+        "A p                         p b "
+      ],
+      [
+        "A p                         p b ",
+        "A p                         p b ",
         "A p                         p p ",
         "A p                         p b ",
         "A p                         p p ",
         "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p b ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p p ",
-        "A p                         p b ",
+        "A p                         p ~p",
+        "A p                         p ~p",
+        "A p                         p ~p",
+        "A p                         p ~p",
+        "A p                         p ~p",
+        "A p                         p ~p",
         "A p                         p p ",
         "A p                         p p ",
         "A p                         p p ",
@@ -3737,7 +3794,52 @@
       ]
     ],
     "meta": [],
-    "tedata": []
+    "tedata": [
+      {
+        "x": 15,
+        "y": 12,
+        "z": 7,
+        "values": [
+          {
+            "key": "locked",
+            "boolean": true
+          }
+        ]
+      },
+      {
+        "x": 15,
+        "y": 12,
+        "z": 8,
+        "values": [
+          {
+            "key": "locked",
+            "boolean": true
+          }
+        ]
+      },
+      {
+        "x": 15,
+        "y": 12,
+        "z": 9,
+        "values": [
+          {
+            "key": "locked",
+            "boolean": true
+          }
+        ]
+      },
+      {
+        "x": 15,
+        "y": 12,
+        "z": 10,
+        "values": [
+          {
+            "key": "locked",
+            "boolean": true
+          }
+        ]
+      }
+    ]
   },
   {
     "type": "part",
@@ -3862,8 +3964,8 @@
         "b q q q q q b b b b R U U U U U ",
         "b q q q q q b b b b R U U U U U ",
         "b q q q q q b b b b R R R R R R ",
-        "b q q q q q b b b b b b b b b b ",
-        "b q q q q q b b b b b b b b b b ",
+        "b q q q q q b !3!a!a!a!3!a!a!a!3",
+        "b q q q q q b !3!a!a!a!3!a!a!a!3",
         "b q q q q q b b b b b b b b b b ",
         "b q q q q q b b b b b b b b b b ",
         "b q q q q q b b b b b b q q q q ",
@@ -3878,12 +3980,12 @@
         "                                ",
         "                                ",
         "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
+        "!2!2!2!2!2!2!3                  ",
+        "!2!2!2!2!2!2o                   ",
+        "!2!2!2!2!2!2o                   ",
+        "!2!2!2!2!2!2o                   ",
+        "!2!2!2!2!2!2o                   ",
+        "!2!2!2!2!2!2!3                  ",
         "                                ",
         "                                ",
         "                                ",
@@ -3896,7 +3998,97 @@
         "                                ",
         "                                ",
         "                                ",
+        "!2!2!2!2!2!3~t                  ",
+        "!2!2!2!2!2o                     ",
+        "!2!2!2!2!2o                     ",
+        "!2!2!2!2!2o                     ",
+        "!2!2!2!2!2o                     ",
+        "!2!2!2!2!2!3~t                  ",
         "                                ",
+        "                                ",
+        "                                ",
+        "                                "
+      ],
+      [
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "!2!2!2!2!3~t                    ",
+        "!2!2!2!2o                       ",
+        "!2!2!2!2o                       ",
+        "!2!2!2!2o                       ",
+        "!2!2!2!2o                       ",
+        "!2!2!2!2!3~t                    ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                "
+      ],
+      [
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "!2!2!2!3~t                      ",
+        "!2!2!2o                         ",
+        "!2!2!2o                         ",
+        "!2!2!2o                         ",
+        "!2!2!2o                         ",
+        "!2!2!2!3~t                      ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                "
+      ],
+      [
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "!3!3!3~t                        ",
+        "!2!2o                           ",
+        "!a!3o                           ",
+        "!a!3o                           ",
+        "!2!2o                           ",
+        "!3!3!3~t                        ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                "
+      ],
+      [
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "~t~t~t                          ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "~t~t~t                          ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                "
+      ],
+      [
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "                                ",
+        "~l                              ",
         "                                ",
         "                                ",
         "                                ",
@@ -3950,102 +4142,12 @@
         "                                ",
         "                                ",
         "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                "
-      ],
-      [
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                "
-      ],
-      [
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                "
-      ],
-      [
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                "
-      ],
-      [
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                "
-      ],
-      [
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
-        "                                ",
+        "!a                              ",
+        "!a                              ",
+        "!a                              ",
+        "!a                              ",
+        "!a                              ",
+        "!a                              ",
         "                                ",
         "                                ",
         "                                ",
@@ -4395,7 +4497,19 @@
       ]
     ],
     "meta": [],
-    "tedata": []
+    "tedata": [
+      {
+        "x": 0,
+        "y": 13,
+        "z": 6,
+        "values": [
+          {
+            "key": "channel",
+            "integer": 2
+          }
+        ]
+      }
+    ]
   },
   {
     "type": "part",
@@ -6576,22 +6690,22 @@
         "A p                         p p "
       ],
       [
-        "A p                 q q q q p b ",
-        "A p                 q q q q p 2 ",
-        "A p                 q q q q p 2 ",
-        "A p                 q q q q p 2 ",
-        "A p                 q q q q p b ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p                 q q q q p p ",
-        "A p q q q q q q q q q q q q p p "
+        "A p                 q q !aq p b ",
+        "A p                 q q !aq p 2 ",
+        "A p                 q q !aq p 2 ",
+        "A p                 q q !aq p 2 ",
+        "A p                 q q !aq p b ",
+        "A p                 q q !aq p p ",
+        "A p                 q q !aq p p ",
+        "A p                 q q !3q p p ",
+        "A p                 q q !aq p p ",
+        "A p                 q q !aq p p ",
+        "A p                 q q !aq p p ",
+        "A p                 q q !aq p p ",
+        "A p                 q q !aq p p ",
+        "A p                 q q !aq p p ",
+        "A p                 q q !aq p p ",
+        "A p q q q q q q q q q q !3q p p "
       ],
       [
         "A p                 9     I p b ",
@@ -9878,17 +9992,17 @@
         "A A A A A A A A A A A A A A A a "
       ],
       [
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
-        "A p q q q q q q q q q q q q p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !3q p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !aq p p ",
+        "A p q q q q q q q q q q !aq p p ",
         "A p q q q q q q q q q q q q p p ",
         "A p q q q q q q q q q q q q p p ",
         "A p q q q q q q q q q q q q p p ",
@@ -9979,9 +10093,9 @@
         "A p                         p p ",
         "A p                         p p ",
         "A p                         p p ",
-        "A p   u u u                  a  ",
-        "A p                          a  ",
-        "A p                          a  ",
+        "A p   u u u                 ~g  ",
+        "A p                         ~g  ",
+        "A p                         ~g  ",
         "A p p p p p p p p p p p p p p p ",
         "A A A A A A A A A A A A A A A a "
       ],
@@ -9997,9 +10111,9 @@
         "A p                         p p ",
         "A p                         p R ",
         "A p                         p p ",
-        "A p   fagaha                 a  ",
-        "A p                          a  ",
-        "A p                          a  ",
+        "A p   fagaha                ~g  ",
+        "A p                         ~g  ",
+        "A p                         ~g  ",
         "A p p p p p p p p p p p p p p p ",
         "A A A A A A A A A A A A A A A a "
       ],
@@ -10015,9 +10129,9 @@
         "A p                         p p ",
         "A p                         p p ",
         "A p                         p p ",
-        "A p   jaH ka                 a  ",
-        "A p                          a  ",
-        "A p                          a  ",
+        "A p   jaH ka                ~g  ",
+        "A p                         ~g  ",
+        "A p                         ~g  ",
         "A p p p p p p p p p p p p p p p ",
         "A A A A A A A A A A A A A A A a "
       ],
@@ -13049,7 +13163,7 @@
       },
       {
         "char": "m ",
-        "block": "ariente:flatlight"
+        "block": "ariente:flatlight@facing=down"
       },
       {
         "char": "L ",
@@ -13454,6 +13568,46 @@
       {
         "char": "@e",
         "block": "ariente:display_base@facing=east"
+      },
+      {
+        "char": "~p",
+        "block": "ariente:marbletech_variation1@facing=down"
+      },
+      {
+        "char": "~b",
+        "block": "ariente:marble@color=blue"
+      },
+      {
+        "char": "~n",
+        "block": "ariente:slope@facing=north_up"
+      },
+      {
+        "char": "~s",
+        "block": "ariente:slope@facing=south_up"
+      },
+      {
+        "char": "~w",
+        "block": "ariente:slope@facing=west_up"
+      },
+      {
+        "char": "~e",
+        "block": "ariente:slope@facing=east_up"
+      },
+      {
+        "char": "~t",
+        "block": "ariente:tech_fence@east=true,west=true"
+      },
+      {
+        "char": "~l",
+        "block": "ariente:wireless_lock@facing=east"
+      },
+      {
+        "char": "~i",
+        "block": "ariente:invisible_door@facing=west"
+      },
+      {
+        "char": "~g",
+        "block": "ariente:blue_glass_fence@north=true,south=true"
       }
     ]
   }

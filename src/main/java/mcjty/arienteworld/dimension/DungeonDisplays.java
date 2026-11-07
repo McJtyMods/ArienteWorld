@@ -54,12 +54,13 @@ public final class DungeonDisplays {
                 for (int z : new int[]{3, 10}) {
                     for (int y = 2; y < part.getSliceCount() - 1; y++) {
                         // The red strip identifies the newly generated low console banks.
-                        if (part.getC(x, y, z).equals(new PaletteIndex('!', '4')) && random.nextBoolean()) {
+                        if (part.getC(x, y, z).equals(new PaletteIndex('!', '4'))) {
                             add(part, palette, new BlockPos(x, y, z), Direction.NORTH, random, false);
                         }
                     }
                 }
             }
+            wallConsoles(part, palette, random, 2);
         } else if ((name.startsWith("building") || name.startsWith("c4_1_")) && random.nextInt(3) == 0) {
             wallConsoles(part, palette, random, name.startsWith("building") ? 1 : 2);
         }
@@ -114,6 +115,9 @@ public final class DungeonDisplays {
     }
 
     private static boolean add(BuildingPart part, Palette palette, BlockPos pos, Direction facing, Random random, boolean pedestal) {
+        if (UndergroundAccess.isReserved(part, pos.getX(), pos.getZ())) {
+            return false;
+        }
         BlockState support = state(part, palette, pos.below(pedestal ? 2 : 1));
         if (support == null || CityFeature.hasBlockEntity(support)
                 || !support.isCollisionShapeFullBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO)
