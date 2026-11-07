@@ -64,8 +64,20 @@ The huge cube has seeded three-deck room layouts, server and control bays,
 unobstructed automatic elevators with floor selectors, and protected storage caches with advanced components,
 modules and rare blueprints. Seeded wall details include fence frames, flat lights,
 blue/red glowing strips and glass-edged inserts, interspersed with plain bays.
-The cube keeps three main-floor lifts and four upper-floor lifts away from the
-outer thresholds. Plain inner thresholds have a single door plane with markers
+The basement and roof contain decorative machinery halls built specifically for
+the cube, using the city's dark marble, blue glass and inset lighting. Chambers,
+cooling banks, recessed consoles and stepped machinery rest on chamfered plinths
+with ramped edges. Sloped caps, thin fence ribs, L-shaped desks and offset gantries
+give each bay a different profile while keeping its supports intact. Smooth dark
+surfaces dominate, with sparse red/blue indicators and occasional control panels.
+Ceiling lights sit in attached beams.
+The basement uses shorter assemblies, while the roof hall has taller structures.
+Broad perimeter walks keep passages and elevator approaches clear. These halls
+add no loot or fixed defenders.
+Three hall lifts connect both halls and all six room decks; the fourth
+upper-floor lift remains local, above the reserved arena. The lifts stay away
+from the outer thresholds. These additions appear in newly generated chunks.
+Plain inner thresholds have a single door plane with markers
 on top of the floor; blue dot-framed outer passages remain open. Neighboring
 outer-corridor rooms alternate radiator bays, relay arms, glass cages and low
 consoles, with seeded fence frames, eye-level lights and different overhead

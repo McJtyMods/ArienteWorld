@@ -257,7 +257,8 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
     public static void placePart(WorldGenLevel level, BlockPos origin, BuildingPart part, Palette palette, Transform transform) {
         for (int x = 0; x < part.getXSize(); x++) {
             for (int z = 0; z < part.getZSize(); z++) {
-                boolean started = false;
+                // Through-lift columns can be entirely air in an intermediate part.
+                boolean started = CubeDecorativeDecks.isLiftOpening(part, x, z);
                 for (int y = 0; y < part.getSliceCount(); y++) {
                     BlockState state = palette.getPalette().get(part.getC(x, y, z));
                     if (state.is(DOOR_MARKER.get())) {

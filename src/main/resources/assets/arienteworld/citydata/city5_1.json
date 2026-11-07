@@ -27715,6 +27715,30 @@
         "block": "ariente:storage@facing=west"
       },
       {
+        "char": "%n",
+        "block": "ariente:tech_fence@north=true,south=true"
+      },
+      {
+        "char": "%e",
+        "block": "ariente:tech_fence@east=true,west=true"
+      },
+      {
+        "char": "%m",
+        "block": "ariente:marble_fence@north=true,south=true"
+      },
+      {
+        "char": "%w",
+        "block": "ariente:marble_fence@east=true,west=true"
+      },
+      {
+        "char": "%b",
+        "block": "ariente:blue_glass_fence@north=true,south=true"
+      },
+      {
+        "char": "%c",
+        "block": "ariente:blue_glass_fence@east=true,west=true"
+      },
+      {
         "char": "@n",
         "block": "ariente:display_base@facing=north"
       },

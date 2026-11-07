@@ -59,10 +59,15 @@ public final class DungeonInteriors {
             // Neighboring ring sections use different bay types, with world-seeded
             // dimensions and fittings inside each type.
             int corridorStyle = Math.floorMod(chunkX + chunkZ + (int) (seed ^ (seed >>> 32)), 4);
-            CubeDetails.decorate(part, random, corridorStyle);
+            if (!CubeDecorativeDecks.isDecorativeDeck(part)) {
+                CubeDetails.decorate(part, random, corridorStyle);
+            }
         }
         DungeonDisplays.decorate(part, palette, seed, chunkX, chunkZ);
         CubeDefenses.decorate(part, palette, chunkX, chunkZ);
+        if (name.startsWith("c5_")) {
+            CubeDecorativeDecks.decorate(part, palette, seed, chunkX, chunkZ);
+        }
         return part;
     }
 

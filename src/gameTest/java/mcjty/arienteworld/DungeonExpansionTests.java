@@ -151,7 +151,7 @@ public class DungeonExpansionTests {
     @GameTest(template = "empty")
     public static void generatedElevatorHasStopsWithoutPowerPods(GameTestHelper helper) {
         Palette palette = AssetRegistries.PALETTES.get("city5_1");
-        BuildingPart part = DungeonInteriors.vary(AssetRegistries.PARTS.get("c5_e1"), palette, 42, 10, 10);
+        BuildingPart part = DungeonInteriors.vary(AssetRegistries.PARTS.get("c5_w1"), palette, 42, 6, 6);
         BlockPos origin = new BlockPos(130000, 170, 130000);
         var level = helper.getLevel();
         level.getChunkAt(origin);
@@ -340,9 +340,11 @@ public class DungeonExpansionTests {
                     continue;
                 }
                 BuildingPart part = DungeonInteriors.vary(AssetRegistries.PARTS.get("c5_e1"), palette, 42, x + 4, z + 4);
-                if (palette.getPalette().get(part.getC(1, 0, 7)).is(Registration.ELEVATOR.get())) {
+                BuildingPart basement = DungeonInteriors.vary(AssetRegistries.PARTS.get("c5_n1"), palette, 42, x + 4, z + 4);
+                if (palette.getPalette().get(basement.getC(1, 1, 7)).is(Registration.ELEVATOR.get())) {
                     elevators++;
                     helper.assertTrue(x > 1 && x < 7 && z > 1 && z < 7, "Elevator in outer doorway approach");
+                    helper.assertTrue(palette.getPalette().get(part.getC(1, 0, 7)).isAir(), "Through lift must open through the main floor");
                 }
             }
         }

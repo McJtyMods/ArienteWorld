@@ -23,6 +23,12 @@ MATERIALS = ['minecraft:air', 'ariente:marble_smooth@color=black',
              'ariente:door_marker@facing=north', 'ariente:door_marker@facing=west']
 CUBE_MATERIALS = ['ariente:storage@facing=north', 'ariente:storage@facing=east',
                   'ariente:storage@facing=west']
+CUBE_DECK_RAILS = [('n', 'tech_fence', 'north=true,south=true'),
+                   ('e', 'tech_fence', 'east=true,west=true'),
+                   ('m', 'marble_fence', 'north=true,south=true'),
+                   ('w', 'marble_fence', 'east=true,west=true'),
+                   ('b', 'blue_glass_fence', 'north=true,south=true'),
+                   ('c', 'blue_glass_fence', 'east=true,west=true')]
 
 
 def key(index):
@@ -40,6 +46,10 @@ def main():
         if path.stem == 'city5_1':
             palette['palette'] += [{'char': key(len(MATERIALS) + i), 'block': block}
                                   for i, block in enumerate(CUBE_MATERIALS)]
+            rail_keys = {'%' + symbol for symbol, _, _ in CUBE_DECK_RAILS}
+            palette['palette'] = [p for p in palette['palette'] if p['char'] not in rail_keys]
+            palette['palette'] += [{'char': '%' + symbol, 'block': 'ariente:' + block + '@' + properties}
+                                  for symbol, block, properties in CUBE_DECK_RAILS]
         if path.stem in ('city3_1', 'city4_1', 'city5_1', 'landscapecities'):
             palette['palette'] = [p for p in palette['palette'] if p['char'] not in ('@n', '@s', '@w', '@e')]
             palette['palette'] += [{'char': '@' + facing[0], 'block': 'ariente:display_base@facing=' + facing}
