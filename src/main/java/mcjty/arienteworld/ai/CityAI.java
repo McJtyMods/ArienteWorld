@@ -18,6 +18,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.state.properties.RailShape;
 import mcjty.arienteworld.cities.BuildingPart;
+import mcjty.arienteworld.cities.AssetRegistries;
+import mcjty.arienteworld.cities.Palette;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityPlan;
 import mcjty.arienteworld.cities.CityTools;
@@ -50,6 +52,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.nbt.Tag;
 
@@ -57,6 +60,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static mcjty.ariente.setup.Registration.AICORE;
 import static mcjty.ariente.setup.Registration.FLUX_BEAM;
 import static mcjty.ariente.setup.Registration.KEY_CARD;
 import static mcjty.ariente.setup.Registration.POWERSUIT_CHEST;
@@ -81,8 +85,12 @@ public class CityAI implements ICityAI {
 
     private CityAISettings settings = null;
 
-    private boolean foundEquipment = false;
+    private final Set<Long> initializedChunks = new HashSet<>();
+    private final Set<Long> scannedChunks = new HashSet<>();
+    private final Map<Integer, Integer> signalChannels = new HashMap<>();
+    private boolean sentinelsInitialized;
     private Set<BlockPos> aiCores = new HashSet<>();
+    private final Set<BlockPos> pendingCores = new HashSet<>();
     private Set<BlockPos> forceFields = new HashSet<>();
     private Set<BlockPos> alarms = new HashSet<>();
     private Set<BlockPos> negariteGenerators = new HashSet<>();
@@ -203,32 +211,72 @@ public class CityAI implements ICityAI {
         return cityHeight - CityTools.getCellarHeight(level.getSeed(), city, chunkX, chunkZ);
     }
 
-    private boolean setup(Level world) {
-        if (!areChunksLoaded()) {
-            return false;
-        }
+    private void setup(Level world) {
         if (!initialized) {
             initialize(world);
-            initialized = true;
-            return false;
-        } else {
-            findEquipment(world, false);
-            return true;
+        }
+        for (ChunkPos chunk : getCityChunks()) {
+            if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) {
+                scannedChunks.remove(chunk.toLong());
+            } else {
+                initializeChunk(chunk);
+            }
         }
     }
 
-    private boolean areChunksLoaded() {
+    private List<ChunkPos> getCityChunks() {
         List<String> pattern = city.getPlan().getPlan();
         int width = pattern.get(0).length();
         int depth = pattern.size();
+        List<ChunkPos> chunks = new ArrayList<>();
         for (int x = center.x - width / 2; x < center.x - width / 2 + width; x++) {
             for (int z = center.z - depth / 2; z < center.z - depth / 2 + depth; z++) {
-                if (level.getChunkSource().getChunkNow(x, z) == null) {
-                    return false;
-                }
+                chunks.add(new ChunkPos(x, z));
             }
         }
+        return chunks;
+    }
+
+    public boolean initializeChunk(ChunkPos pos) {
+        LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+        if (chunk == null || EditMode.isEditing(level, center)) {
+            return false;
+        }
+        if (scannedChunks.contains(pos.toLong())) {
+            return true;
+        }
+        if (!initialized) {
+            initialize(level);
+        }
+        findEquipment(chunk);
         return true;
+    }
+
+    public void chunkUnloaded(ChunkPos pos) {
+        scannedChunks.remove(pos.toLong());
+    }
+
+    /** Loaded outer rooms must keep defending themselves when the core's chunk is outside view distance. */
+    public boolean tickLoadedSections() {
+        IAICoreTile core = findFirstValidAICore(level);
+        if (!initialized || EditMode.isEditing(level, center)
+                || core != null && level.getChunkSource().isPositionTicking(new ChunkPos(core.getCorePos()).toLong())
+                || scannedChunks.stream().noneMatch(chunk -> level.getChunkSource()
+                .getChunkNow(ChunkPos.getX(chunk), ChunkPos.getZ(chunk)) != null)) {
+            return false;
+        }
+        setup(level);
+        if (isDead(level)) {
+            return false;
+        }
+        handleAI(level);
+        return true;
+    }
+
+    @Nullable
+    private BlockEntity getLoadedBlockEntity(BlockPos pos) {
+        LevelChunk chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        return chunk == null ? null : chunk.getBlockEntity(pos);
     }
 
     @Override
@@ -249,6 +297,7 @@ public class CityAI implements ICityAI {
             setAlarmType(world, AlarmType.DEAD);
         }
         aiCores.remove(pos);
+        pendingCores.remove(pos);
     }
 
     // Return true if we potentially have to save the city system state
@@ -260,29 +309,13 @@ public class CityAI implements ICityAI {
         if (tile instanceof IAICoreTile core) {
             ensureGuardian(core.getCorePos());
         }
-        if (!areChunksLoaded()) {
+        setup(tile.getLevel());
+        // Only the first currently loaded core ticks the city; the level lifecycle handles coreless loaded sections.
+        IAICoreTile core = findFirstValidAICore(tile.getLevel());
+        if (core == null || !tile.getBlockPos().equals(core.getCorePos())) {
             return false;
         }
-        // We use the given AICoreTile parameter to make sure only one tick per city happens
-        if (setup(tile.getLevel())) {
-            // If there are no more ai cores the city AI is dead
-            if (aiCores.isEmpty()) {
-                return false;
-            }
-
-            IAICoreTile core = findFirstValidAICore(tile.getLevel());
-            if (core == null) {
-                // All cores are no longer valid and have been removed
-                return false;
-            }
-            // Only tick for the first valid aicore
-            if (!tile.getBlockPos().equals(core.getCorePos())) {
-                return false;
-            }
-
-            handleAI(tile.getLevel());
-            return true;
-        }
+        handleAI(tile.getLevel());
         return true;
     }
 
@@ -328,12 +361,14 @@ public class CityAI implements ICityAI {
         if (!initialized) {
             return true;        // If not initialized we assume this city is alive
         }
-        for (BlockPos pos : aiCores) {
+        Set<BlockPos> cores = new HashSet<>(aiCores);
+        cores.addAll(pendingCores);
+        for (BlockPos pos : cores) {
             if (!pos.equals(exclude)) {
-                if (!world.hasChunkAt(pos)) {
+                if (level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) == null) {
                     return true;
                 }
-                BlockEntity te = world.getBlockEntity(pos);
+                BlockEntity te = getLoadedBlockEntity(pos);
                 if (te instanceof IAICoreTile) {
                     return true;
                 }
@@ -344,16 +379,19 @@ public class CityAI implements ICityAI {
 
     @Nullable
     private IAICoreTile findFirstValidAICore(Level world) {
+        IAICoreTile firstLoaded = null;
         for (BlockPos pos : aiCores) {
-            if (!world.hasChunkAt(pos)) {
-                continue;
-            }
-            BlockEntity te = world.getBlockEntity(pos);
-            if (te instanceof IAICoreTile) {
-                return (IAICoreTile) te;
+            BlockEntity te = getLoadedBlockEntity(pos);
+            if (te instanceof IAICoreTile core) {
+                if (level.getChunkSource().isPositionTicking(new ChunkPos(pos).toLong())) {
+                    return core;
+                }
+                if (firstLoaded == null) {
+                    firstLoaded = core;
+                }
             }
         }
-        return null;
+        return firstLoaded;
     }
 
     private AABB getSoldierBoundingbox() {
@@ -450,6 +488,10 @@ public class CityAI implements ICityAI {
     }
 
     private void handleAI(Level world) {
+        if (!sentinelsInitialized && level.getChunkSource().getChunkNow(center.x, center.z) != null) {
+            initSentinels(world);
+            sentinelsInitialized = true;
+        }
         EntityInfo info = new EntityInfo();
 
         handlePower(world);
@@ -606,7 +648,7 @@ public class CityAI implements ICityAI {
                 continue;
             }
             CityAI otherCity = system.getCityAI(otherCoord);
-            if (otherCity != null && otherCity.areChunksLoaded() && !otherCity.isDead(world)) {
+            if (otherCity != null && otherCity.hasOperationalCore()) {
                 BlockPos end = isValidBeam(world, center, facing, 1, 40);
                 if (end != null) {
                     BlockPos start = isValidBeam(world, center, facing, 100, 120);
@@ -636,7 +678,7 @@ public class CityAI implements ICityAI {
         if (onAlert > 0) {
             // Turn on forcefields if present
             for (BlockPos pos : forceFields) {
-                BlockEntity te = world.getBlockEntity(pos);
+                BlockEntity te = getLoadedBlockEntity(pos);
                 if (te instanceof IForceFieldTile) {
                     GenericTileEntity forcefield = (GenericTileEntity) te;
                     if (forcefield.getRSMode() != RedstoneMode.REDSTONE_IGNORED) {
@@ -650,7 +692,7 @@ public class CityAI implements ICityAI {
             watchingPlayers.clear();
             // Turn off forcefields if present
             for (BlockPos pos : forceFields) {
-                BlockEntity te = world.getBlockEntity(pos);
+                BlockEntity te = getLoadedBlockEntity(pos);
                 if (te instanceof IForceFieldTile) {
                     GenericTileEntity forcefield = (GenericTileEntity) te;
                     if (forcefield.getRSMode() != RedstoneMode.REDSTONE_ONREQUIRED) {
@@ -767,7 +809,9 @@ public class CityAI implements ICityAI {
     }
 
     private void spawnSoldier(Level world) {
-        if (soldierPositions.isEmpty()) {
+        List<BlockPos> loadedPositions = soldierPositions.keySet().stream()
+                .filter(pos -> level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) != null).toList();
+        if (loadedPositions.isEmpty()) {
             return;
         }
 
@@ -778,7 +822,7 @@ public class CityAI implements ICityAI {
         // Avoid too close to player if possible
         int avoidNearby = 3;
         do {
-            pos = new ArrayList<>(soldierPositions.keySet()).get(random.nextInt(soldierPositions.size()));
+            pos = loadedPositions.get(random.nextInt(loadedPositions.size()));
             Player closestPlayer = world.getNearestPlayer(pos.getX(), pos.getY(), pos.getZ(), 10, false);
             if (closestPlayer == null) {
                 avoidNearby = 0;
@@ -841,6 +885,9 @@ public class CityAI implements ICityAI {
     }
 
     private void spawnDrone(Level world, int height) {
+        if (level.getChunkSource().getChunkNow(center.x, center.z) == null) {
+            return;
+        }
         // Too few drones. Spawn a new one
         LivingEntity entity = DroneEntity.create(world, center);
         int cx = center.x * 16 + 8;
@@ -876,13 +923,13 @@ public class CityAI implements ICityAI {
     private void handlePower(Level world) {
         // Handle power
         for (BlockPos pos : negariteGenerators) {
-            BlockEntity te = world.getBlockEntity(pos);
+            BlockEntity te = getLoadedBlockEntity(pos);
             if (te instanceof IGenerator) {
                 ((IGenerator) te).feedDust(1);
             }
         }
         for (BlockPos pos : posiriteGenerators) {
-            BlockEntity te = world.getBlockEntity(pos);
+            BlockEntity te = getLoadedBlockEntity(pos);
             if (te instanceof IGenerator) {
                 ((IGenerator) te).feedDust(1);
             }
@@ -972,7 +1019,7 @@ public class CityAI implements ICityAI {
 
     @Override
     public void alertCity(Player player) {
-        if (findFirstValidAICore(player.level()) == null) {
+        if (isDead(player.level())) {
             // City is dead
             return;
         }
@@ -990,88 +1037,80 @@ public class CityAI implements ICityAI {
         highAlert = true;
     }
 
-    private void findEquipment(Level world, boolean firstTime) {
-        if (foundEquipment) {
-            return;
-        }
-
-        if (firstTime) {
-            keyId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
-            storageKeyId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
-            forcefieldId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
-        }
-
-        CityPlan plan = city.getPlan();
-        List<String> pattern = plan.getPlan();
-        int dimX = pattern.get(0).length();
-        int dimZ = pattern.size();
-        int cx = center.x;
-        int cz = center.z;
-
-        Map<Integer, Integer> desiredToReal = new HashMap<>();
-
-        for (int dx = cx - dimX / 2; dx < cx - dimX / 2 + dimX; dx++) {
-            for (int dz = cz - dimZ / 2; dz < cz - dimZ / 2 + dimZ; dz++) {
-                int starty = getLowestHeight(dx, dz);
-                int top = starty + CityTools.getBuildingParts(level.getSeed(), city, dx, dz).stream()
-                        .mapToInt(BuildingPart::getSliceCount).sum();
-                for (int x = dx * 16; x < dx * 16 + 16; x++) {
-                    for (int z = dz * 16; z < dz * 16 + 16; z++) {
-                        for (int y = starty; y < top; y++) {
-                            BlockPos p = new BlockPos(x, y, z);
-                            BlockState state = world.getBlockState(p);
-                            Block block = state.getBlock();
-                            if (block == Registration.GUARD_DUMMY.get()) {
-                                guardPositions.put(p, state.getValue(BlockStateProperties.HORIZONTAL_FACING));
-                                world.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
-                            } else if (block == Registration.SOLDIER_DUMMY.get()) {
-                                soldierPositions.put(p, state.getValue(BlockStateProperties.HORIZONTAL_FACING));
-                                world.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
-                            } else if (block == Registration.MASTER_SOLDIER_DUMMY.get()) {
-                                masterSoldierPositions.put(p, state.getValue(BlockStateProperties.HORIZONTAL_FACING));
-                                world.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
-                            } else {
-                                BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
-                                if (te instanceof ICityEquipment) {
-                                    ((ICityEquipment) te).setup(this, world, firstTime);
-                                }
-
-                                if (firstTime && te instanceof ISignalChannel) {
-                                    int desired = ((ISignalChannel) te).getDesiredChannel();
-                                    if (!desiredToReal.containsKey(desired)) {
-                                        // New channel is needed
-                                        IRedstoneChannels redstoneChannels = Ariente.arienteSystem.getRedstoneChannels(world);
-                                        int newChannel = redstoneChannels.newChannel();
-                                        desiredToReal.put(desired, newChannel);
-                                    }
-                                    desired = desiredToReal.get(desired);
-                                    ((ISignalChannel) te).setChannel(desired);
-                                }
-
-                                if (te instanceof IAICoreTile) {
-                                    aiCores.add(p);
-                                    ((IAICoreTile) te).setCityName(city.getName());
-                                } else if (te instanceof IForceFieldTile) {
-                                    // We already have this as equipment but we need it separate
-                                    ((IForceFieldTile) te).setCityCenter(center);
-                                    forceFields.add(p);
-                                } else if (te instanceof IAlarmTile) {
-                                    alarms.add(p);
-                                } else if (te instanceof IGenerator) {
-                                    if (((IGenerator) te).supportsNegarite()) {
-                                        negariteGenerators.add(p);
-                                    }
-                                    if (((IGenerator) te).supportsPosirite()) {
-                                        posiriteGenerators.add(p);
-                                    }
-                                }
+    private void findEquipment(LevelChunk chunk) {
+        ChunkPos pos = chunk.getPos();
+        boolean firstTime = !initializedChunks.contains(pos.toLong());
+        int bottom = getLowestHeight(pos.x, pos.z);
+        int top = bottom + CityTools.getBuildingParts(level.getSeed(), city, pos.x, pos.z).stream()
+                .mapToInt(BuildingPart::getSliceCount).sum();
+        for (int x = pos.getMinBlockX(); x <= pos.getMaxBlockX(); x++) {
+            for (int z = pos.getMinBlockZ(); z <= pos.getMaxBlockZ(); z++) {
+                for (int y = bottom; y < top; y++) {
+                    BlockPos p = new BlockPos(x, y, z);
+                    BlockState state = chunk.getBlockState(p);
+                    Block block = state.getBlock();
+                    Direction facing;
+                    if (block == Registration.GUARD_DUMMY.get() || block == Registration.SOLDIER_DUMMY.get()
+                            || block == Registration.MASTER_SOLDIER_DUMMY.get()) {
+                        facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
+                        if (block == Registration.GUARD_DUMMY.get()) {
+                            guardPositions.put(p, facing);
+                        } else if (block == Registration.MASTER_SOLDIER_DUMMY.get()) {
+                            masterSoldierPositions.put(p, facing);
+                        } else {
+                            soldierPositions.put(p, facing);
+                        }
+                        level.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
+                        if (firstTime && block != Registration.SOLDIER_DUMMY.get()) {
+                            ArienteMobs.createSoldier(level, p, facing, center,
+                                    block == Registration.GUARD_DUMMY.get() ? SoldierBehaviourType.SOLDIER_GUARD : SoldierBehaviourType.SOLDIER_FIGHTER,
+                                    block == Registration.MASTER_SOLDIER_DUMMY.get());
+                        }
+                    } else {
+                        BlockEntity te = CityFeature.hasBlockEntity(state) ? chunk.getBlockEntity(p) : null;
+                        if (te instanceof ICityEquipment equipment) {
+                            equipment.setup(this, level, firstTime);
+                        }
+                        if (firstTime && te instanceof ISignalChannel signal) {
+                            int channel = signalChannels.computeIfAbsent(signal.getDesiredChannel(),
+                                    desired -> Ariente.arienteSystem.getRedstoneChannels(level).newChannel());
+                            signal.setChannel(channel);
+                        }
+                        if (te instanceof IAICoreTile core) {
+                            aiCores.add(p);
+                            core.setCityName(city.getName());
+                        } else if (te instanceof IForceFieldTile field) {
+                            field.setCityCenter(center);
+                            forceFields.add(p);
+                            if (firstTime && te instanceof GenericTileEntity tile) {
+                                tile.setRSMode(onAlert > 0 ? RedstoneMode.REDSTONE_IGNORED : RedstoneMode.REDSTONE_ONREQUIRED);
+                            }
+                        } else if (te instanceof IAlarmTile alarm) {
+                            alarms.add(p);
+                            if (firstTime) {
+                                alarm.setAlarmType(isDead(level) ? AlarmType.DEAD : onAlert > 0 ? AlarmType.ALERT : AlarmType.SAFE);
+                            }
+                        } else if (te instanceof IGenerator generator) {
+                            if (generator.supportsNegarite()) {
+                                negariteGenerators.add(p);
+                            }
+                            if (generator.supportsPosirite()) {
+                                posiriteGenerators.add(p);
+                            }
+                            if (firstTime && te instanceof GenericTileEntity tile) {
+                                Ariente.arienteSystem.fixNetworks(level, p);
+                                tile.setRSMode(RedstoneMode.REDSTONE_IGNORED);
                             }
                         }
                     }
                 }
             }
         }
-        foundEquipment = true;
+        pendingCores.removeIf(core -> new ChunkPos(core).equals(pos));
+        soldierBoundingbox = null;
+        initializedChunks.add(pos.toLong());
+        scannedChunks.add(pos.toLong());
+        CityAISystem.getCityAISystem(level).saveSystem();
     }
 
     @Override
@@ -1162,62 +1201,35 @@ public class CityAI implements ICityAI {
 
     private void initialize(Level world) {
         createSettings(world);
-        findEquipment(world, true);
-        initCityEquipment(world);
-        initSentinels(world);
-        initGuards(world);
-        initMasterSoldiers(world);
-    }
-
-    private void initGuards(Level world) {
-        for (Map.Entry<BlockPos, Direction> entry : guardPositions.entrySet()) {
-            BlockPos pos = entry.getKey();
-            Direction facing = entry.getValue();
-            LivingEntity soldier = ArienteMobs.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_GUARD, false);
-        }
-    }
-
-    private void initMasterSoldiers(Level world) {
-        for (Map.Entry<BlockPos, Direction> entry : masterSoldierPositions.entrySet()) {
-            BlockPos pos = entry.getKey();
-            Direction facing = entry.getValue();
-            LivingEntity soldier = ArienteMobs.createSoldier(world, pos, facing, center, SoldierBehaviourType.SOLDIER_FIGHTER, true);
-        }
-    }
-
-    private void initCityEquipment(Level world) {
-
-        setAlarmType(world, AlarmType.SAFE);
-
-        for (BlockPos p : aiCores) {
-            BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
-            if (te instanceof IAICoreTile) {
-                ((IAICoreTile) te).setCityName(city.getName());
+        keyId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
+        storageKeyId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
+        forcefieldId = Ariente.arienteSystem.getSecuritySystem(world).generateKeyId(world);
+        // Remember authored cores before their chunks load, so taking one loaded core cannot
+        // award the storage card while another core in the same complex is still unexplored.
+        Palette palette = AssetRegistries.PALETTES.get(city.getPlan().getPalette());
+        for (ChunkPos chunk : getCityChunks()) {
+            int bottom = getLowestHeight(chunk.x, chunk.z);
+            for (BuildingPart part : CityTools.getBuildingParts(level.getSeed(), city, chunk.x, chunk.z)) {
+                for (int y = 0; y < part.getSliceCount(); y++) {
+                    for (int x = 0; x < part.getXSize(); x++) {
+                        for (int z = 0; z < part.getZSize(); z++) {
+                            BlockState state = palette.getPalette().get(part.getC(x, y, z));
+                            if (state != null && state.is(AICORE.get())) {
+                                pendingCores.add(new BlockPos(chunk.getMinBlockX() + x, bottom + y, chunk.getMinBlockZ() + z));
+                            }
+                        }
+                    }
+                }
+                bottom += part.getSliceCount();
             }
         }
-
-        for (BlockPos p : negariteGenerators) {
-            BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
-            if (te instanceof GenericTileEntity) {
-                GenericTileEntity generator = (GenericTileEntity) te;
-                Ariente.arienteSystem.fixNetworks(world, p);
-                generator.setRSMode(RedstoneMode.REDSTONE_IGNORED);
-            }
-        }
-        for (BlockPos p : posiriteGenerators) {
-            BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
-            if (te instanceof GenericTileEntity) {
-                posiriteGenerators.add(p);
-                GenericTileEntity generator = (GenericTileEntity) te;
-                Ariente.arienteSystem.fixNetworks(world, p);
-                generator.setRSMode(RedstoneMode.REDSTONE_IGNORED);
-            }
-        }
+        initialized = true;
+        CityAISystem.getCityAISystem(level).saveSystem();
     }
 
     public void setAlarmType(Level world, AlarmType type) {
         for (BlockPos p : alarms) {
-            BlockEntity te = CityFeature.hasBlockEntity(world.getBlockState(p)) ? world.getBlockEntity(p) : null;
+            BlockEntity te = getLoadedBlockEntity(p);
             if (te instanceof IAlarmTile) {
                 ((IAlarmTile) te).setAlarmType(type);
             }
@@ -1236,6 +1248,9 @@ public class CityAI implements ICityAI {
     }
 
     private void createSentinel(Level world, int i, int height) {
+        if (level.getChunkSource().getChunkNow(center.x, center.z) == null) {
+            return;
+        }
         LivingEntity entity = SentinelDroneEntity.create(world, i, center);
         int cx = center.x * 16 + 8;
         int cy = isLargeCube() ? CityTools.getCityHeight(level, city) + 36 : height;
@@ -1260,8 +1275,25 @@ public class CityAI implements ICityAI {
         guardianId = nbt.hasUUID("guardianId") ? nbt.getUUID("guardianId") : null;
         guardianDead = nbt.getBoolean("guardianDead");
         initialized = nbt.getBoolean("initialized");
+        scannedChunks.clear();
+        forceFields.clear();
+        alarms.clear();
+        negariteGenerators.clear();
+        posiriteGenerators.clear();
+        soldierBoundingbox = null;
+        initializedChunks.clear();
+        for (long chunk : nbt.getLongArray("initializedChunks")) {
+            initializedChunks.add(chunk);
+        }
+        sentinelsInitialized = nbt.getBoolean("sentinelsInitialized");
+        signalChannels.clear();
+        for (Tag entry : nbt.getList("signalChannels", Tag.TAG_COMPOUND)) {
+            CompoundTag channel = (CompoundTag) entry;
+            signalChannels.put(channel.getInt("desired"), channel.getInt("actual"));
+        }
         settings = null;
         readSetFromNBT(nbt.getList("cores", Tag.TAG_COMPOUND), aiCores);
+        readSetFromNBT(nbt.getList("pendingCores", Tag.TAG_COMPOUND), pendingCores);
         if (initialized) {
             if (nbt.contains("settings")) {
                 settings = new CityAISettings();
@@ -1299,7 +1331,18 @@ public class CityAI implements ICityAI {
         }
         compound.putBoolean("guardianDead", guardianDead);
         compound.putBoolean("initialized", initialized);
+        compound.putLongArray("initializedChunks", initializedChunks.stream().mapToLong(Long::longValue).toArray());
+        compound.putBoolean("sentinelsInitialized", sentinelsInitialized);
+        ListTag channels = new ListTag();
+        signalChannels.forEach((desired, actual) -> {
+            CompoundTag channel = new CompoundTag();
+            channel.putInt("desired", desired);
+            channel.putInt("actual", actual);
+            channels.add(channel);
+        });
+        compound.put("signalChannels", channels);
         compound.put("cores", writeSetToNBT(aiCores));
+        compound.put("pendingCores", writeSetToNBT(pendingCores));
         if (initialized) {
             if (settings != null) {
                 CompoundTag tc = new CompoundTag();

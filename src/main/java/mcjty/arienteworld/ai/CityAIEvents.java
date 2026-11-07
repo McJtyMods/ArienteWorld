@@ -1,0 +1,44 @@
+package mcjty.arienteworld.ai;
+
+import mcjty.arienteworld.ArienteWorld;
+import mcjty.arienteworld.dimension.DimensionRegister;
+import net.minecraft.server.TickTask;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.level.ChunkEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+public class CityAIEvents {
+
+    @SubscribeEvent
+    public static void chunkLoaded(ChunkEvent.Load event) {
+        if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(DimensionRegister.DIMENSION)) {
+            ChunkPos pos = event.getChunk().getPos();
+            // Chunk events can arrive before promotion to a full chunk. Never scan or load neighbors here.
+            level.getServer().tell(new TickTask(level.getServer().getTickCount(),
+                    () -> CityAISystem.getCityAISystem(level).chunkLoaded(pos)));
+        }
+    }
+
+    @SubscribeEvent
+    public static void chunkUnloaded(ChunkEvent.Unload event) {
+        if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(DimensionRegister.DIMENSION)) {
+            ChunkPos pos = event.getChunk().getPos();
+            level.getServer().tell(new TickTask(level.getServer().getTickCount(),
+                    () -> CityAISystem.getCityAISystem(level).chunkUnloaded(pos)));
+        }
+    }
+
+    @SubscribeEvent
+    public static void levelTick(TickEvent.LevelTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && event.level instanceof ServerLevel level
+                && level.dimension().equals(DimensionRegister.DIMENSION)) {
+            CityAISystem system = CityAISystem.getCityAISystem(level);
+            system.initializeLoadedChunks();
+            system.tickLoadedSections();
+        }
+    }
+}

@@ -26,6 +26,12 @@ of 11 or lower. Natural patrols use the normal hostile mob cap and spawning dist
 and do not require an alert or the whole dungeon to be loaded. This also applies
 to existing generated dungeons.
 
+Each loaded dungeon section initializes its loot, locks and fixed defenders once.
+Organized defenses continue in loaded sections even when the perimeter or the
+AI Core's chunk is outside view distance. Unexplored cores still count toward
+conquering the complex; the storage-access card is awarded after the last core
+is destroyed. Loot and fixed defenders do not replenish when sections reload.
+
 Sabre-wielding soldiers can kill unarmored players in one hit on every non-Peaceful
 difficulty. Advanced complexes (`city2_1` and higher) have stronger foot soldiers
 and combat drones whose lasers can kill players in plain netherite with one hit.

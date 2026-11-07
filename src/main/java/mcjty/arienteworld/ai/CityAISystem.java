@@ -1,6 +1,7 @@
 package mcjty.arienteworld.ai;
 
 import mcjty.ariente.api.ICityAISystem;
+import mcjty.arienteworld.cities.CityTools;
 import mcjty.lib.worlddata.AbstractWorldData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -10,12 +11,16 @@ import net.minecraft.world.level.ChunkPos;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.List;
 
 public class CityAISystem extends AbstractWorldData<CityAISystem> implements ICityAISystem {
 
     private static final String NAME = "ArienteCityAI";
     private final ServerLevel level;
     private final Map<ChunkPos, CityAI> cities = new HashMap<>();
+    private final Set<ChunkPos> pendingChunks = new HashSet<>();
 
     private CityAISystem(ServerLevel level) {
         this.level = level;
@@ -44,6 +49,40 @@ public class CityAISystem extends AbstractWorldData<CityAISystem> implements ICi
             setDirty();
             return new CityAI(level, key);
         });
+    }
+
+    public void chunkLoaded(ChunkPos pos) {
+        if (CityTools.isDungeonChunk(level.getSeed(), pos.x, pos.z)) {
+            pendingChunks.add(pos);
+        }
+    }
+
+    public void chunkUnloaded(ChunkPos pos) {
+        pendingChunks.remove(pos);
+        CityAI city = cities.get(CityTools.getNearestDungeonCenter(pos.x, pos.z));
+        if (city != null) {
+            city.chunkUnloaded(pos);
+        }
+    }
+
+    public void initializeLoadedChunks() {
+        for (ChunkPos pos : List.copyOf(pendingChunks)) {
+            if (level.getChunkSource().getChunkNow(pos.x, pos.z) != null
+                    && getCityAI(CityTools.getNearestDungeonCenter(pos.x, pos.z)).initializeChunk(pos)) {
+                pendingChunks.remove(pos);
+            }
+        }
+    }
+
+    public void tickLoadedSections() {
+        if (level.getGameTime() % 11 == 0) {
+            // Reinforcements may discover neighboring cities while this snapshot is ticking.
+            for (CityAI city : List.copyOf(cities.values())) {
+                if (city.tickLoadedSections()) {
+                    setDirty();
+                }
+            }
+        }
     }
 
     @Override

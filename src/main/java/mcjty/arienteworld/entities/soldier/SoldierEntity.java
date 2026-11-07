@@ -225,18 +225,26 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
                 ICityAISystem aiSystem = ArienteWorld.arienteWorldImplementation.getCityAISystem(level());
                 ICityAI cityAI = aiSystem.getCityAI(cityCenter);
                 if (cityAI != null) {
-                    ItemStack stack = new ItemStack(Registration.KEY_CARD.get());
-                    float r = random.nextFloat();
-                    if (r < .4f) {
-                        KeyCardItem.addSecurityTag(stack, cityAI.getKeyId());
-                    } else if (r < .8f) {
-                        KeyCardItem.addSecurityTag(stack, cityAI.getForcefieldId());
+                    ItemStack stack = createCityKeyCard(cityAI, random.nextFloat());
+                    if (!stack.isEmpty()) {
+                        spawnAtLocation(stack, 0.0f);
                     }
-                    KeyCardItem.setDescription(stack, "City: " + cityAI.getCityName());
-                    spawnAtLocation(stack, 0.0f);
                 }
             }
         }
+    }
+
+    static ItemStack createCityKeyCard(ICityAI cityAI, float roll) {
+        String keyId = roll < .4f ? cityAI.getKeyId() : cityAI.getForcefieldId();
+        if (roll < .8f && (keyId == null || keyId.isBlank())) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack stack = new ItemStack(Registration.KEY_CARD.get());
+        if (roll < .8f) {
+            KeyCardItem.addSecurityTag(stack, keyId);
+        }
+        KeyCardItem.setDescription(stack, "City: " + cityAI.getCityName());
+        return stack;
     }
 
     @Override
