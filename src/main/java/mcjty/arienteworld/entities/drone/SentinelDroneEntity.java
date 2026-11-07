@@ -52,6 +52,11 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
     }
 
     @Override
+    public ChunkPos getCityCenter() {
+        return cityCenter;
+    }
+
+    @Override
     public boolean isImmuneToForcefield(IForceFieldTile tile) {
         return true;
     }

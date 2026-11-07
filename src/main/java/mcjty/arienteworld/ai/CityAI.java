@@ -72,6 +72,8 @@ public class CityAI implements ICityAI {
 
     private UUID guardianId;
     private boolean guardianDead;
+    private ChunkPos guardianChunk;
+    private long guardianMissingSince = -1;
 
     private int levitator = -1;
     private int levitatorTicker = 20;
@@ -141,7 +143,7 @@ public class CityAI implements ICityAI {
 
     /** Run from a loaded core, without requiring the entire nine-chunk-wide complex to tick. */
     public void ensureGuardian(BlockPos core) {
-        if (!isCoreProtected() || guardianId != null || EditMode.isEditing(level, center)) {
+        if (!isCoreProtected() || EditMode.isEditing(level, center)) {
             return;
         }
         // Dungeon-local (8,14,40) clears the western hall's railing beside the lower core chamber.
@@ -149,15 +151,57 @@ public class CityAI implements ICityAI {
         BlockPos home = isUndergroundDungeon()
                 ? new BlockPos(center.getMinBlockX() - 24, CityTools.getCityHeight(level, city) - 22, center.getMinBlockZ() + 8)
                 : core.above(8);
+        if (guardianId != null) {
+            Entity existing = level.getEntity(guardianId);
+            if (existing != null) {
+                guardianMoved(guardianId, existing.chunkPosition());
+                guardianMissingSince = -1;
+                return;
+            }
+            ChunkPos lastChunk = guardianChunk != null ? guardianChunk : new ChunkPos(home);
+            // A full terrain chunk does not imply that its asynchronously loaded entities are available.
+            if (level.getChunkSource().getChunkNow(lastChunk.x, lastChunk.z) == null
+                    || !level.areEntitiesLoaded(lastChunk.toLong())) {
+                guardianMissingSince = -1;
+                return;
+            }
+            if (guardianMissingSince < 0) {
+                guardianMissingSince = level.getGameTime();
+                return;
+            }
+            if (level.getGameTime() - guardianMissingSince < 100) {
+                return;
+            }
+        }
         if (!level.hasChunkAt(home)) {
             return;
         }
         CoreGuardianEntity guardian = Registration.ENTITY_CORE_GUARDIAN.get().create(level);
+        if (guardian == null) {
+            return;
+        }
+        // Reuse the encounter identity so a delayed restoration cannot create a second live guardian.
+        if (guardianId != null) {
+            guardian.setUUID(guardianId);
+        }
         guardian.bindToCity(center, home);
         if (level.noCollision(guardian) && level.addFreshEntity(guardian)) {
             guardianId = guardian.getUUID();
+            guardianChunk = guardian.chunkPosition();
+            guardianMissingSince = -1;
             CityAISystem.getCityAISystem(level).saveSystem();
         }
+    }
+
+    public void guardianMoved(UUID id, ChunkPos chunk) {
+        if (id.equals(guardianId) && !chunk.equals(guardianChunk)) {
+            guardianChunk = chunk;
+            CityAISystem.getCityAISystem(level).saveSystem();
+        }
+    }
+
+    public boolean isGuardianDefeated() {
+        return guardianDead;
     }
 
     public void guardianDefeated(UUID id) {
@@ -478,17 +522,20 @@ public class CityAI implements ICityAI {
             AABB boundingbox = getSoldierBoundingbox();
             world.getEntitiesOfClass(LivingEntity.class, new AABB(ctr).inflate(dimX, 200, dimZ),
                     entity -> {
-                        if (entity instanceof ISoldier soldier && entity.isAlive() && soldier.isReinforcementFor(center)) {
+                        if (!entity.isAlive()) {
+                            return false;
+                        }
+                        if (entity instanceof ISoldier soldier && soldier.isReinforcementFor(center)) {
                             if (boundingbox != null) {
                                 if (boundingbox.contains(entity.position())) {
                                     soldiers.incrementAndGet();
                                 }
                             }
                         }
-                        if (entity instanceof ISentinel) {
+                        if (entity instanceof ISentinel sentinel && center.equals(sentinel.getCityCenter())) {
                             sentinels.incrementAndGet();
                         }
-                        if (entity instanceof IDrone) {
+                        if (entity instanceof IDrone drone && center.equals(drone.getCityCenter())) {
                             drones.incrementAndGet();
                         }
                         return false;
@@ -1286,6 +1333,8 @@ public class CityAI implements ICityAI {
     public void readFromNBT(CompoundTag nbt) {
         guardianId = nbt.hasUUID("guardianId") ? nbt.getUUID("guardianId") : null;
         guardianDead = nbt.getBoolean("guardianDead");
+        guardianChunk = nbt.contains("guardianChunk") ? new ChunkPos(nbt.getLong("guardianChunk")) : null;
+        guardianMissingSince = -1;
         initialized = nbt.getBoolean("initialized");
         scannedChunks.clear();
         forceFields.clear();
@@ -1342,6 +1391,9 @@ public class CityAI implements ICityAI {
             compound.putUUID("guardianId", guardianId);
         }
         compound.putBoolean("guardianDead", guardianDead);
+        if (guardianChunk != null) {
+            compound.putLong("guardianChunk", guardianChunk.toLong());
+        }
         compound.putBoolean("initialized", initialized);
         compound.putLongArray("initializedChunks", initializedChunks.stream().mapToLong(Long::longValue).toArray());
         compound.putBoolean("sentinelsInitialized", sentinelsInitialized);

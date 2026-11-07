@@ -8,6 +8,7 @@ import mcjty.ariente.items.armor.PowerSuit;
 import mcjty.ariente.items.modules.ModuleSupport;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ai.CityAISystem;
+import mcjty.arienteworld.ai.CityAI;
 import mcjty.arienteworld.entities.drone.DroneMoveControl;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -318,10 +319,27 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
 
     @Override
     public void tick() {
+        if (level() instanceof ServerLevel server && cityCenter != null) {
+            CityAI ai = CityAISystem.getCityAISystem(server).getCityAI(cityCenter);
+            if (ai.isGuardianDefeated() && isAlive()) {
+                // Also reject an obsolete entity restored from an inconsistent backup after conquest.
+                discard();
+                return;
+            }
+            ai.guardianMoved(getUUID(), chunkPosition());
+        }
         super.tick();
         if (lightningTicks > 0) {
             lightningTicks--;
         }
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        if (level() instanceof ServerLevel server && cityCenter != null) {
+            CityAISystem.getCityAISystem(server).getCityAI(cityCenter).guardianMoved(getUUID(), chunkPosition());
+        }
+        super.remove(reason);
     }
 
     @Override

@@ -60,6 +60,7 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
         return entity;
     }
 
+    @Override
     public ChunkPos getCityCenter() {
         return cityCenter;
     }

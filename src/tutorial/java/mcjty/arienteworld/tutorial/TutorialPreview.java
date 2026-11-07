@@ -36,7 +36,8 @@ public class TutorialPreview {
     private static final String[] SCENES = {"Tutorial-city", "Tutorial-plaza", "Tutorial-bend",
             "Tutorial-beams", "Tutorial-elevator", "Tutorial-cockpit", "Tutorial-displays", "Tutorial-automation", "Tutorial-filter", "Tutorial-welcome", "Tutorial-power", "Tutorial-construction", "Tutorial-forcefield", "Tutorial-security",
             "Tutorial-outline-displays", "Tutorial-module-left", "Tutorial-module-right", "Tutorial-alarm",
-            "Tutorial-city-circuit", "Tutorial-slope-rider", "Tutorial-slope-cockpit"};
+            "Tutorial-city-circuit", "Tutorial-slope-rider", "Tutorial-slope-cockpit",
+            "Tutorial-processing", "Tutorial-cameras", "Tutorial-charger"};
     private static int scene = Integer.getInteger("ariente.tutorial.scene", 0);
     private static int ticks;
     private static boolean started;
@@ -76,7 +77,7 @@ public class TutorialPreview {
             prepare(mc);
         }
         if (!ready || ++ticks < (scene == 20 ? 30 : 160)) {
-            if (ready && scene >= 19 && ticks > 20) {
+            if (ready && (scene == 19 || scene == 20) && ticks > 20) {
                 if (!(mc.player.getVehicle() instanceof FluxLevitatorEntity cart) || mc.player.distanceToSqr(cart) >= 1) {
                     throw new IllegalStateException("Tutorial slope preview rider left the cabin");
                 }
@@ -117,7 +118,7 @@ public class TutorialPreview {
         mc.getSingleplayerServer().execute(() -> {
             var player = mc.getSingleplayerServer().getPlayerList().getPlayer(playerId);
             player.stopRiding();
-            player.setGameMode((current == 5 || current == 9 || current >= 19) ? GameType.CREATIVE : GameType.SPECTATOR);
+            player.setGameMode((current == 5 || current == 9 || current == 19 || current == 20) ? GameType.CREATIVE : GameType.SPECTATOR);
             switch (current) {
                 case 0 -> player.teleportTo(player.serverLevel(), 236, 183, 236, 135, 40);
                 case 1 -> player.teleportTo(player.serverLevel(), 178, 116, 185, 139, 42);
@@ -202,6 +203,9 @@ public class TutorialPreview {
                             current == 19 ? 0 : -90, current == 19 ? 10 : -45);
                     player.startRiding(cart, true);
                 }
+                case 21 -> player.teleportTo(player.serverLevel(), 120, 70, 123, 180, 38);
+                case 22 -> player.teleportTo(player.serverLevel(), 141, 66, 130, 180, 0);
+                case 23 -> player.teleportTo(player.serverLevel(), 130, 68, 157, -135, 27);
                 default -> throw new IllegalStateException("Unknown Tutorial preview scene");
             }
             ready = true;

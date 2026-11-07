@@ -176,7 +176,8 @@ chunk (8, 8), and a flat 48×48 teaching plaza in chunks (7–9, 7–9). The out
 use ArienteWorld's city generator, with parks, buildings and levitator corridors. Numbered Ariente text
 displays and a lectern guide explain power, automation, both constructors, storage,
 forcefields, keycard doors, wireless controls, an elevator, flux vehicles and the
-Warper. The city AI Core is explicitly identified as a dimension-specific exhibit;
+Warper, plus ship charging, camera views, ore purification and loot recycling.
+The city AI Core is explicitly identified as a dimension-specific exhibit;
 its city behavior runs in Ariente, which the charged Warper can reach.
 
 With Java 17 selected through `JAVA_HOME`, run from this checkout:
@@ -194,7 +195,8 @@ Existing worlds are protected unless `--replace` is supplied. For example,
 replaces the installed Tutorial after verification succeeds, without a backup.
 All registered block-entity types are represented, including multipart nodes.
 The automation exhibit uses a closed Field Marker border with no interior markers.
-The authoring run checks real power, smelting, fuel routing, sorted storage,
+The authoring run checks real power, purification followed by smelting, recycling,
+ship charging from 10% to full, both linked camera captures, fuel routing, sorted storage,
 crafted circuits, shield panels, display layouts and wireless signals before saving.
 Fuel barrels keep the main power exhibit running. The cart runs on
 an exposed 424-block circuit with eight bends and 64 sloped beams. It climbs from
@@ -221,13 +223,32 @@ with live meters and history modules for both generators, on a 70% transparent
 surface. The AI Core demo alarm faces the reader on the front of its support.
 
 The automation station takes four item types at a time in the original 2x2
-Storage Cube. Recipe-aware input categories route all furnace inputs to a Smelter,
-with two dedicated three-tank generators and a separate overhead combined-flux bus.
+Storage Cube. Recipe-aware input categories route supported ore blocks through a
+three-tube Ore Purifier, yielding four raw metals per ore at default settings.
+The field transfers these raw metals to the Smelter, then sorts the ingots.
+Other furnace inputs go directly to the Smelter. Both machines and the Recycler
+use two dedicated three-tank generators and a separate overhead combined-flux bus.
 Negarite and Posirite dust, including dust smelted from their ores, refuel those
 generators. Three Holo Storage Cubes receive non-smeltable wood, tagged ingots and
 other items. Fuel dust is explicitly excluded from storage. Logs become charcoal;
 planks go to Wood. Full destinations leave their backlog in the source. The saved
 world starts with a fresh input batch, and the welcome Holo Storage contains more samples.
+
+The raised **EXCESS LOOT ONLY** Holo Storage Cube feeds the Recycler through a
+hopper. An Output Node on the Recycler's back returns recovered ingredients to
+the field for storage and generator refueling. This separate input prevents
+recovered components from being recycled again. A sabre and a Hover Module
+are ready to process; spare modules are in the welcome storage.
+
+The Flux Ship is fully charged and centered on a working Charger in the plaza
+floor, connected to the main power bus. Land back on the lit pad to recharge.
+The lectern explains current flight controls, including Space to fire and the
+Up/Down arrow keys to rise/descend, with Backspace as an alternate descend key.
+
+Booth 11, north of the Warper, has a large rotating Camera Module linked to the
+processing line and ship dock. Click the module and use Next/Previous to switch
+views or adjust yaw, tilt, zoom and rotation speed. The welcome storage includes
+a spare Camera Module and camera blocks for experimenting with additional links.
 
 Booth 10, west of the center, compares three four-base, three-block-tall displays:
 transparent cyan with a border, solid pale green without a border, and invisible
@@ -254,6 +275,8 @@ forcefield controls and the keycard door.
 Start at `-Ptutorial_scene=18` for the city circuit, a mounted slope view and
 a moving cockpit view. The last two scenes also check that the client rider
 stays inside the cart.
+Start at `-Ptutorial_scene=21` for the purifier/recycler, camera display and
+ship charging pad.
 
 To check the automation field renderer at close range, put a disposable copy of
 Tutorial under `build/verification/autofield-vanilla/saves/Tutorial` and run

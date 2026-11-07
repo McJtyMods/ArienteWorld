@@ -217,6 +217,25 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
     }
 
     @Override
+    protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
+        ItemStack weapon = getMainHandItem();
+        boolean naturalWeapon = (weapon.is(Registration.ENERGY_SABRE.get()) || weapon.is(Registration.ENERGY_LANCE.get()))
+                && getEquipmentDropChance(EquipmentSlot.MAINHAND) <= 1;
+        // Scale the whole vanilla roll: merely reducing its base chance lets additive Looting undo the reduction.
+        boolean suppressWeapon = naturalWeapon && random.nextFloat() >= LootConfiguration.SOLDIER_WEAPON_DROP_MULTIPLIER.get();
+        if (suppressWeapon) {
+            setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        }
+        try {
+            super.dropCustomDeathLoot(source, looting, recentlyHit);
+        } finally {
+            if (suppressWeapon) {
+                setItemSlot(EquipmentSlot.MAINHAND, weapon);
+            }
+        }
+    }
+
+    @Override
     protected void dropFromLootTable(DamageSource damageSourceIn, boolean p_213354_2_) {
         super.dropFromLootTable(damageSourceIn, p_213354_2_);
         if (lastHurtByPlayer != null) {

@@ -6,7 +6,10 @@ import mcjty.ariente.blocks.aicore.AICoreTile;
 import mcjty.ariente.blocks.decorative.DecorativeBlockModule;
 import mcjty.ariente.blocks.defense.ForceFieldTile;
 import mcjty.ariente.blocks.generators.PowerCombinerTile;
+import mcjty.ariente.blocks.purifier.PurifierStructure;
+import mcjty.ariente.blocks.purifier.PurifierTile;
 import mcjty.ariente.blocks.utility.AutoConstructorTile;
+import mcjty.ariente.blocks.utility.ChargerTile;
 import mcjty.ariente.blocks.utility.ElevatorTile;
 import mcjty.ariente.blocks.utility.LockTile;
 import mcjty.ariente.blocks.utility.SmelterTile;
@@ -19,6 +22,7 @@ import mcjty.ariente.blocks.utility.autofield.ItemFilterCategory;
 import mcjty.ariente.blocks.utility.autofield.NodeOrientation;
 import mcjty.ariente.blocks.utility.autofield.OutputItemNodeTile;
 import mcjty.ariente.blocks.utility.autofield.SensorItemNodeTile;
+import mcjty.ariente.blocks.utility.camera.CameraTile;
 import mcjty.ariente.blocks.utility.wireless.SignalReceiverTile;
 import mcjty.ariente.blocks.utility.wireless.SignalTransmitterTile;
 import mcjty.ariente.blocks.utility.wireless.WirelessButtonTile;
@@ -26,6 +30,7 @@ import mcjty.ariente.blocks.utility.wireless.WirelessLockTile;
 import mcjty.ariente.cables.CableColor;
 import mcjty.ariente.cables.GenericCableBlock;
 import mcjty.ariente.config.UtilityConfiguration;
+import mcjty.ariente.display.CameraDisplayModule;
 import mcjty.ariente.display.DisplayAppearance;
 import mcjty.ariente.display.DisplayBackground;
 import mcjty.ariente.display.DisplayBaseTile;
@@ -33,6 +38,7 @@ import mcjty.ariente.display.DisplayGeometry;
 import mcjty.ariente.display.DisplayModuleItem;
 import mcjty.ariente.display.InstalledModule;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
+import mcjty.ariente.entities.fluxship.FluxShipEnergy;
 import mcjty.ariente.entities.levitator.FluxLevitatorEntity;
 import mcjty.ariente.items.BlueprintItem;
 import mcjty.ariente.items.KeyCardItem;
@@ -123,6 +129,18 @@ public class TutorialWorld {
     private static final BlockPos WOOD = new BlockPos(115, 66, 114);
     private static final BlockPos INGOTS = new BlockPos(120, 66, 114);
     private static final BlockPos OTHER = new BlockPos(125, 66, 114);
+    private static final BlockPos PURIFIER = new BlockPos(114, 66, 117);
+    private static final BlockPos PURIFIER_FINISH = new BlockPos(118, 66, 117);
+    private static final BlockPos RECYCLER = new BlockPos(125, 66, 117);
+    private static final BlockPos LOOT = new BlockPos(125, 67, 118);
+    private static final BlockPos CHARGER = new BlockPos(135, 64, 152);
+    private static final BlockPos CAMERA_DISPLAY = new BlockPos(139, 65, 123);
+    private static final BlockPos PROCESS_CAMERA = new BlockPos(127, 70, 118);
+    private static final BlockPos DOCK_CAMERA = new BlockPos(137, 70, 148);
+    private static int ironBeforePurifying;
+    private static int goldBeforePurifying;
+    private static int circuitsBeforeRecycling;
+    private static int silverBeforeRecycling;
 
     @SubscribeEvent
     public static void start(ServerStartedEvent event) throws IOException {
@@ -190,6 +208,7 @@ public class TutorialWorld {
         wireless(level);
         elevator(level);
         transport(level);
+        cameras(level);
         welcome(level);
         for (BlockPos pos : CABLES) {
             PowerSenderSupport.fixNetworks(level, pos);
@@ -325,7 +344,7 @@ public class TutorialWorld {
         output.load(tag);
 
         put(level, SMELTER, Registration.SMELTER.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
-        categoryInput(level, SMELTER.west(), NodeOrientation.EAST_DN, ItemFilterCategory.SMELTABLE);
+        categoryInput(level, SMELTER.west(), NodeOrientation.EAST_DN, ItemFilterCategory.DIRECT_SMELTABLE);
         OutputItemNodeTile products = (OutputItemNodeTile) node(level, SMELTER.north(), Registration.OUTPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
         tag = products.saveWithoutMetadata();
         tag.getCompound("Info").putBoolean("outBlacklist", true);
@@ -356,6 +375,28 @@ public class TutorialWorld {
         for (int x = 120; x <= 123; x++) {
             cable(level, new BlockPos(x, 69, 117), CableColor.COMBINED, false);
         }
+        put(level, PURIFIER, Registration.PURIFIER_START.get());
+        for (int tube = 1; tube <= 3; tube++) {
+            put(level, PURIFIER.east(tube), Registration.PURIFIER_TUBE.get().defaultBlockState()
+                    .setValue(BlockStateProperties.HORIZONTAL_AXIS, Direction.Axis.X));
+        }
+        put(level, PURIFIER_FINISH, Registration.PURIFIER_FINISH.get());
+        categoryInput(level, PURIFIER.south(), NodeOrientation.NORTH_DE, ItemFilterCategory.PURIFIABLE);
+        extractAll(level, PURIFIER_FINISH.north(), NodeOrientation.SOUTH_DE);
+        put(level, RECYCLER, Registration.RECYCLER.get().defaultBlockState()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
+        // A dedicated loot feed keeps recovered components out of the recycling input.
+        put(level, LOOT.below(), Blocks.HOPPER.defaultBlockState().setValue(HopperBlock.FACING, Direction.NORTH));
+        put(level, LOOT, Registration.HOLO_STORAGE_1.get());
+        extractAll(level, RECYCLER.north(), NodeOrientation.SOUTH_DE);
+        for (BlockPos machine : new BlockPos[]{PURIFIER, RECYCLER}) {
+            for (int y = 67; y <= 69; y++) {
+                cable(level, new BlockPos(machine.getX(), y, 117), CableColor.COMBINED, y == 67);
+            }
+        }
+        for (int x = 114; x <= 125; x++) {
+            cable(level, new BlockPos(x, 69, 117), CableColor.COMBINED, false);
+        }
         for (BlockPos destination : new BlockPos[]{WOOD, INGOTS, OTHER}) {
             Block block = destination.equals(WOOD) ? Registration.HOLO_STORAGE_1.get()
                     : destination.equals(INGOTS) ? Registration.HOLO_STORAGE_2.get() : Registration.HOLO_STORAGE_3.get();
@@ -368,8 +409,17 @@ public class TutorialWorld {
         label(level, 120, 67, 114, "INGOTS", "All tagged metals");
         label(level, 125, 67, 114, "VARIOUS", "Other finished items");
         label(level, 115, 65, 123, "02 / AUTOMATION", "2x2 cube: add items", "Output = extract", "Sensor: source >=1");
-        label(level, 120, 65, 123, "SMELT + REFUEL", "Recipes -> smelter", "Dust -> generators", "Own overhead power");
-        label(level, 125, 65, 123, "SORTED STORAGE", "Wood / ingots / other", "Full? Wait in source", "Logs smelt to charcoal");
+        label(level, 120, 65, 123, "PURIFY + SMELT", "Ores -> 3 tubes", "Raw -> smelter", "Dust -> generators");
+        label(level, 125, 65, 123, "SORT + RECYCLE", "Loot: raised cube", "Parts -> storage", "Full? Wait in source");
+        label(level, 116, 67, 119, "ORE PURIFIER", "3 tubes / 4 raw per ore");
+        label(level, 125, 68, 119, "EXCESS LOOT ONLY", "Cube -> recycler");
+    }
+
+    private static void extractAll(ServerLevel level, BlockPos pos, NodeOrientation orientation) {
+        OutputItemNodeTile output = (OutputItemNodeTile) node(level, pos, Registration.OUTPUT_ITEM_NODE.get(), orientation);
+        CompoundTag tag = output.saveWithoutMetadata();
+        tag.getCompound("Info").putBoolean("outBlacklist", true);
+        output.load(tag);
     }
 
     private static void categoryInput(ServerLevel level, BlockPos pos, NodeOrientation orientation, ItemFilterCategory category) {
@@ -645,11 +695,56 @@ public class TutorialWorld {
         }
         FluxLevitatorEntity cart = FluxLevitatorEntity.create(level, 132.5, 65.0625, 146.5);
         level.addFreshEntity(cart);
-        FluxShipEntity ship = FluxShipEntity.create(level, 135, 65, 151.5);
+        for (int x = 132; x <= 138; x++) {
+            for (int z = 149; z <= 155; z++) {
+                boolean edgeX = x == 132 || x == 138;
+                boolean edgeZ = z == 149 || z == 155;
+                if (edgeX || edgeZ) {
+                    put(level, new BlockPos(x, FLOOR, z), edgeX && edgeZ
+                            ? Registration.FLUX_GLOW.get().defaultBlockState() : marble(MarbleColor.DARKBLUE));
+                }
+            }
+        }
+        put(level, CHARGER, Registration.CHARGER.get());
+        supply(level, CHARGER);
+        FluxShipEntity ship = FluxShipEntity.create(level, CHARGER.getX() + .5, CHARGER.getY() + 1, CHARGER.getZ() + .5);
         level.addFreshEntity(ship);
         label(level, 133, 65, 158, "08 / TRANSPORT", "W: accelerate", "S: slow down", "Panels: reverse/stop");
-        label(level, 138, 65, 158, "FLUX SHIP", "WASD moves/turns", "Space/Backspace", "Sneak: exit");
+        label(level, 138, 65, 158, "SHIP + CHARGER", "Land on lit pad", "Arrows: up / down", "Space: fire laser");
         label(level, 137, 65, 143, "CITY CIRCUIT", "424 blocks / loop", "Climb 32 blocks", "Returns here");
+    }
+
+    private static FluxShipEntity ship(ServerLevel level) {
+        for (Entity entity : level.getAllEntities()) {
+            if (entity instanceof FluxShipEntity ship) {
+                return ship;
+            }
+        }
+        throw new IllegalStateException("TUTORIAL: Missing docked Flux Ship");
+    }
+
+    private static void cameras(ServerLevel level) {
+        for (BlockPos camera : new BlockPos[]{PROCESS_CAMERA, DOCK_CAMERA}) {
+            for (int y = FLOOR + 1; y <= camera.getY(); y++) {
+                put(level, new BlockPos(camera.getX() + 1, y, camera.getZ()), marble(MarbleColor.DARKBLUE));
+            }
+            put(level, camera, Registration.CAMERA.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.WEST));
+        }
+        DisplayBaseTile[] screen = displayRow(level, CAMERA_DISPLAY, 4, 4,
+                new DisplayAppearance(DisplayBackground.SOLID, 0x102c3b, 0, true));
+        install(screen[0], text("11 / CAMERA VIEWS", 1, 0x83f2ff), 4, 4);
+        ItemStack module = linkedModule(level, Registration.DISPLAY_CAMERA.get(), PROCESS_CAMERA);
+        CompoundTag config = DisplayModuleItem.config(module);
+        ListTag links = new ListTag();
+        links.add(config.getCompound("Link").copy());
+        links.add(DisplayModuleItem.config(linkedModule(level, Registration.DISPLAY_CAMERA.get(), DOCK_CAMERA)).getCompound("Link").copy());
+        config.remove("Link");
+        config.put("Cameras", links);
+        config.putInt("Size", 2);
+        config.putInt("Zoom", 16);
+        config.putInt("RotationSpeed", 10);
+        install(screen[0], module, 28, 40);
+        install(screen[0], text("Processing + ship dock\nClick view: Next / Previous\nAdjust yaw, tilt, zoom, rotation", 1, 0xd2faff), 4, 208);
     }
 
     private static Map<BlockPos, BlockState> cityCircuit() {
@@ -713,9 +808,13 @@ public class TutorialWorld {
         for (String page : new String[]{
                 "Welcome to Tutorial!\n\nA 9 x 9 chunk city platform in the void. The central 3 x 3 chunks contain the teaching stations.\n\nStart north at Power, then follow the numbered displays. The Holo Storage beside this lectern contains tools and the full manual.",
                 "01 POWER (north)\n\nEach generator has eight matching tanks and a fuel barrel feeding a hopper. Blue = Negarite; red = Posirite. Each tank adds 1,000 flux/tick.\n\nThe combiner takes 6,000 of each and outputs 5,880 of each to the buried yellow network. The glass hatch shows its route.",
-                "02 ITEMS (northwest)\n\nThe field uses only a closed marker border; the inside needs no markers.\n\nPut up to four item types in the 2x2 input cube. Output nodes EXTRACT; input nodes INSERT. A sensor enables extraction when items are present.\n\nSmeltables go to the Smelter. Its fuel towers and overhead bus supply power. Both raw ores and dust can be added: smelted dust refuels the matching generator.",
+                "02 ITEMS (northwest)\n\nThe field has a closed marker border. Put up to four types in the 2x2 input cube.\n\nOutput nodes EXTRACT; input nodes INSERT. The sensor enables extraction when items are present. The welcome storage has samples.",
+                "02 ORE PROCESSING\n\nSupported ores go through three purifier tubes: one ore yields four raw metals. The field sends these to the Smelter, then Ingots storage.\n\nOther furnace inputs go directly to the Smelter. The overhead bus powers both machines.",
                 "02 SORTING\n\nNon-smeltables go to Wood, Ingots or Various holo cubes. Categories follow current furnace recipes and item tags. Fuel dust is excluded from storage.\n\nLogs smelt to charcoal; planks go to Wood. If the smelter or destination fills, items wait safely in the input. Add more supplies to keep processing. The welcome storage has sample batches.",
+                "02 RECYCLING\n\nPut unwanted loot in the raised EXCESS LOOT cube above the hopper. It feeds the Recycler. The field sorts recovered parts into storage; fuel dust refills generators.\n\nOnly add loot you want dismantled. Recovered parts cannot loop back.",
                 "10 DISPLAYS (west of center)\n\nThree independent joined screens show transparent cyan, solid pale green and invisible amber surfaces. Each is four bases wide and three blocks tall.\n\nCompare text sizes, a power meter, numbers, live history, storage lists and item grids. Click a base or module to configure; hold right-click and drag to rearrange modules.",
+                "11 CAMERAS (north of Warper)\n\nThe large Camera Module has processing and ship-dock views. Click it and use Next / Previous to switch. Adjust yaw, tilt, zoom and rotation speed.\n\nSpare cameras and a module are in the welcome storage.",
+                "11 CAMERA LINKS\n\nHold a Camera Module and right-click camera blocks to link up to four. Then install the module on a display.\n\nSneak-right-click in air clears its links. Click the installed view to change cameras or settings.",
                 "03 CRAFTING (west)\n\nTake four ingredients from the Storage Cube into YOUR inventory. Open the manual Constructor and double-click the circuit blueprint.\n\nThe Auto Constructor has its own ingredients, power and an adjacent Blueprint Storage. Inspect its circuit outputs. Extra materials are in the Ariente Storage.",
                 "04 SHIELD (northeast)\n\nA working radius-3 forcefield is behind the rail. Stay outside: active shield panels hurt.\n\nUse the wireless button beside the display to switch it off before approaching the generator. Right-click the generator to change radius or redstone mode. Increase power for larger shields.",
                 "05 SECURITY (east)\n\nTake the Tutorial keycard from the welcome storage. Use it on the lock, then walk near the door. The invisible door blocks belong to the marker under the opening.\n\nThe AI Core and safe Alarm show city equipment. AI behavior belongs to the Ariente dimension; this Overworld exhibit does not spawn defenders.",
@@ -723,6 +822,8 @@ public class TutorialWorld {
                 "07 ELEVATOR (southeast)\n\nWalk onto the beam and choose a floor in its hologram. The upper Level Marker provides the observation-deck stop.",
                 "08 TRANSPORT (south)\n\nBoard the cart for a 424-block city circuit. The track climbs 32 blocks, tours the eastern, northern and western skyline, then descends and returns here. Slopes rise one block each; the cabin tilts with the track while its rider and panels follow it.",
                 "08 DRIVING\n\nHold Forward (W) to accelerate where you face, Back (S) to slow down; release to coast. Turn around and hold W to reverse gradually. Both panels also set speed or stop instantly. Movement key remaps work. The cart automatically slows for slopes and bends. Stay aboard for the full return to the plaza.",
+                "08 SHIP CHARGING\n\nThe ship starts charged on a working Charger. Center it on the lit pad to refill its battery using both flux types. Fresh ship items start empty.\n\nCheck the cockpit for battery charge and your actual key bindings.",
+                "08 SHIP CONTROLS\n\nW/S fly, A/D turn. Up/Down arrows rise/descend. Space fires the laser; Backspace also descends.\n\nMouse look steers. Hold Left Alt to look around without steering. Shift exits. Return to the pad before the battery runs out.",
                 "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCheats are enabled: /gamemode survival or /gamemode creative. Daylight, no natural mob spawning and keep-inventory are enabled for teaching. The surrounding 72 chunks use ArienteWorld city generation, including buildings, parks and levitator corridors. Copy this save before experimenting."
         }) {
             pages.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(page))));
@@ -736,7 +837,7 @@ public class TutorialWorld {
         put(level, lectern, Blocks.LECTERN.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
         ((LecternBlockEntity) level.getBlockEntity(lectern)).setBook(guide());
         level.setBlock(lectern, level.getBlockState(lectern).setValue(BlockStateProperties.HAS_BOOK, true), Block.UPDATE_ALL);
-        put(level, WELCOME_STORAGE, Registration.HOLO_STORAGE_1.get());
+        put(level, WELCOME_STORAGE, Registration.HOLO_STORAGE_2.get());
         ItemStack card = new ItemStack(Registration.KEY_CARD.get());
         KeyCardItem.addSecurityTag(card, "Tutorial");
         card.setHoverName(Component.literal("Tutorial door key"));
@@ -749,12 +850,14 @@ public class TutorialWorld {
             stock(level, WELCOME_STORAGE, new ItemStack(item));
         }
         stock(level, WELCOME_STORAGE, new ItemStack(Registration.DUST_NEGARITE.get(), 64), new ItemStack(Registration.DUST_POSIRITE.get(), 64));
-        for (Item item : new Item[]{Items.RAW_IRON, Items.SAND, Items.OAK_PLANKS, Items.DIAMOND, Items.RAW_GOLD,
+        for (Item item : new Item[]{Items.IRON_ORE, Items.GOLD_ORE, Registration.ORE_SILVER.get().asItem(), Items.RAW_IRON, Items.SAND, Items.OAK_PLANKS, Items.DIAMOND, Items.RAW_GOLD,
                 Items.OAK_LOG, Registration.ORE_NEGARITE.get().asItem(), Registration.ORE_POSIRITE.get().asItem()}) {
             stock(level, WELCOME_STORAGE, new ItemStack(item, 16));
         }
         stock(level, WELCOME_STORAGE, new ItemStack(Registration.DISPLAY_BASE.get(), 8), text("Your display\nClick to edit", 1, 0x83f2ff),
-                new ItemStack(Registration.DISPLAY_POWER.get()), new ItemStack(Registration.DISPLAY_STORAGE.get()));
+                new ItemStack(Registration.DISPLAY_POWER.get()), new ItemStack(Registration.DISPLAY_STORAGE.get()),
+                new ItemStack(Registration.DISPLAY_CAMERA.get()), new ItemStack(Registration.CAMERA.get(), 2),
+                new ItemStack(Registration.MODULE_HOVER.get(), 2), new ItemStack(Registration.MODULE_FORCEFIELD.get(), 2));
         BlockPos warper = new BlockPos(140, 64, 132);
         put(level, warper, Registration.WARPER.get());
         ((WarperTile) level.getBlockEntity(warper)).setCharges(UtilityConfiguration.WARPER_MAX_CHARGES.get());
@@ -843,15 +946,16 @@ public class TutorialWorld {
                             + "; lever=" + level.getBlockState(new BlockPos(124, 65, 148))
                             + "; physical input=" + level.getBestNeighborSignal(new BlockPos(123, 65, 148)));
         }
-        if (ticks == 1000) {
+        if (ticks == 1600) {
             verify(level);
             // Leave four useful input types ready to process when the player opens the save.
-            stock(level, INPUT, new ItemStack(Items.RAW_IRON, 64), new ItemStack(Registration.DUST_NEGARITE.get(), 32),
+            stock(level, INPUT, new ItemStack(Items.IRON_ORE, 8), new ItemStack(Registration.DUST_NEGARITE.get(), 32),
                     new ItemStack(Registration.DUST_POSIRITE.get(), 32), new ItemStack(Items.OAK_PLANKS, 64));
+            stock(level, LOOT, new ItemStack(Registration.ENERGY_SABRE.get()), new ItemStack(Registration.MODULE_HOVER.get()));
             Files.writeString(event.getServer().getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete"),
-                    "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified displays, recipe sorting, smelting, refueling, power, crafting, shield, 424-block sloped city circuit with rider in both directions, two cart end panels and machine coverage.\n");
+                    "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified camera views, ship charging, ore purification followed by smelting, loot recycling, displays, sorting, refueling, power, crafting, shield, 424-block sloped city circuit with rider in both directions, two cart end panels and machine coverage.\n");
             running = false;
-            ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: displays, smelting, refueling, sorted storage, circuits, shield, wireless and two cart end panels; saving map");
+            ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: cameras, charged ship, purification, smelting, recycling, refueling, sorted storage, circuits, shield, wireless and two cart end panels; saving map");
             event.getServer().halt(false);
         }
     }
@@ -869,6 +973,8 @@ public class TutorialWorld {
 
     private static void automationChecks(ServerLevel level) {
         if (ticks == 20) {
+            // Saved entities load asynchronously after ServerStartedEvent.
+            ship(level).setCharge(FluxShipEnergy.CAPACITY / 10);
             // Restart verification begins with a stocked input. Clear it using normal extraction.
             IItemHandler source = inventory(level, INPUT);
             for (int slot = 0; slot < source.getSlots(); slot++) {
@@ -907,6 +1013,33 @@ public class TutorialWorld {
                 }
             }
         }
+        if (ticks == 620) {
+            ironBeforePurifying = count(level, INGOTS, Items.IRON_INGOT);
+            goldBeforePurifying = count(level, INGOTS, Items.GOLD_INGOT);
+            circuitsBeforeRecycling = count(level, OTHER, Registration.CIRCUIT.get());
+            silverBeforeRecycling = count(level, INGOTS, Registration.INGOT_SILVER.get());
+            stock(level, INPUT, new ItemStack(Items.IRON_ORE), new ItemStack(Items.GOLD_ORE));
+            stock(level, LOOT, new ItemStack(Registration.ENERGY_SABRE.get()), new ItemStack(Registration.MODULE_HOVER.get()));
+        }
+        if (ticks == 1200) {
+            int yield = PurifierTile.yieldForTubes(3);
+            require(count(level, INGOTS, Items.IRON_INGOT) >= ironBeforePurifying + yield
+                    && count(level, INGOTS, Items.GOLD_INGOT) >= goldBeforePurifying + yield,
+                    "Purified ores did not yield amplified, automatically smelted ingots");
+            require(count(level, INPUT, Items.IRON_ORE) == 0 && count(level, INPUT, Items.GOLD_ORE) == 0
+                    && inventory(level, PURIFIER).getStackInSlot(0).isEmpty()
+                    && inventory(level, PURIFIER_FINISH).getStackInSlot(0).isEmpty(), "Purifier route did not drain");
+            require(count(level, OTHER, Registration.CIRCUIT.get()) > circuitsBeforeRecycling
+                    && count(level, INGOTS, Registration.INGOT_SILVER.get()) > silverBeforeRecycling,
+                    "Recycled loot components did not reach sorted storage");
+            for (BlockPos pos : new BlockPos[]{LOOT, LOOT.below(), RECYCLER}) {
+                IItemHandler items = inventory(level, pos);
+                for (int slot = 0; slot < items.getSlots(); slot++) {
+                    require(items.getStackInSlot(slot).isEmpty(), "Recycling route did not drain at " + pos);
+                }
+            }
+            ArienteWorld.setup.getLogger().info("TUTORIAL PROCESSING CHECK: iron/gold ores -> {} raw each -> ingots; sabre/module -> sorted components", yield);
+        }
     }
 
     private static void verify(ServerLevel level) {
@@ -915,7 +1048,7 @@ public class TutorialWorld {
         }
         require(level.getBlockState(WELCOME_DISPLAY).getValue(BlockStateProperties.HORIZONTAL_FACING) == Direction.SOUTH
                 && WELCOME_DISPLAY.getZ() < SPAWN.getZ(), "Welcome display must face the player at spawn");
-        require(level.getBlockState(WELCOME_STORAGE).is(Registration.HOLO_STORAGE_1.get())
+        require(level.getBlockState(WELCOME_STORAGE).is(Registration.HOLO_STORAGE_2.get())
                 && count(level, WELCOME_STORAGE, Registration.KEY_CARD.get()) == 1, "Welcome supplies need populated Ariente storage");
         require(level.getBlockState(INGREDIENT_STORAGE).is(Registration.STORAGE.get())
                 && count(level, INGREDIENT_STORAGE, Registration.DUST_SILICON.get()) == 64
@@ -947,6 +1080,27 @@ public class TutorialWorld {
         }
         require(PowerReceiverSupport.getPowerAvailable(level, SHIELD, true) > 0, "Shield has no real flux supply");
         require(PowerReceiverSupport.getPowerAvailable(level, SMELTER, true) > 0, "Smelter has no independent power supply");
+        require(PurifierStructure.find(level, PURIFIER) != null && PurifierStructure.find(level, PURIFIER).tubes().size() == 3,
+                "Purifier needs its complete three-tube structure");
+        for (BlockPos machine : new BlockPos[]{PURIFIER, RECYCLER, CHARGER}) {
+            require(PowerReceiverSupport.getPowerAvailable(level, machine, true) > 0, "New machine has no flux supply at " + machine);
+        }
+        require(((ChargerTile) level.getBlockEntity(CHARGER)).isDocked(ship(level))
+                && ship(level).getCharge() == FluxShipEnergy.CAPACITY, "Ship did not recharge on its working landing pad");
+        DisplayBaseTile cameraDisplay = (DisplayBaseTile) level.getBlockEntity(CAMERA_DISPLAY);
+        InstalledModule cameraModule = cameraDisplay.modules().stream()
+                .filter(module -> module.stack().is(Registration.DISPLAY_CAMERA.get())).findFirst().orElseThrow();
+        require(CameraDisplayModule.cameras(cameraModule.stack()).size() == 2, "Camera display needs two selectable views");
+        for (int index = 0; index < 2; index++) {
+            ItemStack selected = cameraModule.stack().copy();
+            DisplayModuleItem.config(selected).putInt("CameraIndex", index);
+            CompoundTag capture = new CameraDisplayModule().sample(level, selected, new CompoundTag());
+            require(!capture.contains("Status") && capture.getLongArray("Blocks").length > 0,
+                    "Linked tutorial camera failed to capture its exhibit: " + index);
+        }
+        require(level.getBlockEntity(PROCESS_CAMERA) instanceof CameraTile && level.getBlockEntity(DOCK_CAMERA) instanceof CameraTile,
+                "Both tutorial camera blocks must be saved");
+        ArienteWorld.setup.getLogger().info("TUTORIAL NEW EXHIBITS CHECK: ship charged from 10% to 100%; both camera links captured blocks");
         require(count(level, WOOD, Items.OAK_PLANKS) >= 2, "Planks did not reach wood storage");
         require(count(level, INGOTS, Items.IRON_INGOT) >= 2 && count(level, INGOTS, Items.GOLD_INGOT) >= 2,
                 "Smelted metals did not reach ingot storage");
