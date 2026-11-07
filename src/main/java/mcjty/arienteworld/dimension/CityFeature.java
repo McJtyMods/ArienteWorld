@@ -171,7 +171,9 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                 int target = approachHeight(height, natural, distance);
                 int surface = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, wx, wz);
                 for (int y = target; y < surface; y++) {
-                    level.setBlock(pos.set(wx, y, wz), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                    // Submerged slopes must stay flooded up to the ocean surface.
+                    BlockState state = y < generator.getSeaLevel() ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
+                    level.setBlock(pos.set(wx, y, wz), state, Block.UPDATE_CLIENTS);
                     level.getChunk(pos).removeBlockEntity(pos);
                 }
                 // Fill low approaches as well as cutting hills. The inner landing joins the
