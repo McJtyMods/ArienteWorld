@@ -1,4 +1,15 @@
 {
   "type": "minecraft:entity",
-  "pools": []
+  "pools": [
+    {
+      "name": "extreme_circuit",
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "ariente:extreme_circuit"
+        }
+      ]
+    }
+  ]
 }
