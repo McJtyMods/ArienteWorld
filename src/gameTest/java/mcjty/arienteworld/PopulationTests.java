@@ -10,11 +10,11 @@ import mcjty.ariente.entities.EntityArientePearl;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.cities.LegacyBlockStates;
-import mcjty.arienteworld.config.WorldgenConfiguration;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import mcjty.arienteworld.dimension.PortalGenerator;
 import mcjty.arienteworld.dimension.terrain.ArienteBiomeLayout;
 import mcjty.arienteworld.dimension.terrain.BiomeProfile;
+import mcjty.arienteworld.oregen.OverworldDungeonGen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
@@ -38,7 +38,6 @@ import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.util.Random;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -130,14 +129,9 @@ public class PopulationTests {
         BlockPos entrance = null;
         for (int x = 2000; x < 2200 && entrance == null; x++) {
             for (int z = 2000; z < 2200; z++) {
-                Random random = new Random(overworld.getSeed() + x * 198491317L + z * 776531419L);
-                random.nextFloat();
-                if (random.nextFloat() < WorldgenConfiguration.OVERWORLD_DUNGEON_CHANCE.get()) {
-                    Random height = new Random(overworld.getSeed() + x * 23567813L + z * 923568029L);
-                    height.nextFloat();
-                    BlockPos candidate = new BlockPos(x * 16 + 8, height.nextInt(25) + 9, z * 16 + 8);
-                    overworld.getChunk(x, z);
-                    if (overworld.getBlockEntity(candidate) instanceof WarperTile) {
+                if (OverworldDungeonGen.isDungeonChunk(overworld, x, z)) {
+                    BlockPos candidate = OverworldDungeonGen.findDungeon(overworld, x, z);
+                    if (candidate != null) {
                         entrance = candidate;
                         break;
                     }

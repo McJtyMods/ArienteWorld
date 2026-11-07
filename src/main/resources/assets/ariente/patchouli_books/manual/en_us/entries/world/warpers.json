@@ -12,7 +12,7 @@
     {
       "type": "patchouli:text",
       "title": "Find an entrance",
-      "text": "Use a Pearl in the air in the Overworld. It flies toward a nearby intact underground entrance, rather than an alien city.$(br2)Follow its direction and search underground. If no entrance is found, travel to a different area and try again. A thrown Pearl may drop for recovery; watch where it lands."
+      "text": "Use a Pearl in the air in the Overworld. It flies toward a nearby intact underground entrance.$(br2)New entrances prefer dry caves, sometimes joined by a short tunnel. Their depth varies; some remain buried when no suitable cave is nearby.$(br2)Follow the Pearl and search underground. If none is found, try another area. A thrown Pearl may drop for recovery; watch where it lands."
     },
     {
       "type": "patchouli:text",

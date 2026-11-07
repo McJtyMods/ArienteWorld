@@ -59,28 +59,14 @@ public class ModCommands {
     private static int findEntrance(CommandSourceStack source) {
         ServerLevel level = source.getServer().getLevel(Level.OVERWORLD);
         BlockPos start = BlockPos.containing(source.getPosition());
-        BlockPos nearest = null;
-        double distance = Double.MAX_VALUE;
-        for (int x = (start.getX() >> 4) - 64; x <= (start.getX() >> 4) + 64; x++) {
-            for (int z = (start.getZ() >> 4) - 64; z <= (start.getZ() >> 4) + 64; z++) {
-                if (OverworldDungeonGen.isDungeonChunk(level, x, z)) {
-                    BlockPos candidate = OverworldDungeonGen.getDungeonPos(level, x, z).above(2);
-                    double d = candidate.distToCenterSqr(start.getX(), candidate.getY(), start.getZ());
-                    if (d < distance) {
-                        distance = d;
-                        nearest = candidate;
-                    }
-                }
-            }
-        }
+        BlockPos nearest = OverworldDungeonGen.getNearestDungeon(level, start, 64);
         if (nearest == null) {
-            source.sendFailure(Component.literal("No entrance site within 1024 blocks"));
+            source.sendFailure(Component.literal("No intact entrance within 1024 blocks"));
             return 0;
         }
-        BlockPos target = nearest;
+        BlockPos target = nearest.above();
         String teleport = "/execute in minecraft:overworld run tp @s " + target.getX() + " " + target.getY() + " " + target.getZ();
-        source.sendSuccess(() -> Component.literal("Overworld entrance site at " + target.getX() + ", " + target.getY() + ", " + target.getZ()
-                + " (requires new chunks or an intact generated entrance)").withStyle(style -> style
+        source.sendSuccess(() -> Component.literal("Overworld entrance at " + target.getX() + ", " + target.getY() + ", " + target.getZ()).withStyle(style -> style
                 .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, teleport))), false);
         return 1;
     }

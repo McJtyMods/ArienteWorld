@@ -5,12 +5,16 @@ import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.config.WorldgenConfiguration;
 import mcjty.arienteworld.dimension.CityFeature;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraftforge.common.Tags;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -21,6 +25,10 @@ import java.util.Random;
 import static mcjty.ariente.setup.Registration.WARPER;
 
 public class OverworldDungeonGen {
+
+    private static final int ROOM_RADIUS = 6;
+    private static final int ROOM_HEIGHT = 5;
+    private static final int MAX_ENTRANCE_DISTANCE = ROOM_RADIUS + 8;
 
     private static final String[][] DUNGEON = {
             {
@@ -102,17 +110,22 @@ public class OverworldDungeonGen {
 
     @Nullable
     public static BlockPos getNearestDungeon(ServerLevel world, BlockPos origin) {
+        return getNearestDungeon(world, origin, 19);
+    }
+
+    @Nullable
+    public static BlockPos getNearestDungeon(ServerLevel world, BlockPos origin, int radius) {
         if (!world.dimension().equals(Level.OVERWORLD)) {
             return null;
         }
         ChunkPos center = new ChunkPos(origin);
         List<BlockPos> candidates = new ArrayList<>();
-        // Retain the original nineteen-chunk search radius. Only seeded entrance
-        // candidates are loaded; ordinary chunks in the search area are not generated.
-        for (int x = center.x - 19; x <= center.x + 19; x++) {
-            for (int z = center.z - 19; z <= center.z + 19; z++) {
+        // Only seeded entrance candidates are loaded; ordinary chunks in the
+        // search area are not generated.
+        for (int x = center.x - radius; x <= center.x + radius; x++) {
+            for (int z = center.z - radius; z <= center.z + radius; z++) {
                 if (isDungeonChunk(world, x, z)) {
-                    candidates.add(getDungeonPos(world, x, z));
+                    candidates.add(new BlockPos(x * 16 + 8, 0, z * 16 + 8));
                 }
             }
         }
@@ -122,24 +135,29 @@ public class OverworldDungeonGen {
             return x * x + z * z;
         }));
         for (BlockPos candidate : candidates) {
-            world.getChunkAt(candidate);
-            for (int x = -2; x <= 2; x++) {
-                for (int y = -2; y <= 2; y++) {
-                    for (int z = -2; z <= 2; z++) {
-                        BlockPos pos = candidate.offset(x, y, z);
-                        if (world.getBlockState(pos).is(WARPER.get())
-                                && world.getBlockEntity(pos) instanceof IWarper) {
-                            return pos;
-                        }
-                    }
-                }
+            BlockPos warper = findDungeon(world, candidate.getX() >> 4, candidate.getZ() >> 4);
+            if (warper != null) {
+                return warper;
             }
         }
         return null;
     }
 
-    public static BlockPos getDungeonPos(WorldGenLevel world, int x, int z) {
-        return new BlockPos(x * 16 + 8, getDungeonHeight(world, x, z), z * 16 + 8);
+    @Nullable
+    public static BlockPos findDungeon(ServerLevel world, int chunkX, int chunkZ) {
+        var chunk = world.getChunk(chunkX, chunkZ);
+        BlockPos center = new BlockPos(chunkX * 16 + 8, getDungeonHeight(world, chunkX, chunkZ) + 1, chunkZ * 16 + 8);
+        // Include pending block entities from saved chunks. Asking the world for
+        // the entity below also loads its NBT if it has not been promoted yet.
+        List<BlockPos> positions = new ArrayList<>(chunk.getBlockEntitiesPos());
+        positions.sort(Comparator.comparingDouble(pos -> pos.distSqr(center)));
+        for (BlockPos pos : positions) {
+            if (Math.abs(pos.getX() - center.getX()) <= 2 && Math.abs(pos.getZ() - center.getZ()) <= 2
+                    && chunk.getBlockState(pos).is(WARPER.get()) && world.getBlockEntity(pos) instanceof IWarper) {
+                return pos;
+            }
+        }
+        return null;
     }
 
     /// Return true if this chunk can contain a dungeon
@@ -162,7 +180,8 @@ public class OverworldDungeonGen {
 
     public static void generate(Random random, int chunkX, int chunkZ, WorldGenLevel world) {
         if (isDungeonChunk(world, chunkX, chunkZ)) {
-            BlockPos dungeonPos = getDungeonPos(world, chunkX, chunkZ);
+            Placement placement = findPlacement(world, chunkX, chunkZ);
+            BlockPos dungeonPos = placement.floor();
             int midx = dungeonPos.getX();
             int midy = dungeonPos.getY();
             int midz = dungeonPos.getZ();
@@ -204,7 +223,137 @@ public class OverworldDungeonGen {
                     }
                 }
             }
+            Entrance entrance = placement.entrance();
+            if (entrance != null) {
+                for (int distance = ROOM_RADIUS + 1; distance < entrance.distance(); distance++) {
+                    BlockPos pos = dungeonPos.above().relative(entrance.direction(), distance);
+                    set(world, pos, Blocks.CAVE_AIR.defaultBlockState(), 2);
+                    set(world, pos.above(), Blocks.CAVE_AIR.defaultBlockState(), 2);
+                }
+            }
         }
+    }
+
+    private static Placement findPlacement(WorldGenLevel world, int chunkX, int chunkZ) {
+        BlockPos original = new BlockPos(chunkX * 16 + 8, getDungeonHeight(world, chunkX, chunkZ), chunkZ * 16 + 8);
+        Placement best = new Placement(original, null);
+        int bestScore = Integer.MAX_VALUE;
+        int minY = Math.max(-48, world.getMinBuildHeight() + 8);
+        int maxY = Math.min(48, world.getMaxBuildHeight() - ROOM_HEIGHT - 4);
+        for (int y = minY; y <= maxY; y++) {
+            BlockPos floor = new BlockPos(original.getX(), y, original.getZ());
+            if (!hasCover(world, floor)) {
+                continue;
+            }
+            Entrance entrance = findEntrance(world, floor, chunkX, chunkZ);
+            if (entrance == null) {
+                continue;
+            }
+            // Prefer natural doorway connections, then short tunnels. Retain the
+            // seeded height as the tie-breaker without consuming decoration RNG.
+            int score = entrance.distance() * 128 + Math.abs(y - original.getY());
+            if (score < bestScore && fitsRoom(world, floor)) {
+                best = new Placement(floor, entrance);
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    @Nullable
+    private static Entrance findEntrance(WorldGenLevel world, BlockPos floor, int chunkX, int chunkZ) {
+        Entrance best = null;
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            BlockPos doorstep = floor.relative(direction, ROOM_RADIUS);
+            if (!world.getBlockState(doorstep).isFaceSturdy(world, doorstep, Direction.UP)) {
+                continue;
+            }
+            for (int distance = ROOM_RADIUS + 1; distance <= MAX_ENTRANCE_DISTANCE; distance++) {
+                BlockPos feet = floor.above().relative(direction, distance);
+                int x = feet.getX() >> 4;
+                int z = feet.getZ() >> 4;
+                // Do not tunnel into another seeded portal room, even if its
+                // chunk has not generated yet. All reads/writes stay in 3x3 chunks.
+                if (((x != chunkX || z != chunkZ) && isDungeonChunk(world, x, z))
+                        || !canTunnel(world, feet)) {
+                    break;
+                }
+                BlockPos outside = feet.relative(direction);
+                if (world.isEmptyBlock(feet) && world.isEmptyBlock(feet.above())
+                        && world.isEmptyBlock(outside) && world.isEmptyBlock(outside.above())
+                        && world.getBlockState(outside.below()).isFaceSturdy(world, outside.below(), Direction.UP)
+                        && isDry(world, outside)) {
+                    if (best == null || distance < best.distance()) {
+                        best = new Entrance(direction, distance);
+                    }
+                    break;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static boolean canTunnel(WorldGenLevel world, BlockPos feet) {
+        return hasCover(world, feet) && isNatural(world.getBlockState(feet))
+                && isNatural(world.getBlockState(feet.above()))
+                && world.getBlockState(feet.below()).isFaceSturdy(world, feet.below(), Direction.UP)
+                && isDry(world, feet);
+    }
+
+    private static boolean hasCover(WorldGenLevel world, BlockPos pos) {
+        return world.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, pos.getX(), pos.getZ()) >= pos.getY() + ROOM_HEIGHT + 4;
+    }
+
+    private static boolean fitsRoom(WorldGenLevel world, BlockPos floor) {
+        int solidFloor = 0;
+        int solidRoof = 0;
+        for (int x = -ROOM_RADIUS - 1; x <= ROOM_RADIUS + 1; x++) {
+            for (int z = -ROOM_RADIUS - 1; z <= ROOM_RADIUS + 1; z++) {
+                BlockPos column = floor.offset(x, 0, z);
+                boolean inside = Math.abs(x) <= ROOM_RADIUS && Math.abs(z) <= ROOM_RADIUS;
+                if (inside && !hasCover(world, column)) {
+                    return false;
+                }
+                for (int y = -1; y <= ROOM_HEIGHT; y++) {
+                    BlockPos pos = column.above(y);
+                    BlockState state = world.getBlockState(pos);
+                    if (!state.getFluidState().isEmpty() || (inside && !isNatural(state))) {
+                        return false;
+                    }
+                    if (inside && state.isFaceSturdy(world, pos, Direction.UP)) {
+                        if (y == 0) {
+                            solidFloor++;
+                        } else if (y == ROOM_HEIGHT - 1) {
+                            solidRoof++;
+                        }
+                    }
+                }
+            }
+        }
+        int area = (ROOM_RADIUS * 2 + 1) * (ROOM_RADIUS * 2 + 1);
+        return solidFloor * 4 >= area * 3 && solidRoof * 4 >= area * 3;
+    }
+
+    private static boolean isNatural(BlockState state) {
+        return !state.hasBlockEntity() && (state.isAir() || state.is(BlockTags.BASE_STONE_OVERWORLD)
+                || state.is(BlockTags.DIRT) || state.is(Blocks.GRAVEL) || state.is(Tags.Blocks.ORES)
+                || state.is(Blocks.CLAY) || state.is(Blocks.MOSS_BLOCK) || state.is(Blocks.CALCITE)
+                || state.is(Blocks.DRIPSTONE_BLOCK) || state.is(Blocks.POINTED_DRIPSTONE));
+    }
+
+    private static boolean isDry(WorldGenLevel world, BlockPos feet) {
+        for (BlockPos pos : BlockPos.betweenClosed(feet.offset(-1, -1, -1), feet.offset(1, 2, 1))) {
+            if (!world.getBlockState(pos).getFluidState().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private record Entrance(Direction direction, int distance) {
+    }
+
+    private record Placement(BlockPos floor, @Nullable Entrance entrance) {
     }
 
     private static void set(WorldGenLevel world, BlockPos pos, BlockState state, int flags) {

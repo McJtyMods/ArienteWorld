@@ -130,6 +130,12 @@ symbols and color for use on another display.
 Surface dungeon approaches grade both high and low terrain toward their entrances.
 Authored empty spaces clear natural vegetation without removing the ground beneath them.
 
+Overworld portal rooms keep their seeded x/z and search floor heights from Y=-48
+to Y=48 for a dry cave entrance. Direct openings take priority over tunnels of up
+to seven blocks. Rooms require supported entrances and rock cover; sites without
+a suitable connection retain their original seeded height. Pearls and
+`/arienteworld findentrance` locate intact warpers at both old and new heights.
+
 These changes apply to new chunks. Existing generated structures are not
 retrofitted; partially explored structures can meet their older sections.
 To regenerate the additive city assets, run `python3 tools/expand_city_assets.py`.

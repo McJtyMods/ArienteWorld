@@ -136,9 +136,8 @@ public class ExplorationClientChecks {
         for (int x = 6000; x < 6200 && entrance == null; x++) {
             for (int z = 6000; z < 6200; z++) {
                 if (OverworldDungeonGen.isDungeonChunk(overworld, x, z)) {
-                    overworld.getChunk(x, z);
-                    BlockPos pos = OverworldDungeonGen.getDungeonPos(overworld, x, z).above();
-                    if (overworld.getBlockEntity(pos) instanceof WarperTile) {
+                    BlockPos pos = OverworldDungeonGen.findDungeon(overworld, x, z);
+                    if (pos != null && overworld.getBlockEntity(pos) instanceof WarperTile) {
                         entrance = pos;
                         break;
                     }
