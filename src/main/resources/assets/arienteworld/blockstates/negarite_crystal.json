@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "arienteworld:block/negarite_crystal",
+        "y": 0
+      },
+      {
+        "model": "arienteworld:block/negarite_crystal",
+        "y": 90
+      },
+      {
+        "model": "arienteworld:block/negarite_crystal",
+        "y": 180
+      },
+      {
+        "model": "arienteworld:block/negarite_crystal",
+        "y": 270
+      }
+    ]
+  }
+}

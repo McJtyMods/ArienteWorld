@@ -13,6 +13,11 @@
       "type": "patchouli:text",
       "title": "Higher deposits",
       "text": "$(li)Silicon: Y 30–59.$(li)Platinum: Y 30–79.$(li)Lapis and Glowstone: Y 10–29.$(br2)White and blue marble deposits are common from Y 16–69; black marble from Y 10–39.$(br2)Process ores back at your workshop. Save both fuel dusts, even when only one seems scarce."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Surface crystals",
+      "text": "On the barren marble of rough biomes, look for irregular clusters of Negarite or Posirite crystals.$(br2)A stone pickaxe or better yields one matching fuel dust per crystal block. Silk Touch collects the crystal itself. The slightly transparent crystals ring when broken.$(br2)These formations occur in newly explored terrain."
     }
   ]
 }

@@ -6,6 +6,15 @@ HoloGui and McJtyLib; The One Probe is optional.
 
 Ariente biomes do not spawn vanilla mobs, including outside cities.
 
+The barren marble of rough biomes has irregular, branching Negarite and Posirite
+crystal formations, with compact leaning spires about four to six blocks tall.
+Each formation contains one mineral. The crystals are slightly transparent and
+ring when broken.
+A stone pickaxe or better yields one matching fuel dust per block; Silk Touch
+collects the crystal itself. These formations appear in newly generated chunks.
+Find the biome with `/locate biome arienteworld:ariente_rough`, or try a formation
+on exposed marble with `/place feature arienteworld:crystal_formation`.
+
 Half of tree placement attempts in plains, forests and swamps choose the alien
 spiral tree: a corkscrew blue-log trunk with three staggered rings of blue leaves.
 The other half retain the existing tree mix. This applies to newly generated

@@ -1,6 +1,7 @@
 package mcjty.arienteworld.setup;
 
 import mcjty.arienteworld.ModSounds;
+import mcjty.arienteworld.blocks.CrystalBlock;
 import mcjty.arienteworld.entities.boss.CoreGuardianEntity;
 import mcjty.arienteworld.entities.darkbat.DarkbatEntity;
 import mcjty.arienteworld.entities.drone.DroneEntity;
@@ -23,6 +24,7 @@ import mcjty.arienteworld.dimension.CityFeature;
 import mcjty.arienteworld.dimension.FlowerHeightPlacement;
 import mcjty.arienteworld.dimension.SwampBiomePlacement;
 import mcjty.arienteworld.dimension.features.SpiralTreeFeature;
+import mcjty.arienteworld.dimension.features.CrystalFormationFeature;
 import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import mcjty.arienteworld.blocks.DummyBlock;
@@ -89,6 +91,7 @@ public class Registration {
     public static final RegistryObject<OverworldDungeonFeature> ENTRANCE = FEATURES.register("overworld_dungeon", OverworldDungeonFeature::new);
     public static final RegistryObject<CityFeature> CITY = FEATURES.register("city", CityFeature::new);
     public static final RegistryObject<SpiralTreeFeature> SPIRAL_TREE = FEATURES.register("spiral_tree", SpiralTreeFeature::new);
+    public static final RegistryObject<CrystalFormationFeature> CRYSTAL_FORMATION = FEATURES.register("crystal_formation", CrystalFormationFeature::new);
 
     public static final DeferredRegister<PlacementModifierType<?>> PLACEMENTS = DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, MODID);
     public static final RegistryObject<PlacementModifierType<FlowerHeightPlacement>> FLOWER_HEIGHT = PLACEMENTS.register("flower_height", () -> () -> FlowerHeightPlacement.CODEC);
@@ -184,5 +187,11 @@ public class Registration {
 
     public static final RegistryObject<Block> GLOWSTONE = BLOCKS.register("glowstoneore", () -> new Block(Block.Properties.of().mapColor(MapColor.STONE).strength(3.0f)));
     public static final RegistryObject<Item> GLOWSTONE_ITEM = ITEMS.register("glowstoneore", () -> new BlockItem(GLOWSTONE.get(), createStandardProperties()));
+
+    public static final RegistryObject<CrystalBlock> NEGARITE_CRYSTAL = BLOCKS.register("negarite_crystal", () -> new CrystalBlock(MapColor.COLOR_YELLOW));
+    public static final RegistryObject<Item> NEGARITE_CRYSTAL_ITEM = ITEMS.register("negarite_crystal", () -> new BlockItem(NEGARITE_CRYSTAL.get(), createStandardProperties()));
+
+    public static final RegistryObject<CrystalBlock> POSIRITE_CRYSTAL = BLOCKS.register("posirite_crystal", () -> new CrystalBlock(MapColor.COLOR_BLUE));
+    public static final RegistryObject<Item> POSIRITE_CRYSTAL_ITEM = ITEMS.register("posirite_crystal", () -> new BlockItem(POSIRITE_CRYSTAL.get(), createStandardProperties()));
 
 }
