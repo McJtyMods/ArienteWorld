@@ -1,6 +1,7 @@
 package mcjty.arienteworld.entities.soldier;
 
 import mcjty.ariente.api.IInhibitable;
+import mcjty.ariente.entities.LaserEntity;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageTypes;
 import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
@@ -75,7 +76,8 @@ public class MasterSoldierEntity extends SoldierEntity implements IInhibitable {
             return true;
         }
         if (source.is(DamageTypes.MAGIC) || source.is(DamageTypes.INDIRECT_MAGIC)) {
-            return true;
+            // Lance shots use magic damage, but must still hurt master soldiers.
+            return !(source.getDirectEntity() instanceof LaserEntity laser && laser.isLanceShot());
         }
         return false;
     }

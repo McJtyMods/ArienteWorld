@@ -217,6 +217,44 @@ public class EnergyLanceTests {
     }
 
     @GameTest(template = "empty")
+    public static void lanceDamagesMasterSoldiersWithoutRemovingTheirOtherImmunities(GameTestHelper helper) {
+        Player player = helper.makeMockSurvivalPlayer();
+        Vec3 origin = clearFiringLane(helper);
+        player.setPos(origin);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Registration.ENERGY_LANCE.get()));
+        var master = ENTITY_MASTER_SOLDIER.get().create(helper.getLevel());
+        master.setPos(origin.add(4, player.getEyeHeight() - master.getEyeHeight(), 0));
+        master.setNoAi(true);
+        helper.getLevel().addFreshEntity(master);
+        LaserEntity shot = LaserEntity.createLanceShot(helper.getLevel(), player, new Vec3(1, 0, 0), EnergyLanceItem.getShotDamage(player));
+        LaserEntity droneShot = LaserEntity.create(helper.getLevel(), player, 1, 0, 0);
+        try {
+            var sources = helper.getLevel().damageSources();
+            helper.assertTrue(master.isInvulnerableTo(sources.magic())
+                            && master.isInvulnerableTo(sources.indirectMagic(player, player))
+                            && master.isInvulnerableTo(sources.indirectMagic(droneShot, player))
+                            && master.isInvulnerableTo(sources.inFire()),
+                    "Master soldiers must retain ordinary magic, drone laser and fire immunity");
+            master.setInvulnerable(true);
+            helper.assertTrue(master.isInvulnerableTo(sources.indirectMagic(shot, player)),
+                    "Lance shots must respect the entity's general invulnerability flag");
+            master.setInvulnerable(false);
+            float health = master.getHealth();
+            for (int tick = 0; tick < 8 && !shot.isRemoved(); tick++) {
+                shot.tick();
+            }
+            helper.assertTrue(shot.isRemoved() && master.getHealth() < health,
+                    "An actual lance impact must damage a master soldier despite its magic immunity");
+        } finally {
+            master.discard();
+            shot.discard();
+            droneShot.discard();
+            player.discard();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void soldiersAndGuardsSwitchToRangedCombatAfterReload(GameTestHelper helper) {
         for (SoldierBehaviourType behaviour : SoldierBehaviourType.values()) {
             SoldierEntity soldier = SoldierEntity.create(helper.getLevel(), null, behaviour);
@@ -398,6 +436,7 @@ public class EnergyLanceTests {
             }
             CompoundTag masterData = new CompoundTag();
             master.saveWithoutId(masterData);
+            helper.assertTrue(master.getHealth() < master.getMaxHealth(), "A saved lance shot with modules must damage a master soldier");
             helper.assertTrue(masterData.getInt("noregen") == 200, "Inhibit must suppress Master Soldier regeneration despite their magic resistance");
         } finally {
             master.discard();
