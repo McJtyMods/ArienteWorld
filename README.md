@@ -196,7 +196,7 @@ replaces the installed Tutorial after verification succeeds, without a backup.
 All registered block-entity types are represented, including multipart nodes.
 The automation exhibit uses a closed Field Marker border with no interior markers.
 The authoring run checks real power, purification followed by smelting, recycling,
-ship charging from 10% to full, both linked camera captures, fuel routing, sorted storage,
+ship charging from 10% to full, takeoff in eight headings, both linked camera captures, fuel routing, sorted storage,
 crafted circuits, shield panels, display layouts and wireless signals before saving.
 Fuel barrels keep the main power exhibit running. The cart runs on
 an exposed 424-block circuit with eight bends and 64 sloped beams. It climbs from

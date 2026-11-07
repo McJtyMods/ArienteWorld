@@ -710,7 +710,7 @@ public class TutorialWorld {
         FluxShipEntity ship = FluxShipEntity.create(level, CHARGER.getX() + .5, CHARGER.getY() + 1, CHARGER.getZ() + .5);
         level.addFreshEntity(ship);
         label(level, 133, 65, 158, "08 / TRANSPORT", "W: accelerate", "S: slow down", "Panels: reverse/stop");
-        label(level, 138, 65, 158, "SHIP + CHARGER", "Land on lit pad", "Arrows: up / down", "Space: fire laser");
+        label(level, 138, 65, 158, "SHIP + CHARGER", "Land on lit pad", "Look up + W: climb", "Space: fire laser");
         label(level, 137, 65, 143, "CITY CIRCUIT", "424 blocks / loop", "Climb 32 blocks", "Returns here");
     }
 
@@ -823,7 +823,7 @@ public class TutorialWorld {
                 "08 TRANSPORT (south)\n\nBoard the cart for a 424-block city circuit. The track climbs 32 blocks, tours the eastern, northern and western skyline, then descends and returns here. Slopes rise one block each; the cabin tilts with the track while its rider and panels follow it.",
                 "08 DRIVING\n\nHold Forward (W) to accelerate where you face, Back (S) to slow down; release to coast. Turn around and hold W to reverse gradually. Both panels also set speed or stop instantly. Movement key remaps work. The cart automatically slows for slopes and bends. Stay aboard for the full return to the plaza.",
                 "08 SHIP CHARGING\n\nThe ship starts charged on a working Charger. Center it on the lit pad to refill its battery using both flux types. Fresh ship items start empty.\n\nCheck the cockpit for battery charge and your actual key bindings.",
-                "08 SHIP CONTROLS\n\nW/S fly, A/D turn. Up/Down arrows rise/descend. Space fires the laser; Backspace also descends.\n\nMouse look steers. Hold Left Alt to look around without steering. Shift exits. Return to the pad before the battery runs out.",
+                "08 SHIP CONTROLS\n\nHold W and look up to climb. W/S fly toward the mouse; A/D turn. Up/Down arrows also rise/descend.\n\nSpace fires. Left Alt is free look: release it to steer again. Shift exits. Land on the charger before the battery runs out.",
                 "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCheats are enabled: /gamemode survival or /gamemode creative. Daylight, no natural mob spawning and keep-inventory are enabled for teaching. The surrounding 72 chunks use ArienteWorld city generation, including buildings, parks and levitator corridors. Copy this save before experimenting."
         }) {
             pages.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(page))));
@@ -1087,6 +1087,7 @@ public class TutorialWorld {
         }
         require(((ChargerTile) level.getBlockEntity(CHARGER)).isDocked(ship(level))
                 && ship(level).getCharge() == FluxShipEnergy.CAPACITY, "Ship did not recharge on its working landing pad");
+        verifyShipTakeoff(level);
         DisplayBaseTile cameraDisplay = (DisplayBaseTile) level.getBlockEntity(CAMERA_DISPLAY);
         InstalledModule cameraModule = cameraDisplay.modules().stream()
                 .filter(module -> module.stack().is(Registration.DISPLAY_CAMERA.get())).findFirst().orElseThrow();
@@ -1204,6 +1205,34 @@ public class TutorialWorld {
         }
         require(carts == 1, "Tutorial must contain exactly one Flux Levitator");
         ArienteWorld.setup.getLogger().info("TUTORIAL CHECK: {} circuits; {} shield panels; {} registered machine types", circuits, panels, Registration.TILES.getEntries().size());
+    }
+
+    private static void verifyShipTakeoff(ServerLevel level) {
+        FluxShipEntity ship = ship(level);
+        CompoundTag parked = ship.saveWithoutId(new CompoundTag());
+        var pilot = FakePlayerFactory.getMinecraft(level);
+        try {
+            for (int heading = 0; heading < 360; heading += 45) {
+                ship.load(parked.copy());
+                ship.setYRot(heading);
+                pilot.startRiding(ship, true);
+                double altitude = ship.getY();
+                for (int tick = 0; tick < 15; tick++) {
+                    ship.handleInput(pilot, 1, 0, 0, false, true, true, heading, -25);
+                    ship.tick();
+                }
+                require(ship.getXRot() < -20 && ship.getY() > altitude + 1.5,
+                        "Fresh ship could not pitch up and leave its dock at heading " + heading);
+                pilot.stopRiding();
+            }
+        } finally {
+            pilot.stopRiding();
+            ship.load(parked);
+            if (ship.getHoloGui() != null) {
+                ship.positionRider(ship.getHoloGui().getEntity());
+            }
+        }
+        ArienteWorld.setup.getLogger().info("TUTORIAL SHIP TAKEOFF CHECK: mouse pitch climbed from the charged dock in all eight headings");
     }
 
     private static void verifyCityCircuit(ServerLevel level, FluxLevitatorEntity cart) {
