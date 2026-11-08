@@ -1,26 +1,26 @@
 package mcjty.arienteworld.dimension;
 
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.arienteworld.entities.drone.DroneEntity;
-import mcjty.arienteworld.entities.soldier.SoldierEntity;
-import mcjty.ariente.items.EnergySabreItem;
 import mcjty.ariente.items.EnergyLanceItem;
+import mcjty.ariente.items.EnergySabreItem;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityTools;
+import mcjty.arienteworld.entities.drone.DroneEntity;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class DefenderCombat {
 
     @SubscribeEvent
-    public static void onSoldierSabreAttack(LivingHurtEvent event) {
+    public static void onSoldierSabreAttack(LivingIncomingDamageEvent event) {
         if (event.getSource().is(DamageTypes.MOB_ATTACK)
                 && event.getSource().getDirectEntity() instanceof SoldierEntity soldier
                 && soldier.getMainHandItem().getItem() instanceof EnergySabreItem) {
@@ -30,7 +30,7 @@ public class DefenderCombat {
     }
 
     @SubscribeEvent
-    public static void onSoldierLanceAttack(LivingHurtEvent event) {
+    public static void onSoldierLanceAttack(LivingIncomingDamageEvent event) {
         if (event.getSource().getDirectEntity() instanceof LaserEntity laser && laser.isLanceShot()
                 && event.getSource().getEntity() instanceof SoldierEntity soldier) {
             event.setAmount(Math.max(event.getAmount(), soldier.getMinimumSabreDamage() * EnergyLanceItem.DAMAGE_MULTIPLIER));
@@ -38,7 +38,7 @@ public class DefenderCombat {
     }
 
     @SubscribeEvent
-    public static void hurt(LivingHurtEvent event) {
+    public static void hurt(LivingIncomingDamageEvent event) {
         if (!(event.getSource().getEntity() instanceof LivingEntity defender)
                 || !(defender.level() instanceof ServerLevel level)
                 || !level.dimension().equals(DimensionRegister.DIMENSION)

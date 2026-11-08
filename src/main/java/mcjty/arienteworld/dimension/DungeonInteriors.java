@@ -1,14 +1,13 @@
 package mcjty.arienteworld.dimension;
 
+import java.util.Map;
+import java.util.Random;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.Palette;
 import mcjty.arienteworld.cities.PaletteIndex;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.EmptyBlockGetter;
-
-import java.util.Random;
-import java.util.Map;
+import net.minecraft.world.level.block.state.BlockState;
 
 /** Chunk-local details: no world reads, shared random stream or writes into neighboring chunks. */
 public final class DungeonInteriors {

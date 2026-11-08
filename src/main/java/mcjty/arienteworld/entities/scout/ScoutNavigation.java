@@ -1,16 +1,15 @@
 package mcjty.arienteworld.entities.scout;
 
+import java.util.UUID;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
-import java.util.UUID;
 
 /** Local avoidance considers the hull's width, terrain, momentum and the loaded chunk boundary. */
 public class ScoutNavigation {

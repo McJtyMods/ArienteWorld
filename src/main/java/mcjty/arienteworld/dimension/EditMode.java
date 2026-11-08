@@ -4,6 +4,21 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import javax.annotation.Nullable;
 import mcjty.ariente.api.ICityEquipment;
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
@@ -19,38 +34,22 @@ import mcjty.arienteworld.cities.PartPalette;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLPaths;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 /** Operator authoring sessions use private asset copies. Runtime generation is never changed implicitly. */
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class EditMode {
 
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
@@ -418,8 +417,8 @@ public class EditMode {
                     if (tile instanceof ICityEquipment equipment && equipment.save() != null) {
                         data.put(new BlockPos(x, y, z), equipment.save());
                     } else if (tile instanceof SpawnerBlockEntity spawner) {
-                        spawner.getSpawner().getOrCreateDisplayEntity(level, level.random, pos);
-                        String mob = spawner.saveWithoutMetadata().getCompound("SpawnData").getCompound("entity").getString("id");
+                        spawner.getSpawner().getOrCreateDisplayEntity(level, pos);
+                        String mob = spawner.saveWithoutMetadata(level.registryAccess()).getCompound("SpawnData").getCompound("entity").getString("id");
                         data.put(new BlockPos(x, y, z), Map.of("mob", mob));
                     }
                 }

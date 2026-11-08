@@ -13,18 +13,20 @@
                 {
                   "condition": "minecraft:match_tool",
                   "predicate": {
-                    "enchantments": [
-                      {
-                        "enchantment": "minecraft:silk_touch",
-                        "levels": {
-                          "min": 1
+                    "predicates": {
+                      "minecraft:enchantments": [
+                        {
+                          "enchantments": "minecraft:silk_touch",
+                          "levels": {
+                            "min": 1
+                          }
                         }
-                      }
-                    ]
+                      ]
+                    }
                   }
                 }
               ],
-              "name": "arienteworld:negarite_crystal"
+              "name": "arienteworld:posirite_crystal"
             },
             {
               "type": "minecraft:item",
@@ -33,7 +35,7 @@
                   "function": "minecraft:explosion_decay"
                 }
               ],
-              "name": "ariente:dust_negarite"
+              "name": "ariente:dust_posirite"
             }
           ]
         }
@@ -41,5 +43,5 @@
       "rolls": 1.0
     }
   ],
-  "random_sequence": "arienteworld:blocks/negarite_crystal"
+  "random_sequence": "arienteworld:blocks/posirite_crystal"
 }

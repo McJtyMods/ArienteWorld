@@ -1,5 +1,6 @@
 package mcjty.arienteworld.entities.boss;
 
+import javax.annotation.Nullable;
 import mcjty.ariente.api.ArmorUpgradeType;
 import mcjty.ariente.api.IForceFieldTile;
 import mcjty.ariente.api.IForcefieldImmunity;
@@ -7,8 +8,8 @@ import mcjty.ariente.items.armor.PersonalForcefield;
 import mcjty.ariente.items.armor.PowerSuit;
 import mcjty.ariente.items.modules.ModuleSupport;
 import mcjty.arienteworld.ArienteWorld;
-import mcjty.arienteworld.ai.CityAISystem;
 import mcjty.arienteworld.ai.CityAI;
+import mcjty.arienteworld.ai.CityAISystem;
 import mcjty.arienteworld.entities.drone.DroneMoveControl;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -51,12 +52,10 @@ import net.minecraft.world.level.pathfinder.PathFinder;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-import javax.annotation.Nullable;
-
 public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity, Enemy {
 
     public static final ResourceKey<DamageType> LIGHTNING_DAMAGE = ResourceKey.create(Registries.DAMAGE_TYPE,
-            new ResourceLocation(ArienteWorld.MODID, "core_lightning"));
+            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "core_lightning"));
     private static final EntityDataAccessor<Integer> CHARGE = SynchedEntityData.defineId(CoreGuardianEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> VICTIM = SynchedEntityData.defineId(CoreGuardianEntity.class, EntityDataSerializers.INT);
     private static final int ATTACK_INTERVAL = 100;
@@ -148,10 +147,10 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        entityData.define(CHARGE, 0);
-        entityData.define(VICTIM, -1);
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(CHARGE, 0);
+        builder.define(VICTIM, -1);
     }
 
     public int getCharge() {
@@ -283,7 +282,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
         // Ordinary armor cannot ground this overload. Working power armor and its field can.
         int upgrades = 0;
         for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (slot.getType() == EquipmentSlot.Type.ARMOR) {
+            if (slot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
                 ItemStack armor = target.getItemBySlot(slot);
                 if (armor.getItem() instanceof PowerSuit && ModuleSupport.hasWorkingUpgrade(armor, ArmorUpgradeType.ARMOR)) {
                     upgrades++;
@@ -348,7 +347,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     }
 
     @Override
-    public boolean canChangeDimensions() {
+    public boolean canChangeDimensions(Level from, Level to) {
         return false;
     }
 
@@ -415,7 +414,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
-        home = tag.contains("Home") ? NbtUtils.readBlockPos(tag.getCompound("Home")) : null;
+        home = tag.contains("Home") ? NbtUtils.readBlockPos(tag, "Home").orElse(null) : null;
         cityCenter = tag.contains("CityX") ? new ChunkPos(tag.getInt("CityX"), tag.getInt("CityZ")) : null;
         attackCooldown = tag.contains("AttackCooldown") ? Math.max(CHARGE_TIME + 1, tag.getInt("AttackCooldown")) : ATTACK_INTERVAL;
         bossEvent.setName(getDisplayName());

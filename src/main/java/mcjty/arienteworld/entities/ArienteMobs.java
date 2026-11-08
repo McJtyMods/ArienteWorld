@@ -1,5 +1,6 @@
 package mcjty.arienteworld.entities;
 
+import javax.annotation.Nullable;
 import mcjty.arienteworld.entities.soldier.MasterSoldierEntity;
 import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.arienteworld.entities.soldier.SoldierEntity;
@@ -7,8 +8,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-
-import javax.annotation.Nullable;
 
 public class ArienteMobs {
 

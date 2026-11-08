@@ -1,15 +1,15 @@
 package mcjty.arienteworld.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class LootConfiguration {
 
     private static final String CATEGORY_LOOT = "loot";
 
-    public static ForgeConfigSpec.DoubleValue SOLDIER_CITYKEY_CHANCE;
-    public static ForgeConfigSpec.DoubleValue SOLDIER_WEAPON_DROP_MULTIPLIER;
+    public static ModConfigSpec.DoubleValue SOLDIER_CITYKEY_CHANCE;
+    public static ModConfigSpec.DoubleValue SOLDIER_WEAPON_DROP_MULTIPLIER;
 
-    public static void init(ForgeConfigSpec.Builder SERVER_BUILDER, ForgeConfigSpec.Builder CLIENT_BUILDER) {
+    public static void init(ModConfigSpec.Builder SERVER_BUILDER, ModConfigSpec.Builder CLIENT_BUILDER) {
         SERVER_BUILDER.comment("Loot settings").push(CATEGORY_LOOT);
 
         SOLDIER_CITYKEY_CHANCE = SERVER_BUILDER

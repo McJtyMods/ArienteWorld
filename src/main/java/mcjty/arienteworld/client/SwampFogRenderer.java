@@ -12,16 +12,16 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ViewportEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ViewportEvent;
 
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class SwampFogRenderer {
 
     private static final ResourceKey<Biome> SWAMP = ResourceKey.create(Registries.BIOME,
-            new ResourceLocation(ArienteWorld.MODID, "ariente_swamp"));
+            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_swamp"));
     private static final Vec3 SWAMP_WEIGHT = new Vec3(1, 0, 0);
 
     @SubscribeEvent

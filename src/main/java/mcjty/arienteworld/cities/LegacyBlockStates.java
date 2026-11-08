@@ -1,15 +1,14 @@
 package mcjty.arienteworld.cities;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraftforge.registries.ForgeRegistries;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /** Translates the block-state notation in the original city assets. */
 public class LegacyBlockStates {
@@ -59,11 +58,11 @@ public class LegacyBlockStates {
             case "arienteworld:master_soldier_dummy" -> "arienteworld:master_solider_dummy";
             default -> id;
         };
-        ResourceLocation key = new ResourceLocation(id);
-        if (!ForgeRegistries.BLOCKS.containsKey(key)) {
+        ResourceLocation key = ResourceLocation.parse(id);
+        if (!BuiltInRegistries.BLOCK.containsKey(key)) {
             throw new IllegalArgumentException("Unknown city block: " + description + " (" + key + ")");
         }
-        Block block = ForgeRegistries.BLOCKS.getValue(key);
+        Block block = BuiltInRegistries.BLOCK.get(key);
         BlockState state = block.defaultBlockState();
         if (block instanceof LeavesBlock) {
             // Leaves in authored city parts must survive independently of generated tree logs.
@@ -85,7 +84,7 @@ public class LegacyBlockStates {
     }
 
     public static String write(BlockState state) {
-        String id = ForgeRegistries.BLOCKS.getKey(state.getBlock()).toString();
+        String id = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
         if (state.getValues().isEmpty()) {
             return id;
         }

@@ -1,5 +1,10 @@
 package mcjty.arienteworld.entities.scout;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import javax.annotation.Nullable;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.ariente.entities.fluxship.FluxShipLaser;
 import mcjty.arienteworld.entities.soldier.SoldierEntity;
@@ -13,12 +18,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
 
 /** A remembered sighting drives search and attack runs; hidden players' positions are never used. */
 public class ScoutPilot {

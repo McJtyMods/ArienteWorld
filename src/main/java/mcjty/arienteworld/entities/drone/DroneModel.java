@@ -26,10 +26,10 @@ public class DroneModel<T extends FlyingMob> extends EntityModel<T> {
     }
 
     @Override
-    public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int light, int overlay, float red, float green, float blue, float alpha) {
+    public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int light, int overlay, int color) {
         poseStack.pushPose();
         poseStack.translate(0, 0.6, 0);
-        body.render(poseStack, buffer, light, overlay, red, green, blue, alpha);
+        body.render(poseStack, buffer, light, overlay, color);
         poseStack.popPose();
     }
 }

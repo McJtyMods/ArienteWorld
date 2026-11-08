@@ -1,8 +1,7 @@
 package mcjty.arienteworld.cities;
 
-import net.minecraft.resources.ResourceLocation;
-
 import javax.annotation.Nullable;
+import net.minecraft.resources.ResourceLocation;
 
 public class Loot {
 

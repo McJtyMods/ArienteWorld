@@ -1,12 +1,11 @@
 package mcjty.arienteworld.dimension.features;
 
-import mcjty.arienteworld.dimension.terrain.NoiseGeneratorPerlin;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.core.BlockPos;
-import mcjty.arienteworld.dimension.terrain.TerrainBuffer;
-
 import java.util.Random;
+import mcjty.arienteworld.dimension.terrain.NoiseGeneratorPerlin;
+import mcjty.arienteworld.dimension.terrain.TerrainBuffer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class BubbleFeature implements IFeature {
 

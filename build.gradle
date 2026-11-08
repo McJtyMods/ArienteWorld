@@ -1,53 +1,43 @@
 buildscript {
     repositories {
-        maven { url = 'https://maven.minecraftforge.net/' }
-        maven { url = 'https://maven.parchmentmc.org' }
-        maven { url = 'https://plugins.gradle.org/m2/' }
         maven { url = 'https://maven.firstdark.dev/releases' }
         mavenCentral()
         gradlePluginPortal()
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
-        classpath 'org.parchmentmc:librarian:1.+'
-        classpath 'com.hypherionmc.modutils:modpublisher:2.0.4'
+        classpath 'com.hypherionmc.modutils:modpublisher:2.2.1'
     }
+}
+
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.1.4'
 }
 
 apply plugin: 'com.hypherionmc.modutils.modpublisher'
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'org.parchmentmc.librarian.forgegradle'
-apply plugin: 'eclipse'
-apply plugin: 'maven-publish'
-if (project.file('../gradletools.gradle').exists()) {
-    apply from: '../gradletools.gradle'
-} else {
-    apply from: 'https://raw.githubusercontent.com/McJtyMods/MultiWorkspace/1.20_tech/gradletools.gradle'
-}
+
+def localGradleTools = [
+        project.findProperty('gradletools_path') ? file(project.property('gradletools_path')) : null,
+        rootProject.file('gradletools.gradle'),
+        file('../gradletools.gradle')
+].find { it != null && it.exists() }
+apply from: localGradleTools ?: 'https://raw.githubusercontent.com/McJtyMods/MultiWorkspace/1.21_neo/gradletools.gradle'
+
 
 group = "com.github.mcjty"
 archivesBaseName = "arienteworld"
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+if (System.getenv('BUILD_NUMBER') != null) {
+    version += "-${System.getenv('BUILD_NUMBER')}"
+}
 
 repos()
-// Standalone verification before the matching dependencies are published.
-if (project.hasProperty('ariente_dependency_repository')) {
-    repositories.maven {
-        url = uri(project.property('ariente_dependency_repository'))
-        content {
-            includeGroup 'com.github.mcjty'
-        }
-    }
-}
-if (project.hasProperty('ariente_runs')) {
-    ext.enable_individual_runs = true
-}
-runs('arienteworld')
-jars('arienteworld')
-// This mod needs no access transformations; the shared jar helper adds this by default.
-tasks.named('jar') {
-    manifest.attributes.remove('FMLAT')
-}
+runs()
+jars()
 
 sourceSets.main.resources {
     srcDir 'src/generated/resources'
@@ -56,121 +46,89 @@ sourceSets.main.resources {
 dependencies {
     mc()
     jei()
+    patchouli()
     top()
     mcjtylib()
-    patchouli()
     if (findProject(':ModHoloGui') != null) {
-        implementation(project(':ModHoloGui')) { transitive = false }
+        implementation project(':ModHoloGui')
     } else {
-        implementation fg.deobf("com.github.mcjty:hologui:${hologui_version}") { transitive = false }
+        implementation("com.github.mcjty:hologui:${hologui_version}") { transitive = false }
     }
     if (findProject(':Ariente') != null) {
-        implementation(project(':Ariente')) { transitive = false }
+        implementation project(':Ariente')
     } else {
-        implementation fg.deobf("com.github.mcjty:ariente:${ariente_version}") { transitive = false }
+        implementation("com.github.mcjty:ariente:${ariente_version}") { transitive = false }
     }
-
 }
 
-modpublisher(['the-one-probe'], ['mcjtylib', 'hologui', 'ariente'],
-        ['the-one-probe'], ['mcjtylib', 'hologui', 'ariente'], [])
+// Unpublished dependency artifacts can be staged for standalone verification.
+if (project.hasProperty('ariente_dependency_repository')) {
+    repositories.maven { url = uri(project.property('ariente_dependency_repository')) }
+}
+
+modpublisher(['the-one-probe'], ['mcjtylib', 'hologui', 'ariente'], ['the-one-probe'], ['mcjtylib', 'hologui', 'ariente'], [])
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifactId = archivesBaseName
             from components.java
+            artifactId = project.archivesBaseName
         }
     }
     repositories {
         if (project.hasProperty('mavendir')) {
-            maven { url mavendir }
+            maven { url = uri(project.property('mavendir')) }
+        } else if (System.getenv('local_maven') != null) {
+            maven { url = uri(System.getenv('local_maven')) }
         } else {
             mavenLocal()
         }
     }
 }
 
+subsystems {
+    parchment {
+        minecraftVersion = "${parchment_minecraft_version}"
+        mappingsVersion = "${parchment_version}"
+    }
+}
+
+// NeoGradle consumes local mod source sets in development, including transitive mod dependencies.
+def localMods = ['McJtyLib', 'TheOneProbe', 'ModHoloGui', 'Ariente']
+localMods.findAll { findProject(":" + it) != null }.each { modName ->
+    evaluationDependsOn(":" + modName)
+    runs { configureEach { modSource project(":" + modName).sourceSets.main } }
+}
+
 sourceSets {
     gameTest {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
+        java.include 'mcjty/arienteworld/PortSmokeTests.java', 'mcjty/arienteworld/PortClientSmoke.java'
+        resources.include 'data/arienteworld/structure/empty.nbt', 'data/minecraft/worldgen/world_preset/flat.json'
     }
 }
-
-tasks.withType(AbstractPublishToMaven).configureEach {
-    dependsOn 'reobfJar'
-}
-
 configurations {
     gameTestImplementation.extendsFrom implementation
-    gameTestCompileOnly.extendsFrom compileOnly
     gameTestRuntimeOnly.extendsFrom runtimeOnly
 }
-
-// An isolated development run for this port, using the included dependency sources.
-if (findProject(':Ariente') != null && project.hasProperty('ariente_runs')) {
-    [':Ariente', ':ModHoloGui', ':McJtyLib', ':TheOneProbe'].each { evaluationDependsOn(it) }
-    minecraft.runs {
-        gameTestServer {
-            workingDirectory project.file('build/gametest')
-            property 'forge.enabledGameTestNamespaces', 'arienteworld'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-            source sourceSets.main
-            mods {
-                arienteworld {
-                    source sourceSets.gameTest
-                }
-            }
-        }
+runs {
+    configureEach {
+        workingDirectory project.file("build/verification/${name}")
     }
-    minecraft.runs.all {
-        forceExit false
-        jvmArgs '-Xmx2G'
-        mods {
-            arienteworld {
-                source sourceSets.main
-            }
-            ariente {
-                source project(':Ariente').sourceSets.main
-            }
-            hologui {
-                source project(':ModHoloGui').sourceSets.main
-            }
-            mcjtylib {
-                source project(':McJtyLib').sourceSets.main
-            }
-            theoneprobe {
-                source project(':TheOneProbe').sourceSets.main
-            }
-        }
-    }
-    minecraft.runs.data {
-        getArgs().clear()
-        args '--mod', 'arienteworld', '--all', '--output', file('build/verification/datagen').absolutePath,
-                '--existing', file('src/main/resources').absolutePath
-        workingDirectory file('build/verification/datagen-run')
+    gameTestServer {
+        systemProperty "neoforge.enabledGameTestNamespaces", "ariente,arienteworld"
+        modSource sourceSets.gameTest
+        if (findProject(":Ariente") != null) { modSource project(":Ariente").sourceSets.gameTest }
     }
 }
 
-// Resolve Forge/remapped libraries in this project; load local mod sources directly.
-configurations.implementation.dependencies.withType(ProjectDependency).configureEach { dependency ->
-    dependency.transitive = false
-}
-
-// Forge otherwise prefers the versioned local jars over the supplied source folders.
-// Keep compilation dependencies, but use source outputs in development launches.
-tasks.withType(JavaExec).configureEach {
-    if (name.startsWith('run')) {
-        doFirst {
-            def localJarDirs = rootProject.subprojects.collect { it.layout.buildDirectory.dir('libs').get().asFile.toPath() }
-            def useInRun = { File entry -> !localJarDirs.any { entry.toPath().startsWith(it) } }
-            classpath = classpath.filter(useInRun)
-            if (systemProperties['legacyClassPath']) {
-                systemProperty 'legacyClassPath', systemProperties['legacyClassPath'].toString()
-                        .split(File.pathSeparator).findAll { useInRun(new File(it)) }.join(File.pathSeparator)
-            }
+if (project.hasProperty('port_client_smoke')) {
+    runs {
+        client {
+            modSource sourceSets.gameTest
+            systemProperty 'ariente.portClientSmoke', 'true'
+            arguments.addAll '--quickPlaySingleplayer', 'PortSmoke'
         }
     }
 }

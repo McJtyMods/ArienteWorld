@@ -1,5 +1,7 @@
 package mcjty.arienteworld.dimension;
 
+import java.util.List;
+import javax.annotation.Nullable;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
@@ -11,18 +13,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.LevelEvent;
 
-import java.util.List;
-import javax.annotation.Nullable;
-
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class SoldierSpawning {
 
     private static final ResourceKey<Biome> CITY_BIOME = ResourceKey.create(Registries.BIOME,
-            new ResourceLocation(ArienteWorld.MODID, "ariente_city"));
+            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_city"));
 
     @SubscribeEvent
     public static void potentialSpawns(LevelEvent.PotentialSpawns event) {

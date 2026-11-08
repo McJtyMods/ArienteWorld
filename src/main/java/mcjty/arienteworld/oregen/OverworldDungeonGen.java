@@ -1,5 +1,10 @@
 package mcjty.arienteworld.oregen;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
+import javax.annotation.Nullable;
 import mcjty.ariente.api.IWarper;
 import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.config.WorldgenConfiguration;
@@ -14,13 +19,7 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.common.Tags;
-
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
+import net.neoforged.neoforge.common.Tags;
 
 import static mcjty.ariente.setup.Registration.WARPER;
 

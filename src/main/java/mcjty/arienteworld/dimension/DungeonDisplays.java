@@ -1,5 +1,11 @@
 package mcjty.arienteworld.dimension;
 
+import net.minecraft.core.HolderLookup;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import mcjty.ariente.display.DisplayAppearance;
 import mcjty.ariente.display.DisplayBackground;
 import mcjty.ariente.display.DisplayBaseTile;
@@ -16,12 +22,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
 /** Decorative consoles, authored entirely inside the current part and chunk. */
 public final class DungeonDisplays {
@@ -171,17 +171,19 @@ public final class DungeonDisplays {
         return state != null && state.isAir();
     }
 
-    public static void configure(DisplayBaseTile display, Map<String, Object> data) {
+    public static void configure(DisplayBaseTile display, Map<String, Object> data, HolderLookup.Provider provider) {
         ItemStack stack = new ItemStack(Registration.DISPLAY_ALIEN_TEXT.get());
-        DisplayModuleItem.config(stack).putString("Text", (String) data.get("AlienText"));
-        DisplayModuleItem.config(stack).putInt("Color", (Integer) data.getOrDefault("AlienColor", 0x83eaff));
+        DisplayModuleItem.editConfig(stack, config -> {
+            config.putString("Text", (String) data.get("AlienText"));
+            config.putInt("Color", (Integer) data.getOrDefault("AlienColor", 0x83eaff));
+        });
         CompoundTag tag = new CompoundTag();
         tag.putInt("Height", 1);
         new DisplayAppearance(DisplayBackground.TRANSPARENT, 0x18445c, 75, true).write(tag);
         ListTag modules = new ListTag();
-        modules.add(new InstalledModule(stack, 4, 4).save(false));
+        modules.add(new InstalledModule(stack, 4, 4).save(false, provider));
         tag.put("Modules", modules);
-        display.load(tag);
+        display.loadWithComponents(tag, provider);
         display.setChanged();
     }
 

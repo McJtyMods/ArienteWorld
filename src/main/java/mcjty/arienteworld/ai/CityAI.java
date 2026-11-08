@@ -1,64 +1,63 @@
 package mcjty.arienteworld.ai;
 
-import mcjty.arienteworld.entities.soldier.SoldierEntity;
-import mcjty.arienteworld.entities.boss.CoreGuardianEntity;
-import mcjty.arienteworld.entities.drone.DroneMoveControl;
-import mcjty.arienteworld.entities.drone.SentinelDroneEntity;
-import mcjty.arienteworld.entities.drone.DroneEntity;
-import mcjty.arienteworld.entities.ArienteMobs;
 import mcjty.ariente.api.*;
-import mcjty.arienteworld.entities.drone.ISentinel;
-import mcjty.arienteworld.entities.drone.IDrone;
-import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 import mcjty.ariente.Ariente;
 import mcjty.ariente.blocks.storagecube.StorageCubeTile;
-import mcjty.hologui.api.IHoloGuiEntity;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.level.block.state.properties.RailShape;
-import mcjty.arienteworld.cities.BuildingPart;
+import mcjty.ariente.items.ItemData;
+import mcjty.ariente.varia.WeightedRandom;
 import mcjty.arienteworld.cities.AssetRegistries;
-import mcjty.arienteworld.cities.Palette;
+import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityPlan;
 import mcjty.arienteworld.cities.CityTools;
 import mcjty.arienteworld.cities.Loot;
+import mcjty.arienteworld.cities.Palette;
 import mcjty.arienteworld.cities.StructureLoot;
 import mcjty.arienteworld.config.AIConfiguration;
-import mcjty.arienteworld.setup.Registration;
-import mcjty.arienteworld.dimension.EditMode;
 import mcjty.arienteworld.dimension.CityFeature;
+import mcjty.arienteworld.dimension.EditMode;
+import mcjty.arienteworld.entities.ArienteMobs;
+import mcjty.arienteworld.entities.boss.CoreGuardianEntity;
+import mcjty.arienteworld.entities.drone.DroneEntity;
+import mcjty.arienteworld.entities.drone.DroneMoveControl;
+import mcjty.arienteworld.entities.drone.IDrone;
+import mcjty.arienteworld.entities.drone.ISentinel;
+import mcjty.arienteworld.entities.drone.SentinelDroneEntity;
+import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
+import mcjty.arienteworld.entities.soldier.SoldierEntity;
+import mcjty.arienteworld.setup.Registration;
+import mcjty.hologui.api.IHoloGuiEntity;
 import mcjty.lib.tileentity.GenericTileEntity;
 import mcjty.lib.varia.OrientationTools;
 import mcjty.lib.varia.RedstoneMode;
-import mcjty.ariente.varia.WeightedRandom;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.core.Direction;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.RailShape;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.nbt.Tag;
-
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import static mcjty.ariente.setup.Registration.AICORE;
 import static mcjty.ariente.setup.Registration.FLUX_BEAM;
@@ -907,7 +906,7 @@ public class CityAI implements ICityAI {
         CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
         compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
-        helmet.setTag(compound);
+        ItemData.set(helmet, compound);
         return helmet;
     }
 
@@ -916,7 +915,7 @@ public class CityAI implements ICityAI {
         CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
         compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
-        helmet.setTag(compound);
+        ItemData.set(helmet, compound);
         return helmet;
     }
 
@@ -930,7 +929,7 @@ public class CityAI implements ICityAI {
             compound.putBoolean(ArmorUpgradeType.FORCEFIELD.getModuleKey(), true);
             compound.putBoolean(ArmorUpgradeType.FORCEFIELD.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.FORCEFIELD.getModuleKey()));
         }
-        helmet.setTag(compound);
+        ItemData.set(helmet, compound);
         return helmet;
     }
 
@@ -939,7 +938,7 @@ public class CityAI implements ICityAI {
         CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
         compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
-        helmet.setTag(compound);
+        ItemData.set(helmet, compound);
         return helmet;
     }
 
@@ -1369,7 +1368,7 @@ public class CityAI implements ICityAI {
                 for (int i = 0; i < list.size(); i++) {
                     CompoundTag tc = list.getCompound(i);
                     UUID uuid = tc.getUUID("id");
-                    BlockPos pos = NbtUtils.readBlockPos(tc);
+                    BlockPos pos = readPosition(tc);
                     watchingPlayers.put(uuid, pos);
                 }
 
@@ -1420,7 +1419,7 @@ public class CityAI implements ICityAI {
             if (!watchingPlayers.isEmpty()) {
                 ListTag list = new ListTag();
                 for (Map.Entry<UUID, BlockPos> entry : watchingPlayers.entrySet()) {
-                    CompoundTag tc = NbtUtils.writeBlockPos(entry.getValue());
+                    CompoundTag tc = writePosition(entry.getValue());
                     tc.putUUID("id", entry.getKey());
                     list.add(tc);
                 }
@@ -1441,7 +1440,7 @@ public class CityAI implements ICityAI {
     private ListTag writeSetToNBT(Set<BlockPos> set) {
         ListTag list = new ListTag();
         for (BlockPos pos : set) {
-            list.add(NbtUtils.writeBlockPos(pos));
+            list.add(writePosition(pos));
         }
         return list;
     }
@@ -1449,7 +1448,7 @@ public class CityAI implements ICityAI {
     private void readSetFromNBT(ListTag list, Set<BlockPos> set) {
         set.clear();
         for (int i = 0; i < list.size(); i++) {
-            BlockPos pos = NbtUtils.readBlockPos(list.getCompound(i));
+            BlockPos pos = readPosition(list.getCompound(i));
             set.add(pos);
         }
     }
@@ -1457,7 +1456,7 @@ public class CityAI implements ICityAI {
     private ListTag writeMapToNBT(Map<BlockPos, Direction> map) {
         ListTag list = new ListTag();
         for (Map.Entry<BlockPos, Direction> entry : map.entrySet()) {
-            CompoundTag tc = NbtUtils.writeBlockPos(entry.getKey());
+            CompoundTag tc = writePosition(entry.getKey());
             tc.putInt("facing", entry.getValue().ordinal());
             list.add(tc);
         }
@@ -1468,9 +1467,22 @@ public class CityAI implements ICityAI {
         map.clear();
         for (int i = 0; i < list.size(); i++) {
             CompoundTag tc = list.getCompound(i);
-            BlockPos pos = NbtUtils.readBlockPos(tc);
+            BlockPos pos = readPosition(tc);
             Direction facing = OrientationTools.DIRECTION_VALUES[tc.getInt("facing")];
             map.put(pos, facing);
         }
     }
+
+    private static BlockPos readPosition(CompoundTag tag) {
+        return new BlockPos(tag.getInt("X"), tag.getInt("Y"), tag.getInt("Z"));
+    }
+
+    private static CompoundTag writePosition(BlockPos pos) {
+        CompoundTag tag = new CompoundTag();
+        tag.putInt("X", pos.getX());
+        tag.putInt("Y", pos.getY());
+        tag.putInt("Z", pos.getZ());
+        return tag;
+    }
+
 }

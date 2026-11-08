@@ -2,6 +2,7 @@ package mcjty.arienteworld.entities.boss;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Random;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -11,8 +12,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
-
-import java.util.Random;
 
 /** Procedural translucent energy shells, with a jagged discharge from the sphere to its victim. */
 public class CoreGuardianRenderer extends EntityRenderer<CoreGuardianEntity> {
@@ -69,9 +68,9 @@ public class CoreGuardianRenderer extends EntityRenderer<CoreGuardianEntity> {
 
     private static void point(VertexConsumer vertices, Matrix4f matrix, float radius, double latitude, double longitude,
                               float red, float green, float blue, float alpha) {
-        vertices.vertex(matrix, (float) (radius * Math.sin(latitude) * Math.cos(longitude)),
+        vertices.addVertex(matrix, (float) (radius * Math.sin(latitude) * Math.cos(longitude)),
                         (float) (radius * Math.cos(latitude)), (float) (radius * Math.sin(latitude) * Math.sin(longitude)))
-                .color(red, green, blue, alpha).endVertex();
+                .setColor(red, green, blue, alpha);
     }
 
     private static void bolt(VertexConsumer vertices, Matrix4f matrix, Vec3 end, long seed) {
@@ -94,6 +93,6 @@ public class CoreGuardianRenderer extends EntityRenderer<CoreGuardianEntity> {
     }
 
     private static void vertex(VertexConsumer vertices, Matrix4f matrix, Vec3 point) {
-        vertices.vertex(matrix, (float) point.x, (float) point.y, (float) point.z).color(0.65f, 0.85f, 1, 0.95f).endVertex();
+        vertices.addVertex(matrix, (float) point.x, (float) point.y, (float) point.z).setColor(0.65f, 0.85f, 1, 0.95f);
     }
 }

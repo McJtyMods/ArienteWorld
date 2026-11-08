@@ -1,5 +1,6 @@
 package mcjty.arienteworld.apiimpl;
 
+import javax.annotation.Nullable;
 import mcjty.ariente.api.IArienteWorld;
 import mcjty.ariente.api.ICityAI;
 import mcjty.ariente.api.ICityAISystem;
@@ -13,9 +14,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.server.ServerLifecycleHooks;
-
-import javax.annotation.Nullable;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 public class ArienteWorldImplementation implements IArienteWorld {
 

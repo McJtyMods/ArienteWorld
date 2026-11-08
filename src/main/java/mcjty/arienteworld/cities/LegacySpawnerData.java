@@ -3,12 +3,12 @@ package mcjty.arienteworld.cities;
 import mcjty.arienteworld.ArienteWorld;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
-import net.minecraftforge.event.level.ChunkDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.ChunkDataEvent;
 
 /** Repair saved spawners from before the soldiers moved to ArienteWorld. */
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class LegacySpawnerData {
 
     @SubscribeEvent

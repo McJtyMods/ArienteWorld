@@ -14,7 +14,7 @@ NAMESPACE = 'arienteworld'
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--generated', type=Path, help='isolated runData --all output')
-    parser.add_argument('--jar', type=Path, help='reobfuscated companion jar')
+    parser.add_argument('--jar', type=Path, help='NeoForge companion jar')
     args = parser.parse_args()
     files = {}
     errors = []
@@ -91,8 +91,8 @@ def main():
             feature = doc['feature']
             if feature.startswith(NAMESPACE + ':') and f'data/{NAMESPACE}/worldgen/configured_feature/{feature.split(":", 1)[1]}.json' not in docs:
                 errors.append(f'Missing configured feature: {feature}')
-    if docs.get('pack.mcmeta', {}).get('pack', {}).get('pack_format') != 15:
-        errors.append('Expected 1.20.1 resource pack format 15')
+    if docs.get('pack.mcmeta', {}).get('pack', {}).get('pack_format') != 34:
+        errors.append('Expected 1.21.1 resource pack format 34')
     registration = (ROOT / 'src/main/java/mcjty/arienteworld/setup/Registration.java').read_text()
     entities = re.findall(r'ENTITIES.register\("([^"]+)"', registration)
     for entity in entities:
@@ -109,7 +109,7 @@ def main():
     language = docs.get('assets/arienteworld/lang/en_us.json', {})
     for block in blocks:
         for name in (f'assets/{NAMESPACE}/blockstates/{block}.json', f'assets/{NAMESPACE}/models/item/{block}.json',
-                     f'data/{NAMESPACE}/loot_tables/blocks/{block}.json'):
+                     f'data/{NAMESPACE}/loot_table/blocks/{block}.json'):
             if name not in docs:
                 errors.append(f'Missing registered block resource: {name}')
         if f'block.{NAMESPACE}.{block}' not in language:
@@ -144,12 +144,12 @@ def main():
                 prefix = source.relative_to(ROOT / 'src/gameTest/java').with_suffix('').as_posix()
                 if any(name == prefix + '.class' or name.startswith(prefix + '$') for name in names):
                     errors.append(f'Fixture/test in release jar: {prefix}')
-            for name in ('mcjty/arienteworld/ArienteWorld.class', 'META-INF/mods.toml'):
+            for name in ('mcjty/arienteworld/ArienteWorld.class', 'META-INF/neoforge.mods.toml'):
                 if name not in names:
                     errors.append(f'Missing jar entry: {name}')
-            city_code = jar.read('mcjty/arienteworld/ai/CityAI.class')
-            if b'getBlockEntity' in city_code or b'm_7702_' not in city_code:
-                errors.append('Release jar must contain reobfuscated 1.20.1 bytecode; run build/reobfJar after development runs')
+            city_code = jar.read('mcjty/arienteworld/dimension/CityFeature.class')
+            if int.from_bytes(city_code[6:8], 'big') != 65:
+                errors.append('Release jar must target Java 21')
             version = next(line.split('=', 1)[1] for line in (ROOT / 'gradle.properties').read_text().splitlines()
                            if line.startswith('version='))
             manifest = jar.read('META-INF/MANIFEST.MF').decode()

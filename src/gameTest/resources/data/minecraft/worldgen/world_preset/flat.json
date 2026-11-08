@@ -1,0 +1,48 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "minecraft:overworld",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:plains",
+          "features": false,
+          "lakes": false,
+          "layers": [
+            {
+              "block": "minecraft:bedrock",
+              "height": 1
+            },
+            {
+              "block": "minecraft:dirt",
+              "height": 2
+            },
+            {
+              "block": "minecraft:grass_block",
+              "height": 1
+            }
+          ],
+          "structure_overrides": []
+        }
+      }
+    },
+    "arienteworld:ariente": {
+      "type": "arienteworld:ariente",
+      "generator": {
+        "type": "arienteworld:ariente",
+        "biome_source": {
+          "type": "arienteworld:ariente",
+          "biomes": [
+            "arienteworld:ariente_plains",
+            "arienteworld:ariente_hills",
+            "arienteworld:ariente_ocean",
+            "arienteworld:ariente_forest",
+            "arienteworld:ariente_rough",
+            "arienteworld:ariente_city",
+            "arienteworld:ariente_swamp"
+          ]
+        }
+      }
+    }
+  }
+}

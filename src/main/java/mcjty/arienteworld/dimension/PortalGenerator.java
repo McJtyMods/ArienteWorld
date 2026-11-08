@@ -1,8 +1,7 @@
 package mcjty.arienteworld.dimension;
 
-import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.ariente.api.IWarper;
-import static mcjty.ariente.setup.Registration.WARPER;
+import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.cities.Transform;
 import net.minecraft.core.BlockPos;
@@ -12,6 +11,8 @@ import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
+
+import static mcjty.ariente.setup.Registration.WARPER;
 
 public class PortalGenerator {
 

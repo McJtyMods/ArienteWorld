@@ -1,5 +1,13 @@
 package mcjty.arienteworld.entities.scout;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ai.CityAISystem;
@@ -10,6 +18,7 @@ import mcjty.arienteworld.dimension.DimensionRegister;
 import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -20,21 +29,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 /** An independent base launch scheduler; neither biome spawn tables nor hostile mob caps are involved. */
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class ScoutPatrols extends SavedData {
 
     public static final double NEAR_RADIUS = 256;
@@ -54,7 +54,7 @@ public class ScoutPatrols extends SavedData {
     }
 
     public static ScoutPatrols get(ServerLevel level) {
-        ScoutPatrols data = level.getDataStorage().computeIfAbsent(ScoutPatrols::load, ScoutPatrols::new, "ArienteScoutPatrols");
+        ScoutPatrols data = level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(ScoutPatrols::new, (tag, provider) -> load(tag)), "ArienteScoutPatrols");
         data.upgradeCadence(level);
         return data;
     }
@@ -73,8 +73,8 @@ public class ScoutPatrols extends SavedData {
     }
 
     @SubscribeEvent
-    public static void levelTick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level)
+    public static void levelTick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)
                 || !level.dimension().equals(DimensionRegister.DIMENSION)
                 || !(level.getChunkSource().getGenerator() instanceof ArienteChunkGenerator)
                 || level.getGameTime() % 10 != 0) {
@@ -335,7 +335,7 @@ public class ScoutPatrols extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
         tag.putInt("cadenceVersion", cadenceVersion);
         ListTag entries = new ListTag();
         bases.forEach((base, launch) -> {

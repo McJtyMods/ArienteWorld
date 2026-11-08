@@ -3,21 +3,22 @@ package mcjty.arienteworld.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import javax.annotation.Nullable;
 import mcjty.arienteworld.ArienteWorld;
-import mcjty.arienteworld.oregen.OverworldDungeonGen;
-import net.minecraft.world.level.Level;
 import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityPlan;
 import mcjty.arienteworld.cities.CityTools;
+import mcjty.arienteworld.dimension.ArienteLandscapeCity;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import mcjty.arienteworld.dimension.PortalGenerator;
-import mcjty.arienteworld.dimension.ArienteLandscapeCity;
-import java.util.stream.Stream;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import mcjty.arienteworld.oregen.OverworldDungeonGen;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -26,15 +27,13 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
-import javax.annotation.Nullable;
-import java.util.stream.StreamSupport;
-
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class ModCommands {
 
     @SubscribeEvent

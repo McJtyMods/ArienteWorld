@@ -1,3 +1,6 @@
+1.21-0.0.31-alpha:
+- Ported to Minecraft 1.21.1 on NeoForge.
+
 1.20-0.0.31-alpha:
 - Scout patrols now require a surviving AI core at their launch base and newly chosen destinations. Flights already heading to a captured base finish their journey and retire on arrival. Patrol frequency and traffic limits are unchanged.
 - Scouts now patrol much closer to the terrain and bank visibly through turns. Defeated pilots leave ships to descend for recovery instead of removing them, and release their base for replacement patrols.

@@ -1,10 +1,10 @@
 package mcjty.arienteworld.dimension.terrain;
 
 import java.util.Random;
+import mcjty.arienteworld.cities.LegacyBlockStates;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import mcjty.arienteworld.cities.LegacyBlockStates;
 
 public class IslandsTerrainGenerator {
 

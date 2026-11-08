@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public class DarkbatRender extends MobRenderer<DarkbatEntity, PhantomModel<DarkbatEntity>> {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(ArienteWorld.MODID, "textures/entity/darkbat.png");
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "textures/entity/darkbat.png");
 
     public DarkbatRender(EntityRendererProvider.Context context) {
         super(context, new PhantomModel<>(context.bakeLayer(ModelLayers.PHANTOM)), 0.75F * DarkbatEntity.SCALE);
@@ -29,8 +29,8 @@ public class DarkbatRender extends MobRenderer<DarkbatEntity, PhantomModel<Darkb
     }
 
     @Override
-    protected void setupRotations(DarkbatEntity entity, PoseStack poses, float age, float yaw, float partialTick) {
-        super.setupRotations(entity, poses, age, yaw, partialTick);
+    protected void setupRotations(DarkbatEntity entity, PoseStack poses, float age, float yaw, float partialTick, float scale) {
+        super.setupRotations(entity, poses, age, yaw, partialTick, scale);
         poses.mulPose(Axis.XP.rotationDegrees(entity.getXRot()));
     }
 }

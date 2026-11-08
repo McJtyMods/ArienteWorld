@@ -1,14 +1,13 @@
 package mcjty.arienteworld.cities;
 
+import java.io.*;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.nio.charset.StandardCharsets;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.config.Config;
-import net.minecraftforge.fml.loading.FMLPaths;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import net.neoforged.fml.loading.FMLPaths;
 
 public class AssetRegistries {
 

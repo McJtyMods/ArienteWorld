@@ -1,12 +1,11 @@
 package mcjty.arienteworld.dimension.features;
 
+import java.util.Random;
 import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.dimension.terrain.NoiseGeneratorPerlin;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.core.BlockPos;
 import mcjty.arienteworld.dimension.terrain.TerrainBuffer;
-
-import java.util.Random;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class SpheresFeature implements IFeature {
 

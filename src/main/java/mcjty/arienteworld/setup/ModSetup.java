@@ -1,9 +1,9 @@
 package mcjty.arienteworld.setup;
 
 import mcjty.arienteworld.cities.AssetRegistries;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import mcjty.lib.compat.MainCompatHandler;
 import mcjty.lib.setup.DefaultModSetup;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 public class ModSetup extends DefaultModSetup {
 

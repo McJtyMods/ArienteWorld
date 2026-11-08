@@ -1,5 +1,7 @@
 package mcjty.arienteworld.entities.scout;
 
+import java.util.ArrayList;
+import java.util.List;
 import mcjty.arienteworld.ai.CityAISystem;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
@@ -9,9 +11,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /** Base queries use the generation seed and known core locations, without loading destination chunks. */
 public class ScoutRoutes {

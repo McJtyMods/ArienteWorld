@@ -32,7 +32,7 @@ public class DarkbatEntity extends Phantom {
     private static final int SPAWN_ATTEMPTS = 64;
     private static final double SPAWN_RADIUS = 128.0D;
     private static final TagKey<Biome> SPAWNS = TagKey.create(Registries.BIOME,
-            new ResourceLocation(ArienteWorld.MODID, "darkbat_spawns"));
+            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "darkbat_spawns"));
 
     public DarkbatEntity(EntityType<? extends DarkbatEntity> type, Level level) {
         super(type, level);

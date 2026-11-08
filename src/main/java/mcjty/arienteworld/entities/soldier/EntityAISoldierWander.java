@@ -1,15 +1,13 @@
 package mcjty.arienteworld.entities.soldier;
 
+import javax.annotation.Nullable;
 import mcjty.ariente.api.ICityAI;
 import mcjty.ariente.api.ICityAISystem;
-import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.arienteworld.ArienteWorld;
-import net.minecraft.world.entity.ai.util.LandRandomPos;
-import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.util.LandRandomPos;
 import net.minecraft.world.phys.Vec3;
-
-import javax.annotation.Nullable;
 
 public class EntityAISoldierWander extends Goal {
     protected final SoldierEntity entity;

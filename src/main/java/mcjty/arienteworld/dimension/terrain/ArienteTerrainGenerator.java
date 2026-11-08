@@ -1,9 +1,8 @@
 package mcjty.arienteworld.dimension.terrain;
 
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Blocks;
-
 import java.util.Random;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class ArienteTerrainGenerator {
     private Random rand;

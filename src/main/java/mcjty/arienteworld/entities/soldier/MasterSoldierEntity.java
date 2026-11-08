@@ -2,18 +2,16 @@ package mcjty.arienteworld.entities.soldier;
 
 import mcjty.ariente.api.IInhibitable;
 import mcjty.ariente.entities.LaserEntity;
-import net.minecraft.tags.DamageTypeTags;
-import net.minecraft.world.damagesource.DamageTypes;
-import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
-import mcjty.ariente.setup.Registration;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 

@@ -2,14 +2,17 @@ package mcjty.arienteworld.dimension;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import mcjty.arienteworld.cities.LegacyBlockStates;
+import mcjty.arienteworld.dimension.features.BubbleFeature;
+import mcjty.arienteworld.dimension.features.GlowBubbleFeature;
 import mcjty.arienteworld.dimension.features.IFeature;
 import mcjty.arienteworld.dimension.features.SpheresFeature;
 import mcjty.arienteworld.dimension.features.SpikesFeature;
-import mcjty.arienteworld.dimension.features.BubbleFeature;
-import mcjty.arienteworld.dimension.features.GlowBubbleFeature;
 import mcjty.arienteworld.dimension.terrain.ArienteTerrainGenerator;
 import mcjty.arienteworld.dimension.terrain.BiomeProfile;
 import mcjty.arienteworld.dimension.terrain.IslandsTerrainGenerator;
@@ -22,6 +25,7 @@ import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
@@ -30,17 +34,11 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
-import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 
 public class ArienteChunkGenerator extends ChunkGenerator {
 
-    public static final Codec<ArienteChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            ArienteBiomeSource.CODEC.fieldOf("biome_source").forGetter(generator -> generator.source)
+    public static final MapCodec<ArienteChunkGenerator> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            ArienteBiomeSource.CODEC.codec().fieldOf("biome_source").forGetter(generator -> generator.source)
     ).apply(instance, ArienteChunkGenerator::new));
 
     private final ArienteBiomeSource source;
@@ -54,7 +52,7 @@ public class ArienteChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    protected Codec<? extends ChunkGenerator> codec() {
+    protected MapCodec<? extends ChunkGenerator> codec() {
         return CODEC;
     }
 
@@ -122,7 +120,7 @@ public class ArienteChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    public CompletableFuture<ChunkAccess> fillFromNoise(Executor executor, Blender blender, RandomState random,
+    public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState random,
                                                        StructureManager structures, ChunkAccess chunk) {
         ChunkPos cp = chunk.getPos();
         TerrainBuffer buffer = getTerrain(cp.x, cp.z);

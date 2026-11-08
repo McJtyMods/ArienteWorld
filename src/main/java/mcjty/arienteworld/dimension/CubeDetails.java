@@ -1,11 +1,10 @@
 package mcjty.arienteworld.dimension;
 
+import java.util.Random;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.PaletteIndex;
 import mcjty.arienteworld.cities.Transform;
 import net.minecraft.core.BlockPos;
-
-import java.util.Random;
 
 /** Additions to the cube's authored halls; equipment and the central machinery stay intact. */
 public final class CubeDetails {

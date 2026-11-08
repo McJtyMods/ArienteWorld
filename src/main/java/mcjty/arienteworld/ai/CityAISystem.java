@@ -1,19 +1,20 @@
 package mcjty.arienteworld.ai;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import mcjty.ariente.api.ICityAISystem;
 import mcjty.arienteworld.cities.CityTools;
 import mcjty.lib.worlddata.AbstractWorldData;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.List;
+import net.minecraft.world.level.saveddata.SavedData;
 
 public class CityAISystem extends AbstractWorldData<CityAISystem> implements ICityAISystem {
 
@@ -27,7 +28,7 @@ public class CityAISystem extends AbstractWorldData<CityAISystem> implements ICi
     }
 
     public static CityAISystem getCityAISystem(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(tag -> load(level, tag), () -> new CityAISystem(level), NAME);
+        return level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(() -> new CityAISystem(level), (tag, provider) -> load(level, tag)), NAME);
     }
 
     private static CityAISystem load(ServerLevel level, CompoundTag tag) {
@@ -91,7 +92,7 @@ public class CityAISystem extends AbstractWorldData<CityAISystem> implements ICi
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
         ListTag list = new ListTag();
         cities.forEach((center, city) -> {
             CompoundTag cityTag = new CompoundTag();

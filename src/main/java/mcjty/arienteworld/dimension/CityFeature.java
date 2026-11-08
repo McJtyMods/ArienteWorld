@@ -1,24 +1,28 @@
 package mcjty.arienteworld.dimension;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import mcjty.ariente.api.ICityEquipment;
 import mcjty.ariente.api.IStorageTile;
+import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.blocks.storagecube.StorageCubeTile;
 import mcjty.ariente.blocks.utility.door.DoorMarkerTile;
 import mcjty.ariente.display.DisplayBaseTile;
-import mcjty.arienteworld.ai.CityAI;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.facade.IFacadeSupport;
-import mcjty.arienteworld.cities.LegacyBlockStates;
+import mcjty.arienteworld.ai.CityAI;
 import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityTools;
+import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.cities.Palette;
 import mcjty.arienteworld.cities.StructureLoot;
 import mcjty.arienteworld.cities.Transform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.ChunkPos;
@@ -31,16 +35,11 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import net.minecraftforge.registries.ForgeRegistries;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
 
 import static mcjty.ariente.setup.Registration.DOOR_MARKER;
 
@@ -292,7 +291,7 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                     if (data != null) {
                         BlockEntity blockEntity = level.getBlockEntity(pos);
                         if (blockEntity instanceof DisplayBaseTile display && data.get("AlienText") instanceof String) {
-                            DungeonDisplays.configure(display, data);
+                            DungeonDisplays.configure(display, data, level.registryAccess());
                         } else if (blockEntity instanceof DoorMarkerTile door && data.get("locked") instanceof Boolean locked) {
                             door.setLocked(locked);
                         } else if (blockEntity instanceof ICityEquipment equipment) {
@@ -305,18 +304,18 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                                 } else {
                                     mimic = LegacyBlockStates.read(id);
                                 }
-                                settings.put("mimic", ForgeRegistries.BLOCKS.getKey(mimic.getBlock()).toString());
+                                settings.put("mimic", BuiltInRegistries.BLOCK.getKey(mimic.getBlock()).toString());
                             }
                             equipment.load(settings);
                             if (blockEntity instanceof StorageCubeTile storage && data.get("lootTable") instanceof String table) {
-                                StructureLoot.setLootTable(storage, new ResourceLocation(table));
+                                StructureLoot.setLootTable(storage, ResourceLocation.parse(table));
                             }
                             if (mimic != null && blockEntity instanceof IFacadeSupport facade) {
                                 facade.setMimicBlock(mimic);
                             }
                             blockEntity.setChanged();
                         } else if (blockEntity instanceof SpawnerBlockEntity spawner && data.get("mob") instanceof String mob) {
-                            EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(mob));
+                            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(mob));
                             if (type == null) {
                                 throw new IllegalArgumentException("Unknown city spawner mob: " + mob);
                             }

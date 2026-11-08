@@ -1,41 +1,42 @@
 package mcjty.arienteworld.entities.drone;
 
-import net.minecraft.util.RandomSource;
-import mcjty.arienteworld.ArienteWorld;
 import mcjty.ariente.api.*;
+import javax.annotation.Nullable;
 import mcjty.ariente.entities.LaserEntity;
-import mcjty.arienteworld.ai.CityAI;
+import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ModSounds;
+import mcjty.arienteworld.ai.CityAI;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.ai.control.MoveControl;
-import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
-import net.minecraft.world.entity.ai.navigation.PathNavigation;
-import net.minecraft.world.entity.FlyingMob;
-import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
-import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.FlyingMob;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.control.MoveControl;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.level.BlockGetter;
-
-import javax.annotation.Nullable;
-
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 
 import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
 
@@ -43,7 +44,7 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
 
     private static final EntityDataAccessor<Boolean> ATTACKING = SynchedEntityData.defineId(DroneEntity.class, EntityDataSerializers.BOOLEAN);
 
-    public static final ResourceLocation LOOT = new ResourceLocation(ArienteWorld.MODID, "entities/drone");
+    public static final ResourceLocation LOOT = ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "entities/drone");
 
     // If this drone is controlled by a city then this will be set
     private ChunkPos cityCenter;
@@ -107,9 +108,9 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(ATTACKING, Boolean.valueOf(false));
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(ATTACKING, Boolean.valueOf(false));
     }
 
     public static AttributeSupplier.Builder registerAttributes() {
@@ -143,8 +144,8 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
     }
 
     @Override
-    protected ResourceLocation getDefaultLootTable() {
-        return LOOT;
+    protected ResourceKey<LootTable> getDefaultLootTable() {
+        return ResourceKey.create(Registries.LOOT_TABLE, LOOT);
     }
 
     /**

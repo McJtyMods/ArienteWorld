@@ -1,14 +1,13 @@
 package mcjty.arienteworld.entities.drone;
 
+import java.util.Comparator;
+import java.util.EnumSet;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
-
-import java.util.Comparator;
-import java.util.EnumSet;
 
 public class EntityAIScanForPlayer extends Goal {
 

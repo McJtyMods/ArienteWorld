@@ -8,9 +8,9 @@ import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.ResourceLocation;
 
 public class DroneRender extends MobRenderer<DroneEntity, DroneModel<DroneEntity>> {
-    private ResourceLocation mobTexture = new ResourceLocation("arienteworld:textures/entity/drone.png");
+    private ResourceLocation mobTexture = ResourceLocation.parse("arienteworld:textures/entity/drone.png");
 
-    private ResourceLocation mobShootingTexture = new ResourceLocation("arienteworld:textures/entity/drone_shooting.png");
+    private ResourceLocation mobShootingTexture = ResourceLocation.parse("arienteworld:textures/entity/drone_shooting.png");
 
     public DroneRender(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new DroneModel<>(), 0.8F);

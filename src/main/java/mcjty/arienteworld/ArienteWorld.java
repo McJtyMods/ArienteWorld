@@ -1,5 +1,7 @@
 package mcjty.arienteworld;
 
+import java.util.function.Function;
+import java.util.function.Supplier;
 import mcjty.ariente.api.IArienteWorld;
 import mcjty.arienteworld.apiimpl.ArienteWorldImplementation;
 import mcjty.arienteworld.config.Config;
@@ -7,16 +9,12 @@ import mcjty.arienteworld.setup.ClientSetup;
 import mcjty.arienteworld.setup.ModSetup;
 import mcjty.arienteworld.setup.Registration;
 import mcjty.hologui.api.IHoloGuiHandler;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-
-import java.util.function.Function;
-import java.util.function.Supplier;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.InterModProcessEvent;
 
 @Mod(ArienteWorld.MODID)
 public class ArienteWorld {
@@ -29,16 +27,16 @@ public class ArienteWorld {
 
     public static IHoloGuiHandler guiHandler;
 
-    public ArienteWorld() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_CONFIG);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Config.SERVER_CONFIG);
-        Registration.register();
+    public ArienteWorld(ModContainer mod, IEventBus bus, Dist dist) {
+        mod.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_CONFIG);
+        mod.registerConfig(ModConfig.Type.SERVER, Config.SERVER_CONFIG);
+        Registration.register(bus);
 
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(setup::init);
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::processIMC);
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-            FMLJavaModLoadingContext.get().getModEventBus().addListener(ClientSetup::init);
-        });
+        bus.addListener(setup::init);
+        bus.addListener(this::processIMC);
+        if (dist.isClient()) {
+            bus.addListener(ClientSetup::init);
+        }
     }
 
     private void processIMC(final InterModProcessEvent event) {

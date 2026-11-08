@@ -1,5 +1,7 @@
 package mcjty.arienteworld.dimension.features;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.BlockPos;
@@ -14,16 +16,13 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 /** A rooted cluster of uneven, tapering spires that lean away from one another. */
 public class CrystalFormationFeature extends Feature<NoneFeatureConfiguration> {
 
     private static final double FORMATION_SCALE = .4;
 
     public static final TagKey<Block> SUBSTRATE = TagKey.create(Registries.BLOCK,
-            new ResourceLocation(ArienteWorld.MODID, "crystal_substrate"));
+            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "crystal_substrate"));
 
     public CrystalFormationFeature() {
         super(NoneFeatureConfiguration.CODEC);

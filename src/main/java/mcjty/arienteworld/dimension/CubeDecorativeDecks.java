@@ -1,5 +1,9 @@
 package mcjty.arienteworld.dimension;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import mcjty.ariente.blocks.decorative.RampBlock;
 import mcjty.ariente.blocks.decorative.SlopeBlock;
 import mcjty.arienteworld.cities.BuildingPart;
@@ -10,11 +14,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
 /** Purpose-built, supported machinery halls inside the cube's basement and roof. */
 final class CubeDecorativeDecks {

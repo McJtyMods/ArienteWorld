@@ -1,6 +1,9 @@
 package mcjty.arienteworld.cities;
 
+import java.util.List;
 import mcjty.ariente.blocks.storagecube.StorageCubeTile;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -9,8 +12,6 @@ import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
-
-import java.util.List;
 
 /** Vanilla loot tables for authored Holo Storage Cubes, filled once by their city AI. */
 public final class StructureLoot {
@@ -29,7 +30,7 @@ public final class StructureLoot {
         }
         if (!storage.hasGeneratedLoot()) {
             ServerLevel level = (ServerLevel) storage.getLevel();
-            LootTable table = level.getServer().getLootData().getLootTable(id);
+            LootTable table = level.getServer().reloadableRegistries().getLootTable(ResourceKey.create(Registries.LOOT_TABLE, id));
             LootParams params = new LootParams.Builder(level)
                     .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(storage.getBlockPos()))
                     .create(LootContextParamSets.CHEST);

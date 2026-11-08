@@ -3,6 +3,7 @@ package mcjty.arienteworld.client;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
@@ -17,13 +18,13 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterDimensionSpecialEffectsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterDimensionSpecialEffectsEvent;
 import org.joml.Matrix4f;
 
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = ArienteWorld.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ArienteDimensionEffects extends DimensionSpecialEffects {
 
     private static final ResourceLocation STARS = texture("stars");
@@ -45,11 +46,11 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
 
     @SubscribeEvent
     public static void register(RegisterDimensionSpecialEffectsEvent event) {
-        event.register(new ResourceLocation(ArienteWorld.MODID, "ariente"), new ArienteDimensionEffects());
+        event.register(ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "ariente"), new ArienteDimensionEffects());
     }
 
     private static ResourceLocation texture(String name) {
-        return new ResourceLocation(ArienteWorld.MODID, "textures/sky/" + name + ".png");
+        return ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "textures/sky/" + name + ".png");
     }
 
     @Override
@@ -64,14 +65,16 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
 
     @Override
     public boolean renderClouds(ClientLevel level, int ticks, float partialTick, PoseStack poses,
-                                double camX, double camY, double camZ, Matrix4f projection) {
+                                double camX, double camY, double camZ, Matrix4f modelView, Matrix4f projection) {
         // The original dimension suppresses vanilla clouds in favor of its skybox.
         return true;
     }
 
     @Override
-    public boolean renderSky(ClientLevel level, int ticks, float partialTick, PoseStack poses, Camera camera,
+    public boolean renderSky(ClientLevel level, int ticks, float partialTick, Matrix4f modelView, Camera camera,
                              Matrix4f projection, boolean foggy, Runnable setupFog) {
+        PoseStack poses = new PoseStack();
+        poses.mulPose(modelView);
         if (foggy || camera.getFluidInCamera() != FogType.NONE) {
             return true;
         }
@@ -88,9 +91,8 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
             float green = (float) sky.y;
             float blue = 1;
             RenderSystem.setShader(GameRenderer::getPositionColorShader);
-            BufferBuilder buffer = Tesselator.getInstance().getBuilder();
             Matrix4f matrix = poses.last().pose();
-            buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
             // A horizon gradient keeps the original vivid upper sky without a blue horizon.
             for (int i = 0; i < 16; i++) {
                 double a = i * Math.PI / 8;
@@ -99,13 +101,13 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
                 float z1 = (float) Math.sin(a) * 200;
                 float x2 = (float) Math.cos(b) * 200;
                 float z2 = (float) Math.sin(b) * 200;
-                buffer.vertex(matrix, x1, -100, z1).color(red * .16f, green * .16f, blue * .2f, 1).endVertex();
-                buffer.vertex(matrix, x2, -100, z2).color(red * .16f, green * .16f, blue * .2f, 1).endVertex();
-                buffer.vertex(matrix, x2, 100, z2).color(red, green, blue, 1).endVertex();
-                buffer.vertex(matrix, x1, 100, z1).color(red, green, blue, 1).endVertex();
+                buffer.addVertex(matrix, x1, -100, z1).setColor(red * .16f, green * .16f, blue * .2f, 1);
+                buffer.addVertex(matrix, x2, -100, z2).setColor(red * .16f, green * .16f, blue * .2f, 1);
+                buffer.addVertex(matrix, x2, 100, z2).setColor(red, green, blue, 1);
+                buffer.addVertex(matrix, x1, 100, z1).setColor(red, green, blue, 1);
             }
-            Tesselator.getInstance().end();
-            buffer.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+            BufferUploader.drawWithShader(buffer.buildOrThrow());
+            buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
             for (int i = 0; i < 16; i++) {
                 double a = i * Math.PI / 8;
                 double b = (i + 1) * Math.PI / 8;
@@ -113,14 +115,14 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
                 float z1 = (float) Math.sin(a) * 200;
                 float x2 = (float) Math.cos(b) * 200;
                 float z2 = (float) Math.sin(b) * 200;
-                buffer.vertex(matrix, 0, 100, 0).color(red, green, blue, 1).endVertex();
-                buffer.vertex(matrix, x1, 100, z1).color(red, green, blue, 1).endVertex();
-                buffer.vertex(matrix, x2, 100, z2).color(red, green, blue, 1).endVertex();
-                buffer.vertex(matrix, 0, -100, 0).color(red * .16f, green * .16f, blue * .2f, 1).endVertex();
-                buffer.vertex(matrix, x1, -100, z1).color(red * .16f, green * .16f, blue * .2f, 1).endVertex();
-                buffer.vertex(matrix, x2, -100, z2).color(red * .16f, green * .16f, blue * .2f, 1).endVertex();
+                buffer.addVertex(matrix, 0, 100, 0).setColor(red, green, blue, 1);
+                buffer.addVertex(matrix, x1, 100, z1).setColor(red, green, blue, 1);
+                buffer.addVertex(matrix, x2, 100, z2).setColor(red, green, blue, 1);
+                buffer.addVertex(matrix, 0, -100, 0).setColor(red * .16f, green * .16f, blue * .2f, 1);
+                buffer.addVertex(matrix, x1, -100, z1).setColor(red * .16f, green * .16f, blue * .2f, 1);
+                buffer.addVertex(matrix, x2, -100, z2).setColor(red * .16f, green * .16f, blue * .2f, 1);
             }
-            Tesselator.getInstance().end();
+            BufferUploader.drawWithShader(buffer.buildOrThrow());
 
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderColor(1, 1, 1, 1);
@@ -171,12 +173,11 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
 
     private static void quad(Matrix4f matrix, float size, float y, float[] uv, float alpha) {
         RenderSystem.setShaderColor(1, 1, 1, alpha);
-        BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        buffer.vertex(matrix, -size, y, -size).uv(uv[0], uv[1]).endVertex();
-        buffer.vertex(matrix, -size, y, size).uv(uv[2], uv[3]).endVertex();
-        buffer.vertex(matrix, size, y, size).uv(uv[4], uv[5]).endVertex();
-        buffer.vertex(matrix, size, y, -size).uv(uv[6], uv[7]).endVertex();
-        Tesselator.getInstance().end();
+        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        buffer.addVertex(matrix, -size, y, -size).setUv(uv[0], uv[1]);
+        buffer.addVertex(matrix, -size, y, size).setUv(uv[2], uv[3]);
+        buffer.addVertex(matrix, size, y, size).setUv(uv[4], uv[5]);
+        buffer.addVertex(matrix, size, y, -size).setUv(uv[6], uv[7]);
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
     }
 }

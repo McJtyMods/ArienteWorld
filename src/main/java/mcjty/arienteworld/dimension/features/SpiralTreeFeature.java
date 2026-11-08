@@ -1,5 +1,10 @@
 package mcjty.arienteworld.dimension.features;
 
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -10,12 +15,6 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.TreeFeature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
 
 /** A winding blue trunk supporting three offset, hollow rings of foliage. */
 public class SpiralTreeFeature extends Feature<NoneFeatureConfiguration> {

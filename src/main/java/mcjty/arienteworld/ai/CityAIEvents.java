@@ -5,12 +5,12 @@ import mcjty.arienteworld.dimension.DimensionRegister;
 import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class CityAIEvents {
 
     @SubscribeEvent
@@ -33,8 +33,8 @@ public class CityAIEvents {
     }
 
     @SubscribeEvent
-    public static void levelTick(TickEvent.LevelTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && event.level instanceof ServerLevel level
+    public static void levelTick(LevelTickEvent.Post event) {
+        if (event.getLevel() instanceof ServerLevel level
                 && level.dimension().equals(DimensionRegister.DIMENSION)) {
             CityAISystem system = CityAISystem.getCityAISystem(level);
             system.initializeLoadedChunks();

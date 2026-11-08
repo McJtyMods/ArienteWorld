@@ -1,16 +1,16 @@
 package mcjty.arienteworld.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class AIConfiguration {
 
     private static final String CATEGORY_AI = "ai";
 
-    public static ForgeConfigSpec.IntValue ALERT_TIME;
-    public static ForgeConfigSpec.BooleanValue SCOUT_PATROLS;
-    public static ForgeConfigSpec.IntValue SCOUT_LAUNCH_INTERVAL;
+    public static ModConfigSpec.IntValue ALERT_TIME;
+    public static ModConfigSpec.BooleanValue SCOUT_PATROLS;
+    public static ModConfigSpec.IntValue SCOUT_LAUNCH_INTERVAL;
 
-    public static void init(ForgeConfigSpec.Builder SERVER_BUILDER, ForgeConfigSpec.Builder CLIENT_BUILDER) {
+    public static void init(ModConfigSpec.Builder SERVER_BUILDER, ModConfigSpec.Builder CLIENT_BUILDER) {
         SERVER_BUILDER.comment("AI settings").push(CATEGORY_AI);
 
         ALERT_TIME = SERVER_BUILDER

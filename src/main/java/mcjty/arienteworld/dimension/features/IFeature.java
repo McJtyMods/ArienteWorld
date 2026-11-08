@@ -1,8 +1,7 @@
 package mcjty.arienteworld.dimension.features;
 
-import mcjty.arienteworld.dimension.terrain.TerrainBuffer;
-
 import java.util.Random;
+import mcjty.arienteworld.dimension.terrain.TerrainBuffer;
 
 public interface IFeature {
 

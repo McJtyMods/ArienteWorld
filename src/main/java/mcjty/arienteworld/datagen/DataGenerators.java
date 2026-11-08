@@ -1,5 +1,8 @@
 package mcjty.arienteworld.datagen;
 
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.blocks.decorative.DecorativeBlockModule;
 import mcjty.arienteworld.ArienteWorld;
@@ -15,35 +18,31 @@ import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-import net.minecraftforge.common.data.BlockTagsProvider;
-import net.minecraftforge.common.data.ExistingFileHelper;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.data.BlockTagsProvider;
+import net.neoforged.neoforge.common.data.ExistingFileHelper;
+import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 import static mcjty.ariente.setup.Registration.DUST_NEGARITE;
 import static mcjty.ariente.setup.Registration.DUST_POSIRITE;
 
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = ArienteWorld.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class DataGenerators {
 
     @SubscribeEvent
     public static void gatherData(GatherDataEvent event) {
         PackOutput output = event.getGenerator().getPackOutput();
         event.getGenerator().addProvider(event.includeServer(), new LootTableProvider(output, Set.of(),
-                List.of(new LootTableProvider.SubProviderEntry(BlockLoot::new, LootContextParamSets.BLOCK))));
+                List.of(new LootTableProvider.SubProviderEntry(BlockLoot::new, LootContextParamSets.BLOCK)), event.getLookupProvider()));
         event.getGenerator().addProvider(event.includeServer(),
                 new BlockTags(output, event.getLookupProvider(), event.getExistingFileHelper()));
     }
 
     private static class BlockLoot extends BlockLootSubProvider {
 
-        private BlockLoot() {
-            super(Set.of(), FeatureFlags.REGISTRY.allFlags());
+        private BlockLoot(HolderLookup.Provider provider) {
+            super(Set.of(), FeatureFlags.REGISTRY.allFlags(), provider);
         }
 
         @Override

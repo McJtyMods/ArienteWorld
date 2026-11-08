@@ -1,15 +1,14 @@
 package mcjty.arienteworld.cities;
 
+import java.util.Random;
 import mcjty.ariente.api.EnumFacingUpDown;
 import mcjty.lib.blocks.BaseBlock;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.Random;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 public enum Transform {
     ROTATE_NONE(Rotation.NONE, Mirror.NONE),

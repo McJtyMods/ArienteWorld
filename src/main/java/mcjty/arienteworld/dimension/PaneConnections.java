@@ -1,5 +1,9 @@
 package mcjty.arienteworld.dimension;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import mcjty.arienteworld.ArienteWorld;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -8,18 +12,13 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 /** Resolve authored pane states after chunks are loaded, including older generated structures. */
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class PaneConnections {
 
     private static final Map<ServerLevel, Set<ChunkPos>> PENDING = new WeakHashMap<>();
@@ -34,8 +33,8 @@ public class PaneConnections {
     }
 
     @SubscribeEvent
-    public static void tick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level)) {
+    public static void tick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) {
             return;
         }
         Set<ChunkPos> chunks;

@@ -1,10 +1,9 @@
 package mcjty.arienteworld.dimension;
 
+import java.util.Random;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.PaletteIndex;
 import net.minecraft.core.Direction;
-
-import java.util.Random;
 
 /** Different equipment bays inside the cube's existing outer-ring connections. */
 final class CubeCorridors {

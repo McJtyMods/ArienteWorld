@@ -1,6 +1,10 @@
 {
   "pack": {
-    "pack_format": 15,
-    "description": "Ariente World resources"
+    "pack_format": 34,
+    "description": "Ariente World resources",
+    "supported_formats": {
+      "min_inclusive": 34,
+      "max_inclusive": 48
+    }
   }
 }

@@ -1,8 +1,7 @@
 package mcjty.arienteworld.dimension.terrain;
 
-import net.minecraft.util.Mth;
-
 import java.util.Random;
+import net.minecraft.util.Mth;
 
 public class NoiseGeneratorOctaves {
     private final NoiseGeneratorImproved[] generatorCollection;

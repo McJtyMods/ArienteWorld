@@ -1,18 +1,18 @@
 package mcjty.arienteworld.dimension;
 
+import mcjty.arienteworld.cities.*;
 import mcjty.ariente.api.EnumFacingUpDown;
 import mcjty.ariente.blocks.utility.ElevatorTile;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import static mcjty.ariente.setup.Registration.*;
-import mcjty.arienteworld.cities.*;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 
 import static mcjty.ariente.api.EnumFacingUpDown.FACING;
+import static mcjty.ariente.setup.Registration.*;
 
 public class LevitatorNetworkGenerator {
 

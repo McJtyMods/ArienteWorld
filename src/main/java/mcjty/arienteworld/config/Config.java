@@ -1,11 +1,11 @@
 package mcjty.arienteworld.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class Config {
 
-    private static final ForgeConfigSpec.Builder SERVER_BUILDER = new ForgeConfigSpec.Builder();
-    private static final ForgeConfigSpec.Builder CLIENT_BUILDER = new ForgeConfigSpec.Builder();
+    private static final ModConfigSpec.Builder SERVER_BUILDER = new ModConfigSpec.Builder();
+    private static final ModConfigSpec.Builder CLIENT_BUILDER = new ModConfigSpec.Builder();
 
     static {
         AIConfiguration.init(SERVER_BUILDER, CLIENT_BUILDER);
@@ -17,8 +17,8 @@ public class Config {
         CLIENT_CONFIG = CLIENT_BUILDER.build();
     }
 
-    public static ForgeConfigSpec SERVER_CONFIG;
-    public static ForgeConfigSpec CLIENT_CONFIG;
+    public static ModConfigSpec SERVER_CONFIG;
+    public static ModConfigSpec CLIENT_CONFIG;
 
     public static String[] ASSETS = new String[] {
             "/assets/arienteworld/citydata/city0_0.json",

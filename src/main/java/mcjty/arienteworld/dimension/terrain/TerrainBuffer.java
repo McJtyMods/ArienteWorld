@@ -1,12 +1,11 @@
 package mcjty.arienteworld.dimension.terrain;
 
+import java.util.Arrays;
+import java.util.Random;
 import mcjty.arienteworld.cities.LegacyBlockStates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.Arrays;
-import java.util.Random;
 
 /** Local 16 x 16 x 256 buffer for the original noise algorithms. */
 public class TerrainBuffer {

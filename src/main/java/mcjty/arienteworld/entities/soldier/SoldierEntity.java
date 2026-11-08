@@ -1,20 +1,35 @@
 package mcjty.arienteworld.entities.soldier;
 
-import mcjty.arienteworld.ArienteWorld;
-import mcjty.arienteworld.config.LootConfiguration;
-import mcjty.ariente.entities.fluxship.FluxShipEntity;
-import mcjty.arienteworld.entities.scout.ScoutPilot;
 import mcjty.ariente.api.*;
-import mcjty.ariente.items.KeyCardItem;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.ariente.items.EnergyLanceItem;
+import mcjty.ariente.items.ItemData;
+import mcjty.ariente.items.KeyCardItem;
 import mcjty.ariente.items.armor.PowerSuit;
 import mcjty.ariente.setup.Registration;
+import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ModSounds;
+import mcjty.arienteworld.config.LootConfiguration;
+import mcjty.arienteworld.entities.scout.ScoutPilot;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
@@ -28,11 +43,9 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.RangedAttackMob;
-import net.minecraft.world.DifficultyInstance;
-import net.minecraft.world.Difficulty;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.monster.ZombifiedPiglin;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -40,16 +53,7 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.network.syncher.EntityDataAccessor;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.core.BlockPos;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import net.minecraft.world.level.storage.loot.LootTable;
 
 import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
 
@@ -57,7 +61,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
 
     private static final EntityDataAccessor<Boolean> ARMS_RAISED = SynchedEntityData.defineId(SoldierEntity.class, EntityDataSerializers.BOOLEAN);
 
-    public static final ResourceLocation LOOT = new ResourceLocation(ArienteWorld.MODID, "entities/soldier");
+    public static final ResourceLocation LOOT = ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "entities/soldier");
     private static final int MAX_SPAWN_LIGHT = 11;
 
     // If this entity is controlled by a city then this will be set
@@ -142,17 +146,19 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
         if (!(stack.getItem() instanceof PowerSuit)) {
             return;
         }
-        CompoundTag compound = stack.getTag();
+        CompoundTag compound = ItemData.get(stack);
         if (compound == null) {
             return;
         }
         int negarite = compound.getInt("negarite");
         if (negarite < 2) {
             compound.putInt("negarite", 2);
+            ItemData.set(stack, compound);
         }
         int posirite = compound.getInt("posirite");
         if (posirite < 2) {
             compound.putInt("posirite", 2);
+            ItemData.set(stack, compound);
         }
     }
 
@@ -177,9 +183,9 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.getEntityData().define(ARMS_RAISED, Boolean.valueOf(false));
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(ARMS_RAISED, Boolean.valueOf(false));
     }
 
     public static AttributeSupplier.Builder registerAttributes() {
@@ -217,7 +223,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
     }
 
     @Override
-    protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
+    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean recentlyHit) {
         ItemStack weapon = getMainHandItem();
         boolean naturalWeapon = (weapon.is(Registration.ENERGY_SABRE.get()) || weapon.is(Registration.ENERGY_LANCE.get()))
                 && getEquipmentDropChance(EquipmentSlot.MAINHAND) <= 1;
@@ -227,7 +233,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
             setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
         }
         try {
-            super.dropCustomDeathLoot(source, looting, recentlyHit);
+            super.dropCustomDeathLoot(level, source, recentlyHit);
         } finally {
             if (suppressWeapon) {
                 setItemSlot(EquipmentSlot.MAINHAND, weapon);
@@ -269,8 +275,8 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
     @Override
     @Nullable
     public SpawnGroupData finalizeSpawn(ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType reason,
-                                       @Nullable SpawnGroupData spawnData, @Nullable CompoundTag data) {
-        SpawnGroupData result = super.finalizeSpawn(level, difficulty, reason, spawnData, data);
+                                       @Nullable SpawnGroupData spawnData) {
+        SpawnGroupData result = super.finalizeSpawn(level, difficulty, reason, spawnData);
         populateDefaultEquipmentSlots(level.getRandom(), difficulty);
         return result;
     }
@@ -334,8 +340,8 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
     }
 
     @Override
-    protected ResourceLocation getDefaultLootTable() {
-        return LOOT;
+    protected ResourceKey<LootTable> getDefaultLootTable() {
+        return ResourceKey.create(Registries.LOOT_TABLE, LOOT);
     }
 
     @Override
@@ -367,7 +373,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
         SoundType soundtype = state.getBlock().getSoundType(state, level(), pos, this);
 
         if (this.level().getBlockState(pos.above()).getBlock() == Blocks.SNOW) {
-            soundtype = Blocks.SNOW.getSoundType(null);
+            soundtype = Blocks.SNOW.defaultBlockState().getSoundType();
             this.playSound(soundtype.getStepSound(), soundtype.getVolume() * 0.15F, soundtype.getPitch());
         } else if (state.getFluidState().isEmpty()) {
             this.playSound(soundtype.getStepSound(), soundtype.getVolume() * 0.15F, soundtype.getPitch());

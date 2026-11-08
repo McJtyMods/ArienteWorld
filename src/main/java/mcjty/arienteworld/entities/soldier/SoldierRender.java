@@ -1,21 +1,20 @@
 package mcjty.arienteworld.entities.soldier;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import mcjty.arienteworld.ArienteWorld;
-import net.minecraft.client.model.geom.ModelLayers;
-import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
-import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
-import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
-import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.resources.ResourceLocation;
-
 import javax.annotation.Nonnull;
+import mcjty.arienteworld.ArienteWorld;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
+import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
+import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
+import net.minecraft.resources.ResourceLocation;
 
 public class SoldierRender extends HumanoidMobRenderer<SoldierEntity, HumanoidModel<SoldierEntity>> {
 
-    private ResourceLocation mobTexture = new ResourceLocation(ArienteWorld.MODID, "textures/entity/soldier.png");
+    private ResourceLocation mobTexture = ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "textures/entity/soldier.png");
 
     public static final Factory FACTORY = new Factory();
 

@@ -1,6 +1,6 @@
 # ArienteWorld
 
-Minecraft **1.20.1 / Forge** companion to Ariente, adding an alien dimension,
+Minecraft **1.21.1 / NeoForge** companion to Ariente, adding an alien dimension,
 cities and progression to obtain its technology. Requires matching Ariente,
 HoloGui and McJtyLib; The One Probe is optional.
 
@@ -105,7 +105,7 @@ netherite, Nether Stars, Ghast Tears, a Totem of Undying, precious materials,
 four enchanted books, Fortune/Silk Touch diamond pickaxes and four potion variants.
 Defeat the guardian and break the core for its storage-access card. The trophy
 cache fills once, preserves its item data and does not replenish on reload.
-Its vanilla loot table is `data/arienteworld/loot_tables/chests/conquered_overworld.json`.
+Its vanilla loot table is `data/arienteworld/loot_table/chests/conquered_overworld.json`.
 Underground halls gain seeded
 console banks, cooling stacks and machinery islands, while ships, stations and
 smaller dungeons can use alternate illuminated hull detailing.
@@ -297,3 +297,11 @@ Add `-Pautofield_render_mods` for Embeddium/Oculus and
 `-Pautofield_check_directory=<directory>` for a separate client profile. Shader
 packs can be enabled in that profile's Oculus configuration. Screenshots go in
 its `screenshots` directory. Player saves are not changed by this check.
+
+
+Development target: Minecraft 1.21.1, NeoForge 21.1.215, Java 21, branch `1.21_neo`.
+Build with `./gradlew build` standalone, or `./gradlew :ArienteWorld:build` from MultiWorkspace.
+The workspace uses the included McJtyLib and The One Probe sources. Ariente and ArienteWorld also use included HoloGui/Ariente sources. Published Maven artifacts are standalone fallbacks.
+Unpublished port dependencies can be provided with `-Pariente_dependency_repository=<repository URL>`; `-Pgradletools_path=<file>` selects an explicit shared Gradle script.
+
+The [NeoForge port checkpoint](PORT_1_21.md) documents current commands and validation. Earlier Forge fixture commands in this file are historical.

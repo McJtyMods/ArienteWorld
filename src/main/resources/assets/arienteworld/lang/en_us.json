@@ -33,5 +33,7 @@
   "death.attack.arienteworld.core_lightning": "%1$s was overloaded by %2$s",
   "death.attack.arienteworld.core_lightning.player": "%1$s was overloaded by %2$s",
   "block.arienteworld.negarite_crystal": "Negarite Crystal",
-  "block.arienteworld.posirite_crystal": "Posirite Crystal"
+  "block.arienteworld.posirite_crystal": "Posirite Crystal",
+  "subtitle.arienteworld.music": "Alien music",
+  "subtitle.arienteworld.ambient": "Alien ambience"
 }

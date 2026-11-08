@@ -1,13 +1,12 @@
 package mcjty.arienteworld.cities;
 
+import java.util.*;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.core.BlockPos;
-
-import java.util.*;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * A structure part

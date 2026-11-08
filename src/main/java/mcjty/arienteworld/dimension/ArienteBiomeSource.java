@@ -1,7 +1,9 @@
 package mcjty.arienteworld.dimension;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.List;
+import java.util.stream.Stream;
 import mcjty.arienteworld.dimension.terrain.ArienteBiomeLayout;
 import mcjty.arienteworld.dimension.terrain.BiomeProfile;
 import net.minecraft.core.Holder;
@@ -9,12 +11,9 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 
-import java.util.List;
-import java.util.stream.Stream;
-
 public class ArienteBiomeSource extends BiomeSource {
 
-    public static final Codec<ArienteBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    public static final MapCodec<ArienteBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             Biome.CODEC.listOf().fieldOf("biomes").forGetter(source -> source.biomes)
     ).apply(instance, ArienteBiomeSource::new));
 
@@ -37,7 +36,7 @@ public class ArienteBiomeSource extends BiomeSource {
     }
 
     @Override
-    protected Codec<? extends BiomeSource> codec() {
+    protected MapCodec<? extends BiomeSource> codec() {
         return CODEC;
     }
 

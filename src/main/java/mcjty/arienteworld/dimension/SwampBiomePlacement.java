@@ -1,6 +1,7 @@
 package mcjty.arienteworld.dimension;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import java.util.stream.Stream;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.BlockPos;
@@ -13,14 +14,12 @@ import net.minecraft.world.level.levelgen.placement.PlacementContext;
 import net.minecraft.world.level.levelgen.placement.PlacementModifier;
 import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 
-import java.util.stream.Stream;
-
 /** Checks each plant in a patch so swamp foliage cannot spill into neighboring biomes. */
 public class SwampBiomePlacement extends PlacementModifier {
 
-    public static final Codec<SwampBiomePlacement> CODEC = Codec.unit(SwampBiomePlacement::new);
+    public static final MapCodec<SwampBiomePlacement> CODEC = MapCodec.unit(SwampBiomePlacement::new);
     private static final ResourceKey<Biome> SWAMP = ResourceKey.create(Registries.BIOME,
-            new ResourceLocation(ArienteWorld.MODID, "ariente_swamp"));
+            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_swamp"));
 
     @Override
     public Stream<BlockPos> getPositions(PlacementContext context, RandomSource random, BlockPos pos) {

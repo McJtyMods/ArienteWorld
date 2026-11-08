@@ -4,16 +4,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import mcjty.ariente.varia.WeightedRandom;
-import net.minecraft.world.item.Item;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import mcjty.ariente.varia.WeightedRandom;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import org.apache.commons.lang3.StringUtils;
 
 public class CityPlan implements IAsset {
 
@@ -349,9 +348,9 @@ public class CityPlan implements IAsset {
             if (id == null) {
                 loot.add(new Loot(null, meta, blueprint, maxAmount, chance));
             } else {
-                Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(id));
+                Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
                 if (item != null) {
-                    loot.add(new Loot(new ResourceLocation(id), meta, blueprint, maxAmount, chance));
+                    loot.add(new Loot(ResourceLocation.parse(id), meta, blueprint, maxAmount, chance));
                 }
             }
         }

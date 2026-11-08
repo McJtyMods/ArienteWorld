@@ -1,12 +1,11 @@
 package mcjty.arienteworld.cities;
 
-import mcjty.lib.varia.Logging;
-import net.minecraft.world.level.block.state.BlockState;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import mcjty.lib.varia.Logging;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * More efficient representation of a palette useful for a single chunk

@@ -1,12 +1,12 @@
 package mcjty.arienteworld.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class SpawningConfiguration {
 
-    public static ForgeConfigSpec.IntValue DARKBAT_MAX_PER_PLAYER;
+    public static ModConfigSpec.IntValue DARKBAT_MAX_PER_PLAYER;
 
-    public static void init(ForgeConfigSpec.Builder serverBuilder) {
+    public static void init(ModConfigSpec.Builder serverBuilder) {
         serverBuilder.comment("Natural mob spawning settings").push("spawning");
         DARKBAT_MAX_PER_PLAYER = serverBuilder
                 .comment("Maximum living Darkbats within 128 horizontal blocks of each nearby non-spectator player, at any height.",
