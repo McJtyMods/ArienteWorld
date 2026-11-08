@@ -285,6 +285,19 @@ ship charging pad.
 Start at `-Ptutorial_scene=24` for the southern booth instructions, wireless
 station and the visible guide lectern beside the welcome screen.
 
+For the forcefield sound regression, copy the stopped authoring save to
+`build/tutorial/sound-check/saves/Tutorial`, then run from the workspace root:
+
+```sh
+./gradlew -I ArienteWorld/tools/tutorial.gradle -Pariente_runs -Ptutorial_forcefield_sound_check -Ptutorial_client_directory=build/tutorial/sound-check :ArienteWorld:runClient
+```
+
+The check approaches and leaves the working shield, re-enters during fade-out,
+and disables it. It checks panel distances at three shield scales, silent starts,
+gradual volume changes, channel reuse and eventual sound shutdown. The client
+profile contains `forcefield-sound.csv`; success logs `FORCEFIELD SOUND CHECK: passed`.
+It changes the disposable save and its sound settings, so use a fresh copy.
+
 To check the automation field renderer at close range, put a disposable copy of
 Tutorial under `build/verification/autofield-vanilla/saves/Tutorial` and run
 `./gradlew -I ArienteWorld/tools/autofield_rendering.gradle -Pariente_runs :ArienteWorld:runClient`

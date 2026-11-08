@@ -13,19 +13,32 @@ gradle.afterProject { p ->
             tutorialRuntimeOnly.extendsFrom runtimeOnly
         }
         p.minecraft.runs.server {
-            mods.arienteworld.source(p.sourceSets.tutorial)
+            mods {
+                arienteworld {
+                    source p.sourceSets.main
+                    source p.sourceSets.tutorial
+                }
+            }
             workingDirectory p.file(p.findProperty('tutorial_directory') ?: 'build/tutorial/server')
             property 'ariente.tutorial', 'true'
             property 'ariente.tutorial.verify', (p.findProperty('tutorial_verify') ?: 'false').toString()
             property 'forge.logging.console.level', 'info'
             args '--nogui'
         }
-        if (p.hasProperty('tutorial_preview')) {
+        def soundCheck = p.hasProperty('tutorial_forcefield_sound_check')
+        if (p.hasProperty('tutorial_preview') || soundCheck) {
             p.minecraft.runs.client {
-                mods.arienteworld.source(p.sourceSets.tutorial)
+                mods {
+                    arienteworld {
+                        source p.sourceSets.main
+                        source p.sourceSets.tutorial
+                    }
+                }
                 workingDirectory p.file(p.findProperty('tutorial_client_directory') ?: 'build/tutorial/client')
                 property 'ariente.tutorial.fabulous', p.hasProperty('tutorial_fabulous').toString()
-                property 'ariente.tutorial.preview', 'true'
+                property 'ariente.tutorial.preview', (!soundCheck).toString()
+                property 'ariente.tutorial.forcefieldSoundCheck', soundCheck.toString()
+                property 'ariente.tutorial.soundBaseline', p.hasProperty('tutorial_sound_baseline').toString()
                 property 'ariente.tutorial.scene', (p.findProperty('tutorial_scene') ?: '0').toString()
                 args '--quickPlaySingleplayer', 'Tutorial', '--width', '1280', '--height', '800'
             }
@@ -35,7 +48,7 @@ gradle.afterProject { p ->
             p.dependencies.add('runtimeOnly', p.fg.deobf('curse.maven:oculus-581495:6020952'))
         }
         p.tasks.withType(JavaExec).configureEach {
-            if (name == 'runServer' || (name == 'runClient' && p.hasProperty('tutorial_preview'))) {
+            if (name == 'runServer' || (name == 'runClient' && (p.hasProperty('tutorial_preview') || soundCheck))) {
                 dependsOn p.tasks.named('tutorialClasses')
             }
         }
