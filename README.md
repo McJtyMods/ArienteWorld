@@ -195,6 +195,9 @@ Existing worlds are protected unless `--replace` is supplied. For example,
 replaces the installed Tutorial after verification succeeds, without a backup.
 All registered block-entity types are represented, including multipart nodes.
 The automation exhibit uses a closed Field Marker border with no interior markers.
+Stations 06–08 and the ship instructions sit on the plaza side of their exhibits
+and face north toward the center. The guide lectern is beside the welcome screen,
+and the Ore Purifier display sits directly above its tubes.
 The authoring run checks real power, purification followed by smelting, recycling,
 ship charging from 10% to full, takeoff in eight headings, both linked camera captures, fuel routing, sorted storage,
 crafted circuits, shield panels, display layouts and wireless signals before saving.
@@ -230,7 +233,9 @@ Other furnace inputs go directly to the Smelter. Both machines and the Recycler
 use two dedicated three-tank generators and a separate overhead combined-flux bus.
 Negarite and Posirite dust, including dust smelted from their ores, refuel those
 generators. Three Holo Storage Cubes receive non-smeltable wood, tagged ingots and
-other items. Fuel dust is explicitly excluded from storage. Logs become charcoal;
+other items. Wood and Ingots use their categories with empty item filters. Various
+blacklists Negarite and Posirite dust to reserve it for generators; its label and
+the guide explain that these filter samples are exclusions. Logs become charcoal;
 planks go to Wood. Full destinations leave their backlog in the source. The saved
 world starts with a fresh input batch, and the welcome Holo Storage contains more samples.
 
@@ -277,6 +282,8 @@ a moving cockpit view. The last two scenes also check that the client rider
 stays inside the cart.
 Start at `-Ptutorial_scene=21` for the purifier/recycler, camera display and
 ship charging pad.
+Start at `-Ptutorial_scene=24` for the southern booth instructions, wireless
+station and the visible guide lectern beside the welcome screen.
 
 To check the automation field renderer at close range, put a disposable copy of
 Tutorial under `build/verification/autofield-vanilla/saves/Tutorial` and run

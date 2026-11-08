@@ -37,7 +37,8 @@ public class TutorialPreview {
             "Tutorial-beams", "Tutorial-elevator", "Tutorial-cockpit", "Tutorial-displays", "Tutorial-automation", "Tutorial-filter", "Tutorial-welcome", "Tutorial-power", "Tutorial-construction", "Tutorial-forcefield", "Tutorial-security",
             "Tutorial-outline-displays", "Tutorial-module-left", "Tutorial-module-right", "Tutorial-alarm",
             "Tutorial-city-circuit", "Tutorial-slope-rider", "Tutorial-slope-cockpit",
-            "Tutorial-processing", "Tutorial-cameras", "Tutorial-charger"};
+            "Tutorial-processing", "Tutorial-cameras", "Tutorial-charger",
+            "Tutorial-southern-booths", "Tutorial-wireless", "Tutorial-guide"};
     private static int scene = Integer.getInteger("ariente.tutorial.scene", 0);
     private static int ticks;
     private static boolean started;
@@ -124,7 +125,7 @@ public class TutorialPreview {
                 case 1 -> player.teleportTo(player.serverLevel(), 178, 116, 185, 139, 42);
                 case 2 -> player.teleportTo(player.serverLevel(), 142.5, 68, 144.5, 27, 60);
                 case 3 -> player.teleportTo(player.serverLevel(), 134.5, 66, 140.5, -144, 7);
-                case 4 -> player.teleportTo(player.serverLevel(), 151.5, 67, 157.5, 180, 10);
+                case 4 -> player.teleportTo(player.serverLevel(), 148.5, 65, 141.5, 0, 0);
                 case 5 -> {
                     var ships = player.serverLevel().getEntitiesOfClass(FluxShipEntity.class, new AABB(128, 60, 144, 144, 80, 160));
                     if (ships.isEmpty()) {
@@ -206,6 +207,9 @@ public class TutorialPreview {
                 case 21 -> player.teleportTo(player.serverLevel(), 120, 70, 123, 180, 38);
                 case 22 -> player.teleportTo(player.serverLevel(), 141, 66, 130, 180, 0);
                 case 23 -> player.teleportTo(player.serverLevel(), 130, 68, 157, -135, 27);
+                case 24 -> player.teleportTo(player.serverLevel(), 136, 67, 137, 0, 25);
+                case 25 -> player.teleportTo(player.serverLevel(), 119, 65, 140, 0, 12);
+                case 26 -> player.teleportTo(player.serverLevel(), 134, 65, 142, 180, 8);
                 default -> throw new IllegalStateException("Unknown Tutorial preview scene");
             }
             ready = true;

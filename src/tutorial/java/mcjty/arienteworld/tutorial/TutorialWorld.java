@@ -42,6 +42,7 @@ import mcjty.ariente.entities.fluxship.FluxShipEnergy;
 import mcjty.ariente.entities.levitator.FluxLevitatorEntity;
 import mcjty.ariente.items.BlueprintItem;
 import mcjty.ariente.items.KeyCardItem;
+import mcjty.ariente.multipart.MultipartHelper;
 import mcjty.ariente.multipart.MultipartTE;
 import mcjty.ariente.power.PowerReceiverSupport;
 import mcjty.ariente.power.PowerSenderSupport;
@@ -114,6 +115,7 @@ public class TutorialWorld {
     private static final BlockPos COMBINER = new BlockPos(132, 65, 114);
     private static final BlockPos POWER_DISPLAY = new BlockPos(129, 65, 120);
     private static final BlockPos WELCOME_DISPLAY = new BlockPos(135, 65, 138);
+    private static final BlockPos LECTERN = new BlockPos(133, 65, 138);
     private static final BlockPos WELCOME_STORAGE = new BlockPos(138, 65, 137);
     private static final BlockPos INGREDIENT_STORAGE = new BlockPos(115, 65, 138);
     private static final BlockPos KEYCARD_DOOR = new BlockPos(148, 65, 139);
@@ -407,11 +409,11 @@ public class TutorialWorld {
         label(level, 115, 67, 120, "INPUT / 2x2", "Four types at a time");
         label(level, 115, 67, 114, "WOOD", "Non-smeltable wood");
         label(level, 120, 67, 114, "INGOTS", "All tagged metals");
-        label(level, 125, 67, 114, "VARIOUS", "Other finished items");
+        label(level, 125, 67, 114, "VARIOUS", "Blacklist: fuel dust");
         label(level, 115, 65, 123, "02 / AUTOMATION", "2x2 cube: add items", "Output = extract", "Sensor: source >=1");
         label(level, 120, 65, 123, "PURIFY + SMELT", "Ores -> 3 tubes", "Raw -> smelter", "Dust -> generators");
         label(level, 125, 65, 123, "SORT + RECYCLE", "Loot: raised cube", "Parts -> storage", "Full? Wait in source");
-        label(level, 116, 67, 119, "ORE PURIFIER", "3 tubes / 4 raw per ore");
+        label(level, 116, 67, 117, "ORE PURIFIER", "3 tubes / 4 raw per ore");
         label(level, 125, 68, 119, "EXCESS LOOT ONLY", "Cube -> recycler");
     }
 
@@ -424,8 +426,11 @@ public class TutorialWorld {
 
     private static void categoryInput(ServerLevel level, BlockPos pos, NodeOrientation orientation, ItemFilterCategory category) {
         InputItemNodeTile input = (InputItemNodeTile) node(level, pos, Registration.INPUT_ITEM_NODE.get(), orientation);
-        input.getInputFilter().set(0, new ItemStack(Registration.DUST_NEGARITE.get()));
-        input.getInputFilter().set(1, new ItemStack(Registration.DUST_POSIRITE.get()));
+        // Only the catch-all storage category accepts fuel dust; keep it for the generators.
+        if (category == ItemFilterCategory.OTHER) {
+            input.getInputFilter().set(0, new ItemStack(Registration.DUST_NEGARITE.get()));
+            input.getInputFilter().set(1, new ItemStack(Registration.DUST_POSIRITE.get()));
+        }
         CompoundTag tag = input.saveWithoutMetadata();
         tag.getCompound("Info").putBoolean("inBlacklist", true);
         input.load(tag);
@@ -505,11 +510,15 @@ public class TutorialWorld {
     }
 
     private static DisplayBaseTile[] displayRow(ServerLevel level, BlockPos left, int width, int height, DisplayAppearance appearance) {
+        return displayRow(level, left, width, height, appearance, Direction.SOUTH);
+    }
+
+    private static DisplayBaseTile[] displayRow(ServerLevel level, BlockPos left, int width, int height, DisplayAppearance appearance, Direction facing) {
         DisplayBaseTile[] bases = new DisplayBaseTile[width];
         for (int column = 0; column < width; column++) {
-            BlockPos pos = left.east(column);
+            BlockPos pos = left.relative(facing.getCounterClockWise(), column);
             require(level.isEmptyBlock(pos), "Display overlaps another exhibit at " + pos);
-            put(level, pos, Registration.DISPLAY_BASE.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
+            put(level, pos, Registration.DISPLAY_BASE.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
             DisplayBaseTile base = (DisplayBaseTile) level.getBlockEntity(pos);
             CompoundTag tag = base.saveWithoutMetadata();
             tag.putInt("Height", height);
@@ -640,8 +649,8 @@ public class TutorialWorld {
         SignalTransmitterTile tx = (SignalTransmitterTile) level.getBlockEntity(transmitter);
         ((SignalReceiverTile) level.getBlockEntity(second)).setChannel(tx.getChannel(true));
         put(level, second.south(), Blocks.REDSTONE_LAMP);
-        label(level, 115, 65, 157, "06 / WIRELESS", "Button: lamp/door", "Lever: transmitter", "Remote lamp south");
-        label(level, 122, 65, 157, "TWO CHANNELS", "Pre-linked pairs", "Tablet can re-link", "Doors open nearby");
+        label(level, new BlockPos(115, 65, 145), 1, Direction.NORTH, "06 / WIRELESS", "Button: lamp/door", "Lever: transmitter", "Remote lamp south");
+        label(level, new BlockPos(122, 65, 145), 1, Direction.NORTH, "TWO CHANNELS", "Pre-linked pairs", "Tablet can re-link", "Doors open nearby");
     }
 
     private static void elevator(ServerLevel level) {
@@ -658,7 +667,7 @@ public class TutorialWorld {
             }
         }
         elevatorStops(level);
-        label(level, 148, 65, 155, "07 / ELEVATOR", "Walk onto beam", "Select upper floor", "No power required");
+        label(level, new BlockPos(148, 65, 145), 1, Direction.NORTH, "07 / ELEVATOR", "Walk onto beam", "Select upper floor", "No power required");
         label(level, 151, 72, 152, "OBSERVATION DECK", "Level marker stops", "Select ground floor", "in elevator panel");
     }
 
@@ -709,9 +718,9 @@ public class TutorialWorld {
         supply(level, CHARGER);
         FluxShipEntity ship = FluxShipEntity.create(level, CHARGER.getX() + .5, CHARGER.getY() + 1, CHARGER.getZ() + .5);
         level.addFreshEntity(ship);
-        label(level, 133, 65, 158, "08 / TRANSPORT", "W: accelerate", "S: slow down", "Panels: reverse/stop");
-        label(level, 138, 65, 158, "SHIP + CHARGER", "Land on lit pad", "Look up + W: climb", "Space: fire laser");
-        label(level, 137, 65, 143, "CITY CIRCUIT", "424 blocks / loop", "Climb 32 blocks", "Returns here");
+        label(level, new BlockPos(131, 65, 143), 1, Direction.NORTH, "08 / TRANSPORT", "W: accelerate", "S: slow down", "Panels: reverse/stop");
+        label(level, new BlockPos(138, 65, 143), 1, Direction.NORTH, "SHIP + CHARGER", "Land on lit pad", "Look up + W: climb", "Space: fire laser");
+        label(level, new BlockPos(135, 65, 143), 1, Direction.NORTH, "CITY CIRCUIT", "424 blocks / loop", "Climb 32 blocks", "Returns here");
     }
 
     private static FluxShipEntity ship(ServerLevel level) {
@@ -810,7 +819,7 @@ public class TutorialWorld {
                 "01 POWER (north)\n\nEach generator has eight matching tanks and a fuel barrel feeding a hopper. Blue = Negarite; red = Posirite. Each tank adds 1,000 flux/tick.\n\nThe combiner takes 6,000 of each and outputs 5,880 of each to the buried yellow network. The glass hatch shows its route.",
                 "02 ITEMS (northwest)\n\nThe field has a closed marker border. Put up to four types in the 2x2 input cube.\n\nOutput nodes EXTRACT; input nodes INSERT. The sensor enables extraction when items are present. The welcome storage has samples.",
                 "02 ORE PROCESSING\n\nSupported ores go through three purifier tubes: one ore yields four raw metals. The field sends these to the Smelter, then Ingots storage.\n\nOther furnace inputs go directly to the Smelter. The overhead bus powers both machines.",
-                "02 SORTING\n\nNon-smeltables go to Wood, Ingots or Various holo cubes. Categories follow current furnace recipes and item tags. Fuel dust is excluded from storage.\n\nLogs smelt to charcoal; planks go to Wood. If the smelter or destination fills, items wait safely in the input. Add more supplies to keep processing. The welcome storage has sample batches.",
+                "02 SORTING\n\nCategories send non-smeltables to Wood, Ingots or Various holo cubes. Wood and Ingots need no item samples. Various BLACKLISTS Negarite and Posirite dust to reserve fuel for generators.\n\nLogs smelt to charcoal; planks go to Wood. Full destinations leave items safely in the source. More samples are in the welcome storage.",
                 "02 RECYCLING\n\nPut unwanted loot in the raised EXCESS LOOT cube above the hopper. It feeds the Recycler. The field sorts recovered parts into storage; fuel dust refills generators.\n\nOnly add loot you want dismantled. Recovered parts cannot loop back.",
                 "10 DISPLAYS (west of center)\n\nThree independent joined screens show transparent cyan, solid pale green and invisible amber surfaces. Each is four bases wide and three blocks tall.\n\nCompare text sizes, a power meter, numbers, live history, storage lists and item grids. Click a base or module to configure; hold right-click and drag to rearrange modules.",
                 "11 CAMERAS (north of Warper)\n\nThe large Camera Module has processing and ship-dock views. Click it and use Next / Previous to switch. Adjust yaw, tilt, zoom and rotation speed.\n\nSpare cameras and a module are in the welcome storage.",
@@ -818,7 +827,7 @@ public class TutorialWorld {
                 "03 CRAFTING (west)\n\nTake four ingredients from the Storage Cube into YOUR inventory. Open the manual Constructor and double-click the circuit blueprint.\n\nThe Auto Constructor has its own ingredients, power and an adjacent Blueprint Storage. Inspect its circuit outputs. Extra materials are in the Ariente Storage.",
                 "04 SHIELD (northeast)\n\nA working radius-3 forcefield is behind the rail. Stay outside: active shield panels hurt.\n\nUse the wireless button beside the display to switch it off before approaching the generator. Right-click the generator to change radius or redstone mode. Increase power for larger shields.",
                 "05 SECURITY (east)\n\nTake the Tutorial keycard from the welcome storage. Use it on the lock, then walk near the door. The invisible door blocks belong to the marker under the opening.\n\nThe AI Core and safe Alarm show city equipment. AI behavior belongs to the Ariente dimension; this Overworld exhibit does not spawn defenders.",
-                "06 WIRELESS (southwest)\n\nThe left wireless button controls a lamp and the nearby Wireless Lock. Walk near the door after unlocking.\n\nThe right lever supplies the transmitter; its remote receiver controls the southern lamp. These are separate pre-linked channels. Use the tablet to copy/reassign channels.",
+                "06 WIRELESS (southwest)\n\nThe wireless button controls a lamp and the nearby Wireless Lock. Walk near the door after unlocking.\n\nThe lever supplies the transmitter; its remote receiver controls the southern lamp. These are separate pre-linked channels. Use the tablet to copy/reassign channels.",
                 "07 ELEVATOR (southeast)\n\nWalk onto the beam and choose a floor in its hologram. The upper Level Marker provides the observation-deck stop.",
                 "08 TRANSPORT (south)\n\nBoard the cart for a 424-block city circuit. The track climbs 32 blocks, tours the eastern, northern and western skyline, then descends and returns here. Slopes rise one block each; the cabin tilts with the track while its rider and panels follow it.",
                 "08 DRIVING\n\nHold Forward (W) to accelerate where you face, Back (S) to slow down; release to coast. Turn around and hold W to reverse gradually. Both panels also set speed or stop instantly. Movement key remaps work. The cart automatically slows for slopes and bends. Stay aboard for the full return to the plaza.",
@@ -833,7 +842,7 @@ public class TutorialWorld {
     }
 
     private static void welcome(ServerLevel level) {
-        BlockPos lectern = new BlockPos(135, 65, 137);
+        BlockPos lectern = LECTERN;
         put(level, lectern, Blocks.LECTERN.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
         ((LecternBlockEntity) level.getBlockEntity(lectern)).setBook(guide());
         level.setBlock(lectern, level.getBlockState(lectern).setValue(BlockStateProperties.HAS_BOOK, true), Block.UPDATE_ALL);
@@ -862,7 +871,7 @@ public class TutorialWorld {
         put(level, warper, Registration.WARPER.get());
         ((WarperTile) level.getBlockEntity(warper)).setCharges(UtilityConfiguration.WARPER_MAX_CHARGES.get());
         label(level, 140, 65, 130, "09 / WARPER", "Visit Ariente", "Return via Warper", "Remembers this spot");
-        label(level, WELCOME_DISPLAY, 2, "WELCOME", "Read the lectern", "Storage to right", "Displays: booth 10");
+        label(level, WELCOME_DISPLAY, 2, "WELCOME", "Lectern to left", "Storage to right", "Displays: booth 10");
     }
 
     private static BlockEntity node(ServerLevel level, BlockPos pos, Block block, NodeOrientation orientation) {
@@ -911,10 +920,14 @@ public class TutorialWorld {
     }
 
     private static void label(ServerLevel level, BlockPos center, int height, String... lines) {
+        label(level, center, height, Direction.SOUTH, lines);
+    }
+
+    private static void label(ServerLevel level, BlockPos center, int height, Direction facing, String... lines) {
         ItemStack module = text(String.join("\n", lines), 1, 0xd2faff);
         int width = (((DisplayModuleItem) module.getItem()).type().size(module).width() + 4 + 63) / 64;
-        DisplayBaseTile[] bases = displayRow(level, center.west(width / 2), width, height,
-                new DisplayAppearance(DisplayBackground.SOLID, 0x102c3b, 0, true));
+        DisplayBaseTile[] bases = displayRow(level, center.relative(facing.getClockWise(), width / 2), width, height,
+                new DisplayAppearance(DisplayBackground.SOLID, 0x102c3b, 0, true), facing);
         install(bases[0], module, 4, 4);
     }
 
@@ -926,11 +939,13 @@ public class TutorialWorld {
         ServerLevel level = event.getServer().overworld();
         ticks++;
         automationChecks(level);
-        if (ticks == 200) {
+        // Rebuilding the shield consumes the shared supply. Finish processing checks first,
+        // so their deadlines do not depend on the machine tick order after a reload.
+        if (ticks == 1200) {
             require(((ForceFieldTile) level.getBlockEntity(SHIELD)).getUsingPower() > 0, "Shield is not running before its control check");
             ((WirelessButtonTile) level.getBlockEntity(SHIELD_BUTTON)).setLocked(false);
         }
-        if (ticks == 220) {
+        if (ticks == 1220) {
             require(((ForceFieldTile) level.getBlockEntity(SHIELD)).getUsingPower() == 0, "Remote shield button did not switch the field off");
             ((WirelessButtonTile) level.getBlockEntity(SHIELD_BUTTON)).setLocked(true);
         }
@@ -946,7 +961,7 @@ public class TutorialWorld {
                             + "; lever=" + level.getBlockState(new BlockPos(124, 65, 148))
                             + "; physical input=" + level.getBestNeighborSignal(new BlockPos(123, 65, 148)));
         }
-        if (ticks == 1600) {
+        if (ticks == 2000) {
             verify(level);
             // Leave four useful input types ready to process when the player opens the save.
             stock(level, INPUT, new ItemStack(Items.IRON_ORE, 8), new ItemStack(Registration.DUST_NEGARITE.get(), 32),
@@ -1048,6 +1063,14 @@ public class TutorialWorld {
         }
         require(level.getBlockState(WELCOME_DISPLAY).getValue(BlockStateProperties.HORIZONTAL_FACING) == Direction.SOUTH
                 && WELCOME_DISPLAY.getZ() < SPAWN.getZ(), "Welcome display must face the player at spawn");
+        require(level.getBlockEntity(LECTERN) instanceof LecternBlockEntity lectern && lectern.hasBook()
+                && LECTERN.getX() < WELCOME_DISPLAY.getX() - 1 && LECTERN.getZ() == WELCOME_DISPLAY.getZ(),
+                "Guide lectern must be visible beside the welcome screen");
+        for (BlockPos pos : new BlockPos[]{new BlockPos(115, 65, 145), new BlockPos(122, 65, 145),
+                new BlockPos(148, 65, 145), new BlockPos(131, 65, 143), new BlockPos(138, 65, 143), new BlockPos(135, 65, 143)}) {
+            require(level.getBlockEntity(pos) instanceof DisplayBaseTile display && DisplayGeometry.facing(display) == Direction.NORTH,
+                    "Southern booth instructions must face the central plaza at " + pos);
+        }
         require(level.getBlockState(WELCOME_STORAGE).is(Registration.HOLO_STORAGE_2.get())
                 && count(level, WELCOME_STORAGE, Registration.KEY_CARD.get()) == 1, "Welcome supplies need populated Ariente storage");
         require(level.getBlockState(INGREDIENT_STORAGE).is(Registration.STORAGE.get())
@@ -1082,6 +1105,20 @@ public class TutorialWorld {
         require(PowerReceiverSupport.getPowerAvailable(level, SMELTER, true) > 0, "Smelter has no independent power supply");
         require(PurifierStructure.find(level, PURIFIER) != null && PurifierStructure.find(level, PURIFIER).tubes().size() == 3,
                 "Purifier needs its complete three-tube structure");
+        require(level.getBlockEntity(PURIFIER.east(2).above()) instanceof DisplayBaseTile,
+                "Purifier instructions must sit directly above its tubes");
+        for (BlockPos destination : new BlockPos[]{WOOD, INGOTS, OTHER}) {
+            InputItemNodeTile input = (InputItemNodeTile) MultipartHelper.getBlockEntity(level, destination.south(), NodeOrientation.NORTH_DE.getSlot());
+            ItemFilterCategory category = destination.equals(WOOD) ? ItemFilterCategory.WOOD
+                    : destination.equals(INGOTS) ? ItemFilterCategory.INGOTS : ItemFilterCategory.OTHER;
+            require(input.getInputCategory() == category && input.isInputBlacklist(), "Storage node lost its category or blacklist mode");
+            if (category == ItemFilterCategory.OTHER) {
+                require(input.getInputFilter().get(0).is(Registration.DUST_NEGARITE.get())
+                        && input.getInputFilter().get(1).is(Registration.DUST_POSIRITE.get()), "Various must reserve both fuel dusts for generators");
+            } else {
+                require(input.getInputFilter().stream().allMatch(ItemStack::isEmpty), "Wood and Ingots must use categories without item samples");
+            }
+        }
         for (BlockPos machine : new BlockPos[]{PURIFIER, RECYCLER, CHARGER}) {
             require(PowerReceiverSupport.getPowerAvailable(level, machine, true) > 0, "New machine has no flux supply at " + machine);
         }
