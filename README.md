@@ -336,3 +336,15 @@ The workspace uses the included McJtyLib and The One Probe sources. Ariente and 
 Unpublished port dependencies can be provided with `-Pariente_dependency_repository=<repository URL>`; `-Pgradletools_path=<file>` selects an explicit shared Gradle script.
 
 The [NeoForge port checkpoint](PORT_1_21.md) documents current commands and validation. Earlier Forge fixture commands in this file are historical.
+
+## Jenkins builds
+
+Select Java 21 and **Use Gradle Wrapper** (Gradle 8.14.2), with tasks
+`clean build publish`. Publish HoloGui and Ariente before building ArienteWorld.
+
+The checked-in `hologui_version` pins the published HoloGui build
+`1.21-0.0.10-beta-6`. After Ariente's Jenkins build succeeds, set `ariente_version`
+in `gradle.properties` to its complete published version, including the build
+number, or pass `-Pariente_version=<published Ariente version>` in this job.
+Jenkins appends its build number to each NeoForge artifact's version; the
+unnumbered base Ariente version does not identify that publication.
