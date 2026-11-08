@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Create and verify the playable Tutorial save using real Forge server ticks.
+"""Create and verify the playable Tutorial save using real NeoForge server ticks.
 
-Requires Java 17 in JAVA_HOME. The generated world and server logs stay under
+Requires Java 21 in JAVA_HOME. The generated world and server logs stay under
 build/tutorial. Supply --saves to install the verified save in a Minecraft client.
 Use --replace to explicitly replace an existing Tutorial save. Run --verify to check persistence
 by restarting the generated server world before installing it.
@@ -59,7 +59,7 @@ def main():
     task = ':ArienteWorld:runServer' if workspace != ROOT else ':runServer'
     log = directory / ('verify.log' if args.verify else 'create.log')
     command = [str(workspace / 'gradlew'), '-I', str(ROOT / 'tools/tutorial.gradle'),
-               '-Pariente_runs', f'-Ptutorial_directory={directory}',
+               f'-Ptutorial_directory={directory}',
                f'-Ptutorial_verify={str(args.verify).lower()}', task, '--console=plain']
     print(f'Creating/verifying Tutorial; server log: {log}', flush=True)
     with log.open('w') as output:

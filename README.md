@@ -170,7 +170,7 @@ Use `/summon arienteworld:darkbat` to inspect one in a development world.
 
 ## Tutorial save
 
-`tools/create_tutorial.py` authors a separate Forge 1.20.1 world named **Tutorial**.
+`tools/create_tutorial.py` authors a fresh NeoForge 1.21.1 world named **Tutorial**.
 It uses a void Overworld, a 144×144 city platform aligned around city-center
 chunk (8, 8), and a flat 48×48 teaching plaza in chunks (7–9, 7–9). The outer 72 chunks
 use ArienteWorld's city generator, with parks, buildings and levitator corridors. Numbered Ariente text
@@ -180,7 +180,7 @@ Warper, plus ship charging, camera views, ore purification and loot recycling.
 The city AI Core is explicitly identified as a dimension-specific exhibit;
 its city behavior runs in Ariente, which the charged Warper can reach.
 
-With Java 17 selected through `JAVA_HOME`, run from this checkout:
+With Java 21 selected through `JAVA_HOME`, run from this checkout:
 
 ```sh
 python3 tools/create_tutorial.py
@@ -266,12 +266,14 @@ For screenshots, copy the completed save to
 `build/tutorial/client/saves/Tutorial` and run from the multiworkspace root:
 
 ```sh
-./gradlew -I ArienteWorld/tools/tutorial.gradle -Pariente_runs -Ptutorial_preview :ArienteWorld:runClient
+./gradlew -I ArienteWorld/tools/tutorial.gradle -Ptutorial_preview :ArienteWorld:runClient
 ```
 
 The preview uses its own copy and writes city, plaza, bend, beam, elevator and
 cockpit, display-booth, automation and category-filter images under `build/tutorial/screenshots`. Add `-Ptutorial_fabulous` to
-check vanilla Fabulous graphics, or `-Ptutorial_render_mods` for Embeddium/Oculus.
+check vanilla Fabulous graphics; those screenshots go under
+`build/tutorial/screenshots-fabulous`. Renderer-mod compatibility needs separate
+testing with NeoForge versions of those mods.
 Use `-Ptutorial_client_directory=<directory>` for a separate client profile.
 Use `-Ptutorial_scene=6` to start at the display booth, or `-Ptutorial_scene=8`
 to start at the category-filter panel. Start at `-Ptutorial_scene=9` to check
@@ -285,19 +287,48 @@ ship charging pad.
 Start at `-Ptutorial_scene=24` for the southern booth instructions, wireless
 station and the visible guide lectern beside the welcome screen.
 
-To check the automation field renderer at close range, put a disposable copy of
-Tutorial under `build/verification/autofield-vanilla/saves/Tutorial` and run
-`./gradlew -I ArienteWorld/tools/autofield_rendering.gradle -Pariente_runs :ArienteWorld:runClient`
-from the workspace root. This checks all 48 outline vertices, beam depth ordering,
-uniform populated module backgrounds across display bases at three camera angles,
-constant field-marker brightness at three pitches, outline/display depth interaction,
-stable tank lighting after item renderers at three angles, tank sorting and stacked seams,
-visible holograms in the final world framebuffer, real world frames and a resource reload. Add `-Phologram_fabulous` for Fabulous graphics.
-Add `-Pautofield_render_mods` for Embeddium/Oculus and
-`-Pautofield_check_directory=<directory>` for a separate client profile. Shader
-packs can be enabled in that profile's Oculus configuration. Screenshots go in
-its `screenshots` directory. Player saves are not changed by this check.
+The 37-scene NeoForge preview also checks disabled and newly placed empty
+forcefields, rebuilding panels and hit effects, personal shields in both camera
+perspectives, orthographic/perspective/live camera displays, resource reloads,
+the Ariente sky, all six defender types and a flying, firing Flux Ship. It verifies
+connected-texture UV bounds for all 256 neighbor
+masks on all six faces, both before and after reloading resources. Successful
+runs log `TUTORIAL PREVIEW: screenshot sequence complete` and exit. Use
+`-Ptutorial_scene=27` to start at the forcefield regressions. The preview changes
+its disposable save, so always copy the stopped authoring world again for a new
+run or graphics mode. Use `-Ptutorial_scene=35` for just the defender and flight
+scenes. The installed Tutorial remains at its welcome point.
 
+For the display-position regression, copy the stopped authoring save to
+`build/tutorial/position-check/saves/Tutorial`, then run from the workspace root:
+
+```sh
+./gradlew -I ArienteWorld/tools/tutorial.gradle -Ptutorial_position_check -Ptutorial_client_directory=build/tutorial/position-check :ArienteWorld:runClient
+```
+
+This checks nine views: diagonal and cardinal turns, looking up/down, moving
+sideways and third person. It compares the camera transform used by the deferred
+display pass with Minecraft's block entity pass, and verifies that the original
+render state is restored afterward. Screenshots go in that profile's `screenshots`
+directory. Add `-Ptutorial_fabulous` to check Fabulous using another fresh copy.
+Successful runs log `DISPLAY POSITION CHECK: all views passed` and exit.
+
+For the forcefield sound regression, copy the stopped authoring save to
+`build/tutorial/sound-check/saves/Tutorial`, then run from the workspace root:
+
+```sh
+./gradlew -I ArienteWorld/tools/tutorial.gradle -Ptutorial_forcefield_sound_check -Ptutorial_client_directory=build/tutorial/sound-check :ArienteWorld:runClient
+```
+
+The check approaches and leaves the working shield, re-enters during fade-out,
+and disables it. It checks panel distances at three shield scales, silent starts,
+gradual volume changes, channel reuse and eventual sound shutdown. The client
+profile contains `forcefield-sound.csv`; success logs `FORCEFIELD SOUND CHECK: passed`.
+It changes the disposable save and its sound settings, so use a fresh copy.
+
+The older `tools/autofield_rendering.gradle` and broader Forge client/GameTest
+fixtures are historical 1.20.1 checks; they are not part of the NeoForge suite.
+Use the tutorial preview above for current client validation.
 
 Development target: Minecraft 1.21.1, NeoForge 21.1.215, Java 21, branch `1.21_neo`.
 Build with `./gradlew build` standalone, or `./gradlew :ArienteWorld:build` from MultiWorkspace.

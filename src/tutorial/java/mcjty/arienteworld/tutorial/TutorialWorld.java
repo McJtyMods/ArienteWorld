@@ -1,5 +1,6 @@
 package mcjty.arienteworld.tutorial;
 
+import com.mojang.authlib.GameProfile;
 import mcjty.ariente.api.AlarmType;
 import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.blocks.aicore.AICoreTile;
@@ -8,13 +9,13 @@ import mcjty.ariente.blocks.defense.ForceFieldTile;
 import mcjty.ariente.blocks.generators.PowerCombinerTile;
 import mcjty.ariente.blocks.purifier.PurifierStructure;
 import mcjty.ariente.blocks.purifier.PurifierTile;
+import mcjty.ariente.blocks.utility.AlarmTile;
 import mcjty.ariente.blocks.utility.AutoConstructorTile;
 import mcjty.ariente.blocks.utility.ChargerTile;
 import mcjty.ariente.blocks.utility.ElevatorTile;
 import mcjty.ariente.blocks.utility.LockTile;
 import mcjty.ariente.blocks.utility.SmelterTile;
 import mcjty.ariente.blocks.utility.WarperTile;
-import mcjty.ariente.blocks.utility.AlarmTile;
 import mcjty.ariente.blocks.utility.autofield.AbstractNodeTile;
 import mcjty.ariente.blocks.utility.autofield.AutoFieldTile;
 import mcjty.ariente.blocks.utility.autofield.InputItemNodeTile;
@@ -37,10 +38,11 @@ import mcjty.ariente.display.DisplayBaseTile;
 import mcjty.ariente.display.DisplayGeometry;
 import mcjty.ariente.display.DisplayModuleItem;
 import mcjty.ariente.display.InstalledModule;
-import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.ariente.entities.fluxship.FluxShipEnergy;
+import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.ariente.entities.levitator.FluxLevitatorEntity;
 import mcjty.ariente.items.BlueprintItem;
+import mcjty.ariente.items.ItemData;
 import mcjty.ariente.items.KeyCardItem;
 import mcjty.ariente.multipart.MultipartHelper;
 import mcjty.ariente.multipart.MultipartTE;
@@ -56,23 +58,27 @@ import mcjty.lib.tileentity.GenericTileEntity;
 import mcjty.lib.varia.RedstoneMode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.Filterable;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameRules;
-import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
@@ -83,28 +89,32 @@ import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.FakePlayerFactory;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemHandlerHelper;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
+import vazkii.patchouli.api.PatchouliAPI;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 /** An explicitly enabled authoring tool, never loaded by an ordinary game. */
-@Mod.EventBusSubscriber(modid = ArienteWorld.MODID)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class TutorialWorld {
 
     private static final int FLOOR = 64;
@@ -181,8 +191,8 @@ public class TutorialWorld {
         var root = event.getServer().getWorldPath(LevelResource.ROOT);
         if (Files.exists(root.resolve("Tutorial.complete"))) {
             // Dedicated servers create saves with cheats disabled. Enable them for the singleplayer tutorial.
-            var levelFile = root.resolve("level.dat").toFile();
-            CompoundTag saved = NbtIo.readCompressed(levelFile);
+            var levelFile = root.resolve("level.dat");
+            CompoundTag saved = NbtIo.readCompressed(levelFile, NbtAccounter.unlimitedHeap());
             saved.getCompound("Data").putBoolean("allowCommands", true);
             NbtIo.writeCompressed(saved, levelFile);
             ArienteWorld.setup.getLogger().info("TUTORIAL: saved world permits survival/creative commands");
@@ -331,26 +341,26 @@ public class TutorialWorld {
         supply(level, FIELD);
         put(level, INPUT, Registration.STORAGE.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH));
         OutputItemNodeTile output = (OutputItemNodeTile) node(level, INPUT.north(), Registration.OUTPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
-        CompoundTag tag = output.saveWithoutMetadata();
+        CompoundTag tag = output.saveWithoutMetadata(level.registryAccess());
         tag.getCompound("Info").putBoolean("outBlacklist", true);
-        output.load(tag);
+        output.loadWithComponents(tag, level.registryAccess());
         part(level, INPUT.north(), Registration.ROUND_ROBIN_NODE.get().defaultBlockState()
                 .setValue(AbstractNodeTile.ORIENTATION, NodeOrientation.SOUTH_DE), PartSlot.SOUTH_DE_BACK);
         SensorItemNodeTile sensor = (SensorItemNodeTile) node(level, INPUT.south(), Registration.SENSOR_ITEM_NODE.get(), NodeOrientation.NORTH_DE);
-        tag = sensor.saveWithoutMetadata();
+        tag = sensor.saveWithoutMetadata(level.registryAccess());
         tag.getCompound("Info").putInt("op", 3);
         tag.getCompound("Info").putInt("amount", 1);
-        sensor.load(tag);
-        tag = output.saveWithoutMetadata();
+        sensor.loadWithComponents(tag, level.registryAccess());
+        tag = output.saveWithoutMetadata(level.registryAccess());
         tag.getCompound("Info").putInt("f0", 0);
-        output.load(tag);
+        output.loadWithComponents(tag, level.registryAccess());
 
         put(level, SMELTER, Registration.SMELTER.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
         categoryInput(level, SMELTER.west(), NodeOrientation.EAST_DN, ItemFilterCategory.DIRECT_SMELTABLE);
         OutputItemNodeTile products = (OutputItemNodeTile) node(level, SMELTER.north(), Registration.OUTPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
-        tag = products.saveWithoutMetadata();
+        tag = products.saveWithoutMetadata(level.registryAccess());
         tag.getCompound("Info").putBoolean("outBlacklist", true);
-        products.load(tag);
+        products.loadWithComponents(tag, level.registryAccess());
         BlockPos combiner = new BlockPos(123, 66, 120);
         put(level, combiner, Registration.POWER_COMBINER.get());
         ((PowerCombinerTile) level.getBlockEntity(combiner)).setPowerTransfer(2500);
@@ -419,9 +429,9 @@ public class TutorialWorld {
 
     private static void extractAll(ServerLevel level, BlockPos pos, NodeOrientation orientation) {
         OutputItemNodeTile output = (OutputItemNodeTile) node(level, pos, Registration.OUTPUT_ITEM_NODE.get(), orientation);
-        CompoundTag tag = output.saveWithoutMetadata();
+        CompoundTag tag = output.saveWithoutMetadata(level.registryAccess());
         tag.getCompound("Info").putBoolean("outBlacklist", true);
-        output.load(tag);
+        output.loadWithComponents(tag, level.registryAccess());
     }
 
     private static void categoryInput(ServerLevel level, BlockPos pos, NodeOrientation orientation, ItemFilterCategory category) {
@@ -431,9 +441,9 @@ public class TutorialWorld {
             input.getInputFilter().set(0, new ItemStack(Registration.DUST_NEGARITE.get()));
             input.getInputFilter().set(1, new ItemStack(Registration.DUST_POSIRITE.get()));
         }
-        CompoundTag tag = input.saveWithoutMetadata();
+        CompoundTag tag = input.saveWithoutMetadata(level.registryAccess());
         tag.getCompound("Info").putBoolean("inBlacklist", true);
-        input.load(tag);
+        input.loadWithComponents(tag, level.registryAccess());
         input.setInputCategory(category);
     }
 
@@ -452,10 +462,10 @@ public class TutorialWorld {
         install(solid[0], text("STORAGE / GRID", 2, 0x123c32), 4, 4);
         install(solid[0], text("Icons + compact power numbers", 1, 0x123c32), 4, 40);
         ItemStack grid = storageModule(level, OTHER, true);
-        DisplayModuleItem.config(grid).putInt("Color", 0x123c32);
+        DisplayModuleItem.editConfig(grid, config -> config.putInt("Color", 0x123c32));
         install(solid[0], grid, 4, 68);
         ItemStack numbers = powerModule(level, NEGATIVE, 0);
-        DisplayModuleItem.config(numbers).putInt("Color", 0x123c32);
+        DisplayModuleItem.editConfig(numbers, config -> config.putInt("Color", 0x123c32));
         install(solid[2], numbers, 4, 68);
         install(solid[0], text("Solid / light green / no border", 1, 0x123c32), 4, 164);
 
@@ -475,6 +485,7 @@ public class TutorialWorld {
         config.putString("Text", text);
         config.putInt("Scale", scale);
         config.putInt("Color", color);
+        ItemData.setSection(stack, "Display", config);
         return stack;
     }
 
@@ -484,8 +495,8 @@ public class TutorialWorld {
         link.putString("Dimension", level.dimension().location().toString());
         link.putLong("Pos", target.asLong());
         link.putInt("Side", Direction.UP.get3DDataValue());
-        link.putString("Block", ForgeRegistries.BLOCKS.getKey(level.getBlockState(target).getBlock()).toString());
-        DisplayModuleItem.config(stack).put("Link", link);
+        link.putString("Block", BuiltInRegistries.BLOCK.getKey(level.getBlockState(target).getBlock()).toString());
+        DisplayModuleItem.editConfig(stack, config -> config.put("Link", link));
         return stack;
     }
 
@@ -497,6 +508,7 @@ public class TutorialWorld {
         config.putBoolean("Usage", target.equals(SMELTER));
         config.putBoolean("Output", !target.equals(SMELTER));
         config.putBoolean("Fuel", !target.equals(SMELTER));
+        ItemData.setSection(stack, "Display", config);
         return stack;
     }
 
@@ -506,6 +518,7 @@ public class TutorialWorld {
         config.putInt("Count", grid ? 8 : 3);
         config.putInt("Columns", 4);
         config.putBoolean("Grid", grid);
+        ItemData.setSection(stack, "Display", config);
         return stack;
     }
 
@@ -520,10 +533,10 @@ public class TutorialWorld {
             require(level.isEmptyBlock(pos), "Display overlaps another exhibit at " + pos);
             put(level, pos, Registration.DISPLAY_BASE.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, facing));
             DisplayBaseTile base = (DisplayBaseTile) level.getBlockEntity(pos);
-            CompoundTag tag = base.saveWithoutMetadata();
+            CompoundTag tag = base.saveWithoutMetadata(base.getLevel().registryAccess());
             tag.putInt("Height", height);
             appearance.write(tag);
-            base.load(tag);
+            base.loadWithComponents(tag, base.getLevel().registryAccess());
             base.changed();
             bases[column] = base;
         }
@@ -533,9 +546,9 @@ public class TutorialWorld {
     private static void install(DisplayBaseTile base, ItemStack stack, int x, int y) {
         InstalledModule module = new InstalledModule(stack, x, y);
         require(DisplayGeometry.canPlace(base, module.size(), x, y), "Module does not fit its tutorial display at " + base.getBlockPos());
-        CompoundTag tag = base.saveWithoutMetadata();
-        tag.getList("Modules", Tag.TAG_COMPOUND).add(module.save(false));
-        base.load(tag);
+        CompoundTag tag = base.saveWithoutMetadata(base.getLevel().registryAccess());
+        tag.getList("Modules", Tag.TAG_COMPOUND).add(module.save(false, base.getLevel().registryAccess()));
+        base.loadWithComponents(tag, base.getLevel().registryAccess());
         base.changed();
     }
 
@@ -752,6 +765,7 @@ public class TutorialWorld {
         config.putInt("Size", 2);
         config.putInt("Zoom", 16);
         config.putInt("RotationSpeed", 10);
+        ItemData.setSection(module, "Display", config);
         install(screen[0], module, 28, 40);
         install(screen[0], text("Processing + ship dock\nClick view: Next / Previous\nAdjust yaw, tilt, zoom, rotation", 1, 0xd2faff), 4, 208);
     }
@@ -810,10 +824,7 @@ public class TutorialWorld {
 
     private static ItemStack guide() {
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
-        CompoundTag tag = book.getOrCreateTag();
-        tag.putString("title", "Ariente Tutorial");
-        tag.putString("author", "Ariente");
-        ListTag pages = new ListTag();
+        List<Filterable<Component>> pages = new ArrayList<>();
         for (String page : new String[]{
                 "Welcome to Tutorial!\n\nA 9 x 9 chunk city platform in the void. The central 3 x 3 chunks contain the teaching stations.\n\nStart north at Power, then follow the numbered displays. The Holo Storage beside this lectern contains tools and the full manual.",
                 "01 POWER (north)\n\nEach generator has eight matching tanks and a fuel barrel feeding a hopper. Blue = Negarite; red = Posirite. Each tank adds 1,000 flux/tick.\n\nThe combiner takes 6,000 of each and outputs 5,880 of each to the buried yellow network. The glass hatch shows its route.",
@@ -835,9 +846,9 @@ public class TutorialWorld {
                 "08 SHIP CONTROLS\n\nHold W and look up to climb. W/S fly toward the mouse; A/D turn. Up/Down arrows also rise/descend.\n\nSpace fires. Left Alt is free look: release it to steer again. Shift exits. Land on the charger before the battery runs out.",
                 "09 EXPLORATION (center)\n\nThe charged Warper connects to the actual Ariente dimension. Right-click and choose Warp. The destination Warper returns you here.\n\nCheats are enabled: /gamemode survival or /gamemode creative. Daylight, no natural mob spawning and keep-inventory are enabled for teaching. The surrounding 72 chunks use ArienteWorld city generation, including buildings, parks and levitator corridors. Copy this save before experimenting."
         }) {
-            pages.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(page))));
+            pages.add(Filterable.passThrough(Component.literal(page)));
         }
-        tag.put("pages", pages);
+        book.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(Filterable.passThrough("Ariente Tutorial"), "Ariente", 0, pages, true));
         return book;
     }
 
@@ -849,9 +860,8 @@ public class TutorialWorld {
         put(level, WELCOME_STORAGE, Registration.HOLO_STORAGE_2.get());
         ItemStack card = new ItemStack(Registration.KEY_CARD.get());
         KeyCardItem.addSecurityTag(card, "Tutorial");
-        card.setHoverName(Component.literal("Tutorial door key"));
-        ItemStack manual = new ItemStack(ForgeRegistries.ITEMS.getValue(new ResourceLocation("patchouli", "guide_book")));
-        manual.getOrCreateTag().putString("patchouli:book", "ariente:manual");
+        card.set(DataComponents.CUSTOM_NAME, Component.literal("Tutorial door key"));
+        ItemStack manual = PatchouliAPI.get().getBookStack(ResourceLocation.fromNamespaceAndPath("ariente", "manual"));
         stock(level, WELCOME_STORAGE, guide(), card, new ItemStack(Registration.TABLET.get()),
                 new ItemStack(Registration.FLUX_LEVITATOR.get()), new ItemStack(Registration.FLUX_SHIP.get()), manual);
         for (Item item : new Item[]{Registration.POWERSUIT_HEAD.get(), Registration.POWERSUIT_CHEST.get(), Registration.POWERSUIT_LEGS.get(),
@@ -904,7 +914,7 @@ public class TutorialWorld {
     }
 
     private static IItemHandler inventory(ServerLevel level, BlockPos pos) {
-        return level.getBlockEntity(pos).getCapability(ForgeCapabilities.ITEM_HANDLER).orElseThrow(IllegalStateException::new);
+        return Objects.requireNonNull(level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null), "Missing inventory at " + pos);
     }
 
     private static void put(ServerLevel level, BlockPos pos, Block block) {
@@ -932,8 +942,8 @@ public class TutorialWorld {
     }
 
     @SubscribeEvent
-    public static void tick(TickEvent.ServerTickEvent event) throws IOException {
-        if (!running || event.phase != TickEvent.Phase.END) {
+    public static void tick(ServerTickEvent.Post event) throws IOException {
+        if (!running) {
             return;
         }
         ServerLevel level = event.getServer().overworld();
@@ -1059,7 +1069,7 @@ public class TutorialWorld {
 
     private static void verify(ServerLevel level) {
         if (Boolean.getBoolean("ariente.tutorial.verify")) {
-            require(level.getServer().getWorldData().getAllowCommands(), "Reloaded Tutorial must permit survival/creative commands");
+            require(level.getServer().getWorldData().getLevelSettings().allowCommands(), "Reloaded Tutorial must permit survival/creative commands");
         }
         require(level.getBlockState(WELCOME_DISPLAY).getValue(BlockStateProperties.HORIZONTAL_FACING) == Direction.SOUTH
                 && WELCOME_DISPLAY.getZ() < SPAWN.getZ(), "Welcome display must face the player at spawn");
@@ -1178,10 +1188,10 @@ public class TutorialWorld {
                             require(!module.snapshot().contains("Status"), "Display source failed: " + module.snapshot());
                         }
                     }
-                    coverage.add(ForgeRegistries.BLOCK_ENTITY_TYPES.getKey(tile.getType()));
+                    coverage.add(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(tile.getType()));
                     if (tile instanceof MultipartTE multipart) {
                         multipart.getParts().values().forEach(part -> coverage.add(
-                                ForgeRegistries.BLOCK_ENTITY_TYPES.getKey(part.getBlockEntity().getType())));
+                                BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(part.getBlockEntity().getType())));
                     }
                 }
             }
@@ -1244,15 +1254,31 @@ public class TutorialWorld {
         ArienteWorld.setup.getLogger().info("TUTORIAL CHECK: {} circuits; {} shield panels; {} registered machine types", circuits, panels, Registration.TILES.getEntries().size());
     }
 
+    private static Player mockRider(ServerLevel level) {
+        // NeoForge FakePlayer deliberately refuses mounts; use vanilla's GameTest player pattern.
+        return new Player(level, SPAWN, 0, new GameProfile(UUID.randomUUID(), "tutorial-rider")) {
+
+            @Override
+            public boolean isSpectator() {
+                return false;
+            }
+
+            @Override
+            public boolean isCreative() {
+                return true;
+            }
+        };
+    }
+
     private static void verifyShipTakeoff(ServerLevel level) {
         FluxShipEntity ship = ship(level);
         CompoundTag parked = ship.saveWithoutId(new CompoundTag());
-        var pilot = FakePlayerFactory.getMinecraft(level);
+        var pilot = mockRider(level);
         try {
             for (int heading = 0; heading < 360; heading += 45) {
                 ship.load(parked.copy());
                 ship.setYRot(heading);
-                pilot.startRiding(ship, true);
+                require(pilot.startRiding(ship, true), "Ship test pilot could not mount");
                 double altitude = ship.getY();
                 for (int tick = 0; tick < 15; tick++) {
                     ship.handleInput(pilot, 1, 0, 0, false, true, true, heading, -25);
@@ -1281,11 +1307,11 @@ public class TutorialWorld {
         });
         require(track.size() == 424, "Unexpected city circuit length: " + track.size());
         CompoundTag parked = cart.saveWithoutId(new CompoundTag());
-        var rider = FakePlayerFactory.getMinecraft(level);
+        var rider = mockRider(level);
         try {
             for (int speed : new int[]{5, 80, -5, -80}) {
                 cart.load(parked.copy());
-                rider.startRiding(cart, true);
+                require(rider.startRiding(cart, true), "Circuit test rider could not mount");
                 cart.changeSpeed(speed);
                 Set<BlockPos> bends = new HashSet<>();
                 Set<BlockPos> slopes = new HashSet<>();
