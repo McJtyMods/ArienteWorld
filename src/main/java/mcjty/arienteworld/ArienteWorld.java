@@ -1,50 +1,42 @@
 package mcjty.arienteworld;
 
-import java.util.function.Function;
-import java.util.function.Supplier;
-import mcjty.ariente.api.IArienteWorld;
+import mcjty.arienteworld.setup.FabricEvents;
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.levelgen.GenerationStep;
+
+import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
+import mcjty.ariente.compat.arienteworld.ArienteWorldCompat;
 import mcjty.arienteworld.apiimpl.ArienteWorldImplementation;
 import mcjty.arienteworld.config.Config;
-import mcjty.arienteworld.setup.ClientSetup;
 import mcjty.arienteworld.setup.ModSetup;
 import mcjty.arienteworld.setup.Registration;
+import mcjty.hologui.HoloGui;
 import mcjty.hologui.api.IHoloGuiHandler;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
+import net.fabricmc.api.ModInitializer;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.event.lifecycle.InterModProcessEvent;
 
-@Mod(ArienteWorld.MODID)
-public class ArienteWorld {
+public class ArienteWorld implements ModInitializer {
+
     public static final String MODID = "arienteworld";
     public static final String ARIENTE_MODID = "ariente";
-
-    public static ModSetup setup = new ModSetup();
-
-    public static ArienteWorldImplementation arienteWorldImplementation = new ArienteWorldImplementation();
-
+    public static final ModSetup setup = new ModSetup();
+    public static final ArienteWorldImplementation arienteWorldImplementation = new ArienteWorldImplementation();
     public static IHoloGuiHandler guiHandler;
 
-    public ArienteWorld(ModContainer mod, IEventBus bus, Dist dist) {
-        mod.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_CONFIG);
-        mod.registerConfig(ModConfig.Type.SERVER, Config.SERVER_CONFIG);
-        Registration.register(bus);
-
-        bus.addListener(setup::init);
-        bus.addListener(this::processIMC);
-        if (dist.isClient()) {
-            bus.addListener(ClientSetup::init);
-        }
-    }
-
-    private void processIMC(final InterModProcessEvent event) {
-        event.getIMCStream().forEach(message -> {
-            if ("getArienteWorld".equalsIgnoreCase(message.method())) {
-                Supplier<Function<IArienteWorld, Void>> supplier = (Supplier<Function<IArienteWorld, Void>>) (Supplier<?>) message.messageSupplier();
-                supplier.get().apply(arienteWorldImplementation);
-            }
-        });
+    @Override
+    public void onInitialize() {
+        ConfigRegistry.INSTANCE.register(MODID, ModConfig.Type.CLIENT, Config.CLIENT_CONFIG);
+        ConfigRegistry.INSTANCE.register(MODID, ModConfig.Type.SERVER, Config.SERVER_CONFIG);
+        Registration.register();
+        BiomeModifications.addFeature(BiomeSelectors.foundInOverworld(),
+                GenerationStep.Decoration.UNDERGROUND_STRUCTURES, ResourceKey.create(Registries.PLACED_FEATURE, Identifier.parse("arienteworld:overworld_dungeon")));
+        guiHandler = HoloGui.guiHandler;
+        new ArienteWorldCompat.GetArienteWorld().apply(arienteWorldImplementation);
+        setup.init();
+        FabricEvents.register();
     }
 }

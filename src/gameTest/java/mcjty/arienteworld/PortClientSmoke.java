@@ -1,5 +1,8 @@
 package mcjty.arienteworld;
 
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+
 import java.util.Set;
 import mcjty.ariente.client.StandaloneModels;
 import net.minecraft.client.gui.components.AbstractButton;
@@ -21,28 +24,28 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /** Opt-in visual smoke check. Only run in a disposable PortSmoke save. */
-@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
-public final class PortClientSmoke {
+public final class PortClientSmoke implements ClientModInitializer {
 
     private static int ticks;
     private static int stage;
     private static int waitingTicks;
 
-    private PortClientSmoke() {
+    public PortClientSmoke() {
     }
 
-    @SubscribeEvent
-    public static void tick(ClientTickEvent.Post event) {
+    @Override
+    public void onInitializeClient() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> tick());
+    }
+
+    public static void tick() {
         if (!Boolean.getBoolean("ariente.portClientSmoke")) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
+        mc.options.pauseOnLostFocus = false;
         if (mc.level == null || mc.player == null || mc.getSingleplayerServer() == null) {
             if (++waitingTicks % 60 == 0 && mc.screen != null) {
                 System.out.println("Port client screen: " + mc.screen.getClass().getSimpleName());
@@ -50,7 +53,7 @@ public final class PortClientSmoke {
                     if (listener instanceof AbstractButton button) {
                         String text = button.getMessage().getString();
                         System.out.println("Port client button: " + text);
-                        if (text.equals("Proceed") || text.equals("I know what I'm doing!") || text.equals("Yes")) {
+                        if (text.equals("Proceed") || text.equals("Continue") || text.equals("I know what I'm doing!") || text.equals("Yes")) {
                             button.onPress(new KeyEvent(257, 0, 0));
                             break;
                         }
@@ -105,6 +108,7 @@ public final class PortClientSmoke {
                 throw new AssertionError("Client did not enter the Ariente dimension");
             }
             Screenshot.grab(mc.gameDirectory, "port-ariente.png", mc.getMainRenderTarget(), 1, message -> {});
+            System.out.println("FABRIC CLIENT SMOKE VERIFIED: holograms, ship model, armor, dimension and sky");
             mc.stop();
         }
     }

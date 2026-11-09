@@ -435,7 +435,7 @@ public class CoreGuardianEntity extends ArienteFlyingMob implements IForcefieldI
         super.addAdditionalSaveData(output);
         CompoundTag tag = new CompoundTag();
         writeEntityData(tag);
-        output.store(tag);
+        output.store(MapCodec.assumeMapUnsafe(CompoundTag.CODEC), tag);
     }
 
 }

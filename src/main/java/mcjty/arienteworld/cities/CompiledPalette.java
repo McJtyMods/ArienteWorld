@@ -1,5 +1,6 @@
 package mcjty.arienteworld.cities;
 
+import net.minecraft.core.registries.Registries;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

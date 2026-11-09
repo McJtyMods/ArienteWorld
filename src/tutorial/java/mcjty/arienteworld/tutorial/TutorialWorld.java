@@ -1,5 +1,7 @@
 package mcjty.arienteworld.tutorial;
 
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+
 import mcjty.lib.varia.CapabilityTools;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.clock.WorldClocks;
@@ -99,15 +101,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.event.server.ServerStartedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
-import vazkii.patchouli.api.PatchouliAPI;
+import mcjty.lib.container.IItemHandler;
+import mcjty.lib.container.ItemHandlerHelper;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -121,7 +116,6 @@ import java.util.Set;
 import java.util.UUID;
 
 /** An explicitly enabled authoring tool, never loaded by an ordinary game. */
-@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class TutorialWorld {
 
     private static final int FLOOR = 64;
@@ -161,12 +155,10 @@ public class TutorialWorld {
     private static int circuitsBeforeRecycling;
     private static int silverBeforeRecycling;
 
-    @SubscribeEvent
-    public static void start(ServerStartedEvent event) throws IOException {
+    public static void start(MinecraftServer server) throws IOException {
         if (!Boolean.getBoolean("ariente.tutorial")) {
             return;
         }
-        MinecraftServer server = event.getServer();
         ServerLevel level = server.overworld();
         var marker = server.getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete");
         if (Boolean.getBoolean("ariente.tutorial.verify")) {
@@ -190,12 +182,11 @@ public class TutorialWorld {
         ArienteWorld.setup.getLogger().info("TUTORIAL: platform ready; observing real machine ticks");
     }
 
-    @SubscribeEvent
-    public static void stopped(ServerStoppedEvent event) throws IOException {
+    public static void stopped(MinecraftServer server) throws IOException {
         if (!Boolean.getBoolean("ariente.tutorial")) {
             return;
         }
-        var root = event.getServer().getWorldPath(LevelResource.ROOT);
+        var root = server.getWorldPath(LevelResource.ROOT);
         if (Files.exists(root.resolve("Tutorial.complete"))) {
             // Dedicated servers create saves with cheats disabled. Enable them for the singleplayer tutorial.
             var levelFile = root.resolve("level.dat");
@@ -868,7 +859,7 @@ public class TutorialWorld {
         ItemStack card = new ItemStack(Registration.KEY_CARD.get());
         KeyCardItem.addSecurityTag(card, "Tutorial");
         card.set(DataComponents.CUSTOM_NAME, Component.literal("Tutorial door key"));
-        ItemStack manual = PatchouliAPI.get().getBookStack(Identifier.fromNamespaceAndPath("ariente", "manual"));
+        ItemStack manual = guide();
         stock(level, WELCOME_STORAGE, guide(), card, new ItemStack(Registration.TABLET.get()),
                 new ItemStack(Registration.FLUX_LEVITATOR.get()), new ItemStack(Registration.FLUX_SHIP.get()), manual);
         for (Item item : new Item[]{Registration.POWERSUIT_HEAD.get(), Registration.POWERSUIT_CHEST.get(), Registration.POWERSUIT_LEGS.get(),
@@ -921,7 +912,7 @@ public class TutorialWorld {
     }
 
     private static IItemHandler inventory(ServerLevel level, BlockPos pos) {
-        return Objects.requireNonNull(CapabilityTools.itemHandler(level.getCapability(Capabilities.Item.BLOCK, pos, null)), "Missing inventory at " + pos);
+        return Objects.requireNonNull(CapabilityTools.itemHandler(ItemStorage.SIDED.find(level, pos, null)), "Missing inventory at " + pos);
     }
 
     private static void put(ServerLevel level, BlockPos pos, Block block) {
@@ -948,12 +939,11 @@ public class TutorialWorld {
         install(bases[0], module, 4, 4);
     }
 
-    @SubscribeEvent
-    public static void tick(ServerTickEvent.Post event) throws IOException {
+    public static void tick(MinecraftServer server) throws IOException {
         if (!running) {
             return;
         }
-        ServerLevel level = event.getServer().overworld();
+        ServerLevel level = server.overworld();
         ticks++;
         automationChecks(level);
         // Rebuilding the shield consumes the shared supply. Finish processing checks first,
@@ -984,11 +974,11 @@ public class TutorialWorld {
             stock(level, INPUT, new ItemStack(Items.IRON_ORE, 8), new ItemStack(Registration.DUST_NEGARITE.get(), 32),
                     new ItemStack(Registration.DUST_POSIRITE.get(), 32), new ItemStack(Items.OAK_PLANKS, 64));
             stock(level, LOOT, new ItemStack(Registration.ENERGY_SABRE.get()), new ItemStack(Registration.MODULE_HOVER.get()));
-            Files.writeString(event.getServer().getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete"),
+            Files.writeString(server.getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete"),
                     "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified camera views, ship charging, ore purification followed by smelting, loot recycling, displays, sorting, refueling, power, crafting, shield, 424-block sloped city circuit with rider in both directions, two cart end panels and machine coverage.\n");
             running = false;
             ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: cameras, charged ship, purification, smelting, recycling, refueling, sorted storage, circuits, shield, wireless and two cart end panels; saving map");
-            event.getServer().halt(false);
+            server.halt(false);
         }
     }
 

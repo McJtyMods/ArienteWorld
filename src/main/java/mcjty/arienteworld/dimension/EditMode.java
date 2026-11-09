@@ -1,5 +1,9 @@
 package mcjty.arienteworld.dimension;
 
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.world.entity.player.Player;
+
+import net.minecraft.core.registries.Registries;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -42,14 +46,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 /** Operator authoring sessions use private asset copies. Runtime generation is never changed implicitly. */
-@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class EditMode {
 
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
@@ -128,7 +126,7 @@ public class EditMode {
             if (!getName().matches("[A-Za-z0-9_@.-]+")) {
                 throw new IllegalStateException("Invalid export name");
             }
-            return FMLPaths.CONFIGDIR.get().resolve("ariente/exports").resolve(getName() + ".json");
+            return FabricLoader.getInstance().getConfigDir().resolve("ariente/exports").resolve(getName() + ".json");
         }
 
         public void restore() {
@@ -206,6 +204,7 @@ public class EditMode {
                         }
                         case "palette" -> loadedPalette = new Palette(object);
                         case "plan" -> loadedPlan = new CityPlan(object);
+
                         default -> throw new IllegalStateException("Unknown asset type");
                     }
                 }
@@ -433,13 +432,11 @@ public class EditMode {
         return new BuildingPart(json);
     }
 
-    @SubscribeEvent
-    public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
-        SESSIONS.remove(event.getEntity().getUUID());
+    public static void logout(Player player) {
+        SESSIONS.remove(player.getUUID());
     }
 
-    @SubscribeEvent
-    public static void stopping(ServerStoppingEvent event) {
+    public static void stopping() {
         SESSIONS.clear();
     }
 }

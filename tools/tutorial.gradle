@@ -1,10 +1,16 @@
-// Opt-in map authoring. No tutorial code is included in the released mod.
+// Opt-in tutorial creation and persistence checks using the native Fabric server.
 gradle.afterProject { p ->
-    if (p.name == 'ArienteWorld') {
+    if (p.name == 'ArienteWorld' || p.findProperty('mod_id') == 'arienteworld') {
         p.sourceSets {
             tutorial {
-                compileClasspath += p.sourceSets.main.output
-                runtimeClasspath += p.sourceSets.main.output
+                compileClasspath += p.sourceSets.main.output + p.sourceSets.main.compileClasspath
+                runtimeClasspath += p.sourceSets.main.output + p.sourceSets.main.runtimeClasspath
+                java.include 'mcjty/arienteworld/tutorial/TutorialWorld.java'
+                java.include 'mcjty/arienteworld/tutorial/TutorialPortChecks.java'
+                java.include 'mcjty/arienteworld/tutorial/TutorialEntrypoint.java'
+                java.srcDir 'src/gameTest/java'
+                java.include 'mcjty/arienteworld/PortClientSmoke.java'
+                java.include 'mcjty/arienteworld/PortRenderChecks.java'
             }
         }
         p.configurations {
@@ -12,39 +18,36 @@ gradle.afterProject { p ->
             tutorialCompileOnly.extendsFrom compileOnly
             tutorialRuntimeOnly.extendsFrom runtimeOnly
         }
-        p.runs {
-            server {
-                modSource p.sourceSets.tutorial
-                workingDirectory p.file(p.findProperty('tutorial_directory') ?: 'build/tutorial/server')
-                systemProperty 'ariente.tutorial', 'true'
-                systemProperty 'ariente.tutorial.verify', (p.findProperty('tutorial_verify') ?: 'false').toString()
-                systemProperty 'forge.logging.console.level', 'info'
-                argument '--nogui'
+        p.loom {
+            mods {
+                ariente_tutorial { sourceSet p.sourceSets.tutorial }
             }
-        }
-        def positionCheck = p.hasProperty('tutorial_position_check')
-        def soundCheck = p.hasProperty('tutorial_forcefield_sound_check')
-        def renderCheck = p.hasProperty('tutorial_render_regression')
-        if (p.hasProperty('tutorial_preview') || positionCheck || soundCheck || renderCheck) {
-            p.runs {
-                client {
-                    modSource p.sourceSets.tutorial
-                    workingDirectory p.file(p.findProperty('tutorial_client_directory') ?: 'build/tutorial/client')
-                    systemProperty 'ariente.tutorial.fabulous', p.hasProperty('tutorial_fabulous').toString()
-                    systemProperty 'ariente.tutorial.preview', (!positionCheck && !soundCheck && !renderCheck).toString()
-                    systemProperty 'ariente.tutorial.renderRegression', renderCheck.toString()
-                    systemProperty 'ariente.tutorial.positionCheck', positionCheck.toString()
-                    systemProperty 'ariente.tutorial.forcefieldSoundCheck', soundCheck.toString()
-                    systemProperty 'ariente.tutorial.soundBaseline', p.hasProperty('tutorial_sound_baseline').toString()
-                    systemProperty 'ariente.tutorial.scene', (p.findProperty('tutorial_scene') ?: '0').toString()
-                    arguments.addAll '--quickPlaySingleplayer', 'Tutorial', '--width', '1280', '--height', '800'
+            runs {
+                server {
+                    server()
+                    runDir(p.findProperty('tutorial_directory') ?: 'build/tutorial/server')
+                    vmArg '-Dariente.tutorial=true'
+                    vmArg '-Dariente.tutorial.verify=' + (p.findProperty('tutorial_verify') ?: 'false')
+                    programArg '--nogui'
                 }
             }
         }
-        p.tasks.withType(JavaExec).configureEach {
-            if (name == 'runServer' || (name == 'runClient' && (p.hasProperty('tutorial_preview') || positionCheck || soundCheck || renderCheck))) {
-                dependsOn p.tasks.named('tutorialClasses')
+        if (p.hasProperty('tutorial_client_smoke') || p.hasProperty('tutorial_render_checks')) {
+            p.loom.runs.client {
+                client()
+                runDir(p.findProperty('tutorial_client_directory') ?: 'build/tutorial/client')
+                vmArg '-Dariente.portClientSmoke=' + !p.hasProperty('tutorial_render_checks')
+                vmArg '-Dariente.portRenderChecks=' + p.hasProperty('tutorial_render_checks')
+                programArgs '--quickPlaySingleplayer', 'PortSmoke', '--width', '1280', '--height', '800'
             }
+            p.tasks.named('runClient') {
+                dependsOn p.tasks.named('tutorialClasses')
+                classpath += p.sourceSets.tutorial.output
+            }
+        }
+        p.tasks.named('runServer') {
+            dependsOn p.tasks.named('tutorialClasses')
+            classpath += p.sourceSets.tutorial.output
         }
     }
 }

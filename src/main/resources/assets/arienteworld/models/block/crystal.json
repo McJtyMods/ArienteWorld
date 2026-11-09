@@ -1,6 +1,5 @@
 {
   "parent": "minecraft:block/cube_all",
-  "render_type": "minecraft:translucent",
   "elements": [
     {
       "from": [
@@ -13,33 +12,36 @@
         16,
         16
       ],
-      "neoforge_data": {
-        "color": "d9ffffff"
-      },
       "faces": {
         "down": {
           "texture": "#all",
-          "cullface": "down"
+          "cullface": "down",
+          "tintindex": 0
         },
         "up": {
           "texture": "#all",
-          "cullface": "up"
+          "cullface": "up",
+          "tintindex": 0
         },
         "north": {
           "texture": "#all",
-          "cullface": "north"
+          "cullface": "north",
+          "tintindex": 0
         },
         "south": {
           "texture": "#all",
-          "cullface": "south"
+          "cullface": "south",
+          "tintindex": 0
         },
         "west": {
           "texture": "#all",
-          "cullface": "west"
+          "cullface": "west",
+          "tintindex": 0
         },
         "east": {
           "texture": "#all",
-          "cullface": "east"
+          "cullface": "east",
+          "tintindex": 0
         }
       }
     }

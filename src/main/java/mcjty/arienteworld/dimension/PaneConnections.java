@@ -1,5 +1,8 @@
 package mcjty.arienteworld.dimension;
 
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -12,32 +15,27 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.level.ChunkEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 /** Resolve authored pane states after chunks are loaded, including older generated structures. */
-@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class PaneConnections {
 
     private static final Map<ServerLevel, Set<ChunkPos>> PENDING = new WeakHashMap<>();
 
-    @SubscribeEvent
-    public static void chunkLoaded(ChunkEvent.Load event) {
-        if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(DimensionRegister.DIMENSION)) {
+    public static void chunkLoaded(Level world, LevelChunk chunk) {
+        if (world instanceof ServerLevel level && level.dimension().equals(DimensionRegister.DIMENSION)) {
+
             synchronized (PENDING) {
-                PENDING.computeIfAbsent(level, key -> new HashSet<>()).add(event.getChunk().getPos());
+                PENDING.computeIfAbsent(level, key -> new HashSet<>()).add(chunk.getPos());
             }
         }
     }
 
-    @SubscribeEvent
-    public static void tick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) {
+    public static void tick(Level world) {
+        if (!(world instanceof ServerLevel level)) {
             return;
         }
         Set<ChunkPos> chunks;
+
         synchronized (PENDING) {
             chunks = PENDING.remove(level);
         }
