@@ -1,5 +1,8 @@
 package mcjty.arienteworld.dimension;
 
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
+
 import net.minecraft.core.HolderLookup;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -183,7 +186,7 @@ public final class DungeonDisplays {
         ListTag modules = new ListTag();
         modules.add(new InstalledModule(stack, 4, 4).save(false, provider));
         tag.put("Modules", modules);
-        display.loadWithComponents(tag, provider);
+        display.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, provider, tag));
         display.setChanged();
     }
 

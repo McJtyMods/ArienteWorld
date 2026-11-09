@@ -1,5 +1,10 @@
 package mcjty.arienteworld.entities.soldier;
 
+import net.minecraft.server.level.ServerLevel;
+
+import com.mojang.serialization.MapCodec;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import mcjty.ariente.api.IInhibitable;
 import mcjty.ariente.entities.LaserEntity;
 import net.minecraft.nbt.CompoundTag;
@@ -65,8 +70,8 @@ public class MasterSoldierEntity extends SoldierEntity implements IInhibitable {
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
-        boolean rc = super.isInvulnerableTo(source);
+    public boolean isInvulnerableTo(ServerLevel serverLevel, DamageSource source) {
+        boolean rc = super.isInvulnerableTo(serverLevel, source);
         if (rc) {
             return rc;
         }
@@ -80,15 +85,13 @@ public class MasterSoldierEntity extends SoldierEntity implements IInhibitable {
         return false;
     }
 
-    @Override
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
-        noregenCounter = compound.getInt("noregen");
+    public void readEntityData(CompoundTag compound) {
+
+        noregenCounter = compound.getIntOr("noregen", 0);
     }
 
-    @Override
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
+    public void writeEntityData(CompoundTag compound) {
+
         compound.putInt("noregen", noregenCounter);
     }
 
@@ -96,4 +99,19 @@ public class MasterSoldierEntity extends SoldierEntity implements IInhibitable {
     protected boolean isMaster() {
         return true;
     }
+
+    @Override
+    public void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        readEntityData(input.read(MapCodec.assumeMapUnsafe(CompoundTag.CODEC)).orElseGet(CompoundTag::new));
+    }
+
+    @Override
+    public void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        CompoundTag tag = new CompoundTag();
+        writeEntityData(tag);
+        output.store(tag);
+    }
+
 }

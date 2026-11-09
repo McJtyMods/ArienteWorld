@@ -29,7 +29,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
-import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
@@ -64,7 +63,7 @@ public class ArienteChunkGenerator extends ChunkGenerator {
     }
 
     private TerrainBuffer getTerrain(int chunkX, int chunkZ) {
-        long key = ChunkPos.asLong(chunkX, chunkZ);
+        long key = ChunkPos.pack(chunkX, chunkZ);
         TerrainBuffer cached = terrain.getIfPresent(key);
         if (cached != null) {
             return cached;
@@ -123,14 +122,14 @@ public class ArienteChunkGenerator extends ChunkGenerator {
     public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState random,
                                                        StructureManager structures, ChunkAccess chunk) {
         ChunkPos cp = chunk.getPos();
-        TerrainBuffer buffer = getTerrain(cp.x, cp.z);
+        TerrainBuffer buffer = getTerrain(cp.x(), cp.z());
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
                 for (int y = 0; y < 256; y++) {
                     BlockState state = buffer.getBlockState(x, y, z);
                     if (!state.isAir()) {
-                        chunk.setBlockState(pos.set(cp.getMinBlockX() + x, y, cp.getMinBlockZ() + z), state, false);
+                        chunk.setBlockState(pos.set(cp.getMinBlockX() + x, y, cp.getMinBlockZ() + z), state, 0);
                         if (state.hasBlockEntity() && !CityFeature.hasBlockEntity(state)) {
                             chunk.removeBlockEntity(pos);
                         }
@@ -143,7 +142,7 @@ public class ArienteChunkGenerator extends ChunkGenerator {
 
     @Override
     public void applyCarvers(WorldGenRegion level, long seed, RandomState random, BiomeManager biomes,
-                             StructureManager structures, ChunkAccess chunk, GenerationStep.Carving step) {
+                             StructureManager structures, ChunkAccess chunk) {
         // The original cave carver did not replace Ariente marble. Authored underground rooms are carved by the city feature.
     }
 
@@ -175,7 +174,7 @@ public class ArienteChunkGenerator extends ChunkGenerator {
     @Override
     public int getBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor height, RandomState random) {
         TerrainBuffer buffer = getTerrain(x >> 4, z >> 4);
-        for (int y = Math.min(255, height.getMaxBuildHeight() - 1); y >= 0; y--) {
+        for (int y = Math.min(255, height.getMaxY() - 1); y >= 0; y--) {
             if (type.isOpaque().test(buffer.getBlockState(x & 15, y, z & 15))) {
                 return y + 1;
             }

@@ -3,12 +3,9 @@
   "temperature": 0.8,
   "downfall": 0.4,
   "effects": {
-    "sky_color": 8103167,
-    "fog_color": 7956405,
-    "water_color": 5858702,
-    "water_fog_color": 4536678,
-    "grass_color": 3690326,
-    "foliage_color": 2571081
+    "water_color": "#59658e",
+    "grass_color": "#384f56",
+    "foliage_color": "#273b49"
   },
   "spawners": {
     "monster": [
@@ -21,7 +18,7 @@
     ]
   },
   "spawn_costs": {},
-  "carvers": {},
+  "carvers": [],
   "features": [
     [],
     [],
@@ -54,5 +51,10 @@
     [
       "arienteworld:city"
     ]
-  ]
+  ],
+  "attributes": {
+    "minecraft:visual/fog_color": "#7967b5",
+    "minecraft:visual/sky_color": "#7ba4ff",
+    "minecraft:visual/water_fog_color": "#453966"
+  }
 }

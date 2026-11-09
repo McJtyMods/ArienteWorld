@@ -1,18 +1,23 @@
 package mcjty.arienteworld.dimension;
 
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import javax.annotation.Nullable;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.cities.BuildingPart;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.cities.CityTools;
+import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.random.Weighted;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
@@ -20,8 +25,10 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 @EventBusSubscriber(modid = ArienteWorld.MODID)
 public class SoldierSpawning {
 
+    private static final Map<MobSpawnSettings, List<Weighted<MobSpawnSettings.SpawnerData>>> SMALL_DUNGEON_SPAWNS = new WeakHashMap<>();
+
     private static final ResourceKey<Biome> CITY_BIOME = ResourceKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_city"));
+            Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_city"));
 
     @SubscribeEvent
     public static void potentialSpawns(LevelEvent.PotentialSpawns event) {
@@ -34,11 +41,22 @@ public class SoldierSpawning {
         if (city == null) {
             return;
         }
-        // Reuse the city's datapack spawn table, including the same entries during pack-position validation.
-        var spawns = level.registryAccess().registryOrThrow(Registries.BIOME).getOrThrow(CITY_BIOME)
-                .getMobSettings().getMobs(MobCategory.MONSTER);
+        var settings = level.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(CITY_BIOME)
+                .value().getMobSettings();
+        var entries = settings.getMobs(MobCategory.MONSTER).unwrap();
+        if (city.getPlan().isSmallDungeon()) {
+            // Single-soldier patrols keep small rooms and islands from filling with packs.
+            // Cache the entries: pack-position validation must see the same selected spawn data.
+            entries = SMALL_DUNGEON_SPAWNS.computeIfAbsent(settings, source -> source.getMobs(MobCategory.MONSTER).unwrap().stream().map(entry -> {
+                var spawn = entry.value();
+                if (spawn.type() == Registration.ENTITY_SOLDIER.get() || spawn.type() == Registration.ENTITY_MASTER_SOLDIER.get()) {
+                    return new Weighted<>(new MobSpawnSettings.SpawnerData(spawn.type(), 1, 1), entry.weight());
+                }
+                return entry;
+            }).toList());
+        }
         List.copyOf(event.getSpawnerDataList()).forEach(event::removeSpawnerData);
-        spawns.unwrap().forEach(event::addSpawnerData);
+        entries.forEach(event::addSpawnerData);
     }
 
     @Nullable

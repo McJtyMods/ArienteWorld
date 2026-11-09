@@ -1,5 +1,7 @@
 package mcjty.arienteworld.entities.drone;
 
+import net.minecraft.server.level.ServerLevel;
+
 import java.util.Comparator;
 import java.util.EnumSet;
 import net.minecraft.world.entity.Mob;
@@ -27,7 +29,7 @@ public class EntityAIScanForPlayer extends Goal {
             return false;
         }
         // Vanilla targeting applies sneaking/invisibility range reductions and line of sight.
-        return targeting.range(maxTargetRange()).test(entityLiving, player);
+        return targeting.range(maxTargetRange()).test((ServerLevel) entityLiving.level(), entityLiving, player);
     }
 
     @Override

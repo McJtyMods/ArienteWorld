@@ -1,5 +1,6 @@
 package mcjty.arienteworld.entities.scout;
 
+import net.minecraft.core.UUIDUtil;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -10,7 +11,6 @@ import mcjty.ariente.entities.fluxship.FluxShipLaser;
 import mcjty.arienteworld.entities.soldier.SoldierEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -267,7 +267,7 @@ public class ScoutPilot {
     }
 
     private void newRoute(ServerLevel level, FluxShipEntity ship) {
-        ScoutRoutes.FlightPlan plan = ScoutRoutes.create(level, destination, ship.position(), level.random);
+        ScoutRoutes.FlightPlan plan = ScoutRoutes.create(level, destination, ship.position(), level.getRandom());
         destination = plan.destination();
         route = plan.waypoints();
         waypoint = 0;
@@ -276,8 +276,8 @@ public class ScoutPilot {
 
     private void fly(FluxShipEntity ship, SoldierEntity soldier, Vec3 destination, double speed) {
         ServerLevel level = (ServerLevel) ship.level();
-        Vec3 bounded = new Vec3(destination.x, Mth.clamp(destination.y, level.getMinBuildHeight() + 12,
-                level.getMaxBuildHeight() + 96), destination.z);
+        Vec3 bounded = new Vec3(destination.x, Mth.clamp(destination.y, level.getMinY() + 12,
+                level.getMaxY() + 96), destination.z);
         ship.flyTowards(soldier, ScoutNavigation.steer(ship, bounded, speed), speed);
     }
 
@@ -313,8 +313,8 @@ public class ScoutPilot {
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
-        tag.putLong("home", home.toLong());
-        tag.putLong("destination", destination.toLong());
+        tag.putLong("home", home.pack());
+        tag.putLong("destination", destination.pack());
         ListTag points = new ListTag();
         route.forEach(point -> points.add(vector(point)));
         tag.put("route", points);
@@ -322,7 +322,7 @@ public class ScoutPilot {
         tag.putString("phase", phase.name());
         tag.putInt("phaseTicks", phaseTicks);
         if (targetId != null) {
-            tag.putUUID("target", targetId);
+            tag.store("target", UUIDUtil.CODEC, targetId);
         }
         tag.put("lastSeen", vector(lastSeen));
         tag.put("velocity", vector(lastVelocity));
@@ -336,27 +336,27 @@ public class ScoutPilot {
 
     public static ScoutPilot load(CompoundTag tag) {
         List<Vec3> points = new ArrayList<>();
-        ListTag list = tag.getList("route", Tag.TAG_COMPOUND);
+        ListTag list = tag.getListOrEmpty("route");
         for (int i = 0; i < Math.min(32, list.size()); i++) {
-            points.add(vector(list.getCompound(i)));
+            points.add(vector(list.getCompoundOrEmpty(i)));
         }
-        ScoutPilot pilot = new ScoutPilot(new ChunkPos(tag.getLong("home")),
-                new ScoutRoutes.FlightPlan(new ChunkPos(tag.getLong("destination")), points));
-        pilot.waypoint = Mth.clamp(tag.getInt("waypoint"), 0, points.size());
+        ScoutPilot pilot = new ScoutPilot(ChunkPos.unpack(tag.getLongOr("home", 0)),
+                new ScoutRoutes.FlightPlan(ChunkPos.unpack(tag.getLongOr("destination", 0)), points));
+        pilot.waypoint = Mth.clamp(tag.getIntOr("waypoint", 0), 0, points.size());
         try {
-            pilot.phase = Phase.valueOf(tag.getString("phase"));
+            pilot.phase = Phase.valueOf(tag.getStringOr("phase", ""));
         } catch (IllegalArgumentException ignored) {
             pilot.phase = Phase.PATROL;
         }
-        pilot.phaseTicks = tag.getInt("phaseTicks");
-        pilot.targetId = tag.hasUUID("target") ? tag.getUUID("target") : null;
-        pilot.lastSeen = vector(tag.getCompound("lastSeen"));
-        pilot.lastVelocity = vector(tag.getCompound("velocity"));
-        pilot.lastSeenTime = tag.getLong("seenTime");
-        pilot.maneuver = vector(tag.getCompound("maneuver"));
-        pilot.searchAngle = tag.getFloat("searchAngle");
-        pilot.divertUntil = tag.getLong("divertUntil");
-        pilot.turningIn = tag.getBoolean("turningIn");
+        pilot.phaseTicks = tag.getIntOr("phaseTicks", 0);
+        pilot.targetId = tag.read("target", UUIDUtil.CODEC).isPresent() ? tag.read("target", UUIDUtil.CODEC).orElse(null) : null;
+        pilot.lastSeen = vector(tag.getCompoundOrEmpty("lastSeen"));
+        pilot.lastVelocity = vector(tag.getCompoundOrEmpty("velocity"));
+        pilot.lastSeenTime = tag.getLongOr("seenTime", 0);
+        pilot.maneuver = vector(tag.getCompoundOrEmpty("maneuver"));
+        pilot.searchAngle = tag.getFloatOr("searchAngle", 0);
+        pilot.divertUntil = tag.getLongOr("divertUntil", 0);
+        pilot.turningIn = tag.getBooleanOr("turningIn", false);
         return pilot;
     }
 
@@ -369,6 +369,6 @@ public class ScoutPilot {
     }
 
     private static Vec3 vector(CompoundTag tag) {
-        return new Vec3(tag.getDouble("x"), tag.getDouble("y"), tag.getDouble("z"));
+        return new Vec3(tag.getDoubleOr("x", 0), tag.getDoubleOr("y", 0), tag.getDoubleOr("z", 0));
     }
 }

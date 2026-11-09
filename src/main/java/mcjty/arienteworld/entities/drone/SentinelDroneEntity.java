@@ -1,16 +1,20 @@
 package mcjty.arienteworld.entities.drone;
 
+import net.minecraft.server.level.ServerLevel;
+
+import com.mojang.serialization.MapCodec;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import mcjty.ariente.api.*;
+import mcjty.arienteworld.entities.ArienteFlyingMob;
 import net.minecraft.world.entity.*;
 import javax.annotation.Nullable;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ModSounds;
 import mcjty.arienteworld.ai.CityAI;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -26,19 +30,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.Vec3;
 
 import static mcjty.arienteworld.setup.Registration.ENTITY_SENTINEL_DRONE;
 
-public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunity, ISentinel {
+public class SentinelDroneEntity extends ArienteFlyingMob implements IForcefieldImmunity, ISentinel {
 
-    public static final ResourceLocation LOOT = ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "entities/sentinel_drone");
+    public static final Identifier LOOT = Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "entities/sentinel_drone");
 
     private int sentinelId;
     private ChunkPos cityCenter;
 
-    public SentinelDroneEntity(EntityType<? extends FlyingMob> type, Level worldIn) {
+    public SentinelDroneEntity(EntityType<? extends ArienteFlyingMob> type, Level worldIn) {
         super(type, worldIn);
 
         this.xpReward = 5;
@@ -117,7 +120,7 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
     public void tick() {
         super.tick();
 
-        if (!this.getCommandSenderWorld().isClientSide && this.getCommandSenderWorld().getDifficulty() == Difficulty.PEACEFUL) {
+        if (!this.level().isClientSide() && this.level().getDifficulty() == Difficulty.PEACEFUL) {
             this.remove(RemovalReason.DISCARDED);
         }
     }
@@ -126,11 +129,11 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
      * Called when the entity is attacked.
      */
     @Override
-    public boolean hurt(DamageSource source, float amount) {
-        if (this.isInvulnerableTo(source)) {
+    public boolean hurtServer(ServerLevel serverLevel, DamageSource source, float amount) {
+        if (this.isInvulnerableTo(serverLevel, source)) {
             return false;
         } else {
-            return super.hurt(source, amount);
+            return super.hurtServer(serverLevel, source, amount);
         }
     }
 
@@ -164,11 +167,6 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
         return ModSounds.sentinelDeath.get();
     }
 
-    @Override
-    protected ResourceKey<LootTable> getDefaultLootTable() {
-        return ResourceKey.create(Registries.LOOT_TABLE, LOOT);
-    }
-
     /**
      * Returns the volume for the sounds this mob makes.
      */
@@ -178,8 +176,8 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
     }
 
     // @todo 1.18 @Override
-    public boolean checkSpawnRules(Level worldIn, MobSpawnType spawnReasonIn) {
-        boolean b = (this.random.nextInt(100) == 0) && super.checkSpawnRules(worldIn, spawnReasonIn) && this.getCommandSenderWorld().getDifficulty() != Difficulty.PEACEFUL;
+    public boolean checkSpawnRules(Level worldIn, EntitySpawnReason spawnReasonIn) {
+        boolean b = (this.random.nextInt(100) == 0) && super.checkSpawnRules(worldIn, spawnReasonIn) && this.level().getDifficulty() != Difficulty.PEACEFUL;
         return b;
     }
 
@@ -199,23 +197,21 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
     /**
      * (abstract) Protected helper method to write subclass entity data to NBT.
      */
-    @Override
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
+    public void writeEntityData(CompoundTag compound) {
+
         if (cityCenter != null) {
-            compound.putInt("cityX", cityCenter.x);
-            compound.putInt("cityZ", cityCenter.z);
+            compound.putInt("cityX", cityCenter.x());
+            compound.putInt("cityZ", cityCenter.z());
         }
     }
 
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    @Override
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
+    public void readEntityData(CompoundTag compound) {
+
         if (compound.contains("cityX")) {
-            cityCenter = new ChunkPos(compound.getInt("cityX"), compound.getInt("cityZ"));
+            cityCenter = new ChunkPos(compound.getIntOr("cityX", 0), compound.getIntOr("cityZ", 0));
         }
     }
 
@@ -314,4 +310,19 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
             }
         }
     }
+
+    @Override
+    public void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        readEntityData(input.read(MapCodec.assumeMapUnsafe(CompoundTag.CODEC)).orElseGet(CompoundTag::new));
+    }
+
+    @Override
+    public void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        CompoundTag tag = new CompoundTag();
+        writeEntityData(tag);
+        output.store(tag);
+    }
+
 }

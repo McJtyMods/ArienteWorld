@@ -1,5 +1,10 @@
 package mcjty.arienteworld.datagen;
 
+import mcjty.lib.datagen.model.ModelProvider;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.data.CachedOutput;
+import net.minecraft.data.DataProvider;
+
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -21,22 +26,22 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.data.BlockTagsProvider;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 import static mcjty.ariente.setup.Registration.DUST_NEGARITE;
 import static mcjty.ariente.setup.Registration.DUST_POSIRITE;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class DataGenerators {
 
     @SubscribeEvent
-    public static void gatherData(GatherDataEvent event) {
+    public static void gatherData(GatherDataEvent.Client event) {
         PackOutput output = event.getGenerator().getPackOutput();
-        event.getGenerator().addProvider(event.includeServer(), new LootTableProvider(output, Set.of(),
+        event.getGenerator().addProvider(true, new ItemDefinitions(output));
+        event.getGenerator().addProvider(true, new LootTableProvider(output, Set.of(),
                 List.of(new LootTableProvider.SubProviderEntry(BlockLoot::new, LootContextParamSets.BLOCK)), event.getLookupProvider()));
-        event.getGenerator().addProvider(event.includeServer(),
-                new BlockTags(output, event.getLookupProvider(), event.getExistingFileHelper()));
+        event.getGenerator().addProvider(true,
+                new BlockTags(output, event.getLookupProvider()));
     }
 
     private static class BlockLoot extends BlockLootSubProvider {
@@ -68,8 +73,8 @@ public class DataGenerators {
 
     private static class BlockTags extends BlockTagsProvider {
 
-        private BlockTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookup, ExistingFileHelper helper) {
-            super(output, lookup, ArienteWorld.MODID, helper);
+        private BlockTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookup) {
+            super(output, lookup, ArienteWorld.MODID);
         }
 
         @Override
@@ -81,6 +86,23 @@ public class DataGenerators {
             tag(CrystalFormationFeature.SUBSTRATE).add(DecorativeBlockModule.MARBLE.get(MarbleColor.GRAY).get(),
                     DecorativeBlockModule.MARBLE.get(MarbleColor.WHITE).get(), DecorativeBlockModule.MARBLE.get(MarbleColor.BLUE).get(),
                     DecorativeBlockModule.MARBLE.get(MarbleColor.BLACK).get());
+        }
+    }
+    private record ItemDefinitions(PackOutput output) implements DataProvider {
+
+        @Override
+        public CompletableFuture<?> run(CachedOutput cache) {
+            var paths = output.createPathProvider(PackOutput.Target.RESOURCE_PACK, "items");
+            var tasks = Registration.ITEMS.getEntries().stream().map(entry -> {
+                var id = BuiltInRegistries.ITEM.getKey(entry.get());
+                return DataProvider.saveStable(cache, ModelProvider.itemDefinition(id.withPrefix("item/")), paths.json(id));
+            }).toArray(CompletableFuture[]::new);
+            return CompletableFuture.allOf(tasks);
+        }
+
+        @Override
+        public String getName() {
+            return "ArienteWorld item definitions";
         }
     }
 }

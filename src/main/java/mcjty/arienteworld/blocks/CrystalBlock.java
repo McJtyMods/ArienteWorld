@@ -11,8 +11,8 @@ public class CrystalBlock extends TransparentBlock {
             SoundEvents.EXPERIENCE_ORB_PICKUP, SoundEvents.AMETHYST_BLOCK_STEP,
             SoundEvents.AMETHYST_BLOCK_PLACE, SoundEvents.AMETHYST_BLOCK_HIT, SoundEvents.AMETHYST_BLOCK_FALL);
 
-    public CrystalBlock(MapColor color) {
-        super(Properties.of().mapColor(color).strength(1.5f, 3).requiresCorrectToolForDrops()
+    public CrystalBlock(Properties properties, MapColor color) {
+        super(properties.mapColor(color).strength(1.5f, 3).requiresCorrectToolForDrops()
                 .noOcclusion().sound(CRYSTAL_SOUND));
     }
 }

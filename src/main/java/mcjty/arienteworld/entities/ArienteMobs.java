@@ -37,7 +37,7 @@ public class ArienteMobs {
             default:
                 break;
         }
-        entity.moveTo(entity.getX(), entity.getY(), entity.getZ(), yaw, 0);
+        entity.snapTo(entity.getX(), entity.getY(), entity.getZ(), yaw, 0);
         entity.equipDefaultWeapon(world.getRandom());
         world.addFreshEntity(entity);
         return entity;

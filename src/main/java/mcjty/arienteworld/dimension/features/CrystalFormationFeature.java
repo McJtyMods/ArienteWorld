@@ -6,7 +6,7 @@ import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.LevelSimulatedReader;
@@ -22,7 +22,7 @@ public class CrystalFormationFeature extends Feature<NoneFeatureConfiguration> {
     private static final double FORMATION_SCALE = .4;
 
     public static final TagKey<Block> SUBSTRATE = TagKey.create(Registries.BLOCK,
-            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "crystal_substrate"));
+            Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "crystal_substrate"));
 
     public CrystalFormationFeature() {
         super(NoneFeatureConfiguration.CODEC);

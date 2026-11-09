@@ -1,6 +1,6 @@
 # ArienteWorld
 
-Minecraft **1.21.1 / NeoForge** companion to Ariente, adding an alien dimension,
+Minecraft **26.1.2 / NeoForge** companion to Ariente, adding an alien dimension,
 cities and progression to obtain its technology. Requires matching Ariente,
 HoloGui and McJtyLib; The One Probe is optional.
 
@@ -34,6 +34,11 @@ all dungeon types, including underground halls and the huge cube, at light level
 of 11 or lower. Natural patrols use the normal hostile mob cap and spawning distances
 and do not require an alert or the whole dungeon to be loaded. This also applies
 to existing generated dungeons.
+Small surface bases and floating islands (up to three by three chunks) use
+single-soldier natural patrols and half the alert reinforcement counts, rounded
+down after any high-alert doubling. Larger dungeons keep their original patrol
+packs and reinforcement strengths. Fixed defenders retain their authored posts;
+already spawned soldiers are not removed by this change.
 
 Each loaded dungeon section initializes its loot, locks and fixed defenders once.
 Organized defenses continue in loaded sections even when the perimeter or the
@@ -170,7 +175,7 @@ Use `/summon arienteworld:darkbat` to inspect one in a development world.
 
 ## Tutorial save
 
-`tools/create_tutorial.py` authors a fresh NeoForge 1.21.1 world named **Tutorial**.
+`tools/create_tutorial.py` authors a fresh NeoForge 26.1.2 world named **Tutorial**.
 It uses a void Overworld, a 144×144 city platform aligned around city-center
 chunk (8, 8), and a flat 48×48 teaching plaza in chunks (7–9, 7–9). The outer 72 chunks
 use ArienteWorld's city generator, with parks, buildings and levitator corridors. Numbered Ariente text
@@ -180,18 +185,18 @@ Warper, plus ship charging, camera views, ore purification and loot recycling.
 The city AI Core is explicitly identified as a dimension-specific exhibit;
 its city behavior runs in Ariente, which the charged Warper can reach.
 
-With Java 21 selected through `JAVA_HOME`, run from this checkout:
+With Java 25 selected through `JAVA_HOME`, run from this checkout:
 
 ```sh
 python3 tools/create_tutorial.py
-python3 tools/create_tutorial.py --verify --saves ../workspace/run/saves
+python3 tools/create_tutorial.py --verify --saves ../Multi_neo/workspace/run/saves
 ```
 
 The first command builds under `build/tutorial/server`. The second restarts that
 world, checks persistence and installs it in the development client's saves list.
 Use `--directory` for another authoring directory or `--saves` for another client.
 Existing worlds are protected unless `--replace` is supplied. For example,
-`python3 tools/create_tutorial.py --verify --replace --saves ../workspace/run/saves`
+`python3 tools/create_tutorial.py --verify --replace --saves ../Multi_neo/workspace/run/saves`
 replaces the installed Tutorial after verification succeeds, without a backup.
 All registered block-entity types are represented, including multipart nodes.
 The automation exhibit uses a closed Field Marker border with no interior markers.
@@ -266,7 +271,7 @@ For screenshots, copy the completed save to
 `build/tutorial/client/saves/Tutorial` and run from the multiworkspace root:
 
 ```sh
-./gradlew -I ArienteWorld/tools/tutorial.gradle -Ptutorial_preview :ArienteWorld:runClient
+./gradlew -I ../ArienteWorld_neo/tools/tutorial.gradle -Ptutorial_preview :ArienteWorld:runClient
 ```
 
 The preview uses its own copy and writes city, plaza, bend, beam, elevator and
@@ -303,7 +308,7 @@ For the display-position regression, copy the stopped authoring save to
 `build/tutorial/position-check/saves/Tutorial`, then run from the workspace root:
 
 ```sh
-./gradlew -I ArienteWorld/tools/tutorial.gradle -Ptutorial_position_check -Ptutorial_client_directory=build/tutorial/position-check :ArienteWorld:runClient
+./gradlew -I ../ArienteWorld_neo/tools/tutorial.gradle -Ptutorial_position_check -Ptutorial_client_directory=build/tutorial/position-check :ArienteWorld:runClient
 ```
 
 This checks nine views: diagonal and cardinal turns, looking up/down, moving
@@ -317,7 +322,7 @@ For the forcefield sound regression, copy the stopped authoring save to
 `build/tutorial/sound-check/saves/Tutorial`, then run from the workspace root:
 
 ```sh
-./gradlew -I ArienteWorld/tools/tutorial.gradle -Ptutorial_forcefield_sound_check -Ptutorial_client_directory=build/tutorial/sound-check :ArienteWorld:runClient
+./gradlew -I ../ArienteWorld_neo/tools/tutorial.gradle -Ptutorial_forcefield_sound_check -Ptutorial_client_directory=build/tutorial/sound-check :ArienteWorld:runClient
 ```
 
 The check approaches and leaves the working shield, re-enters during fade-out,
@@ -326,13 +331,33 @@ gradual volume changes, channel reuse and eventual sound shutdown. The client
 profile contains `forcefield-sound.csv`; success logs `FORCEFIELD SOUND CHECK: passed`.
 It changes the disposable save and its sound settings, so use a fresh copy.
 
+For the live-camera and tank transparency regression, copy the stopped
+authoring save to a disposable profile under `/var/tmp`, then run from `Multi_neo`:
+
+```sh
+TMPDIR=/var/tmp ./gradlew -I ../ArienteWorld_neo/tools/tutorial.gradle -Ptutorial_render_regression -Ptutorial_client_directory=/var/tmp/ariente-render-check :ArienteWorld:runClient
+```
+
+The profile must contain `saves/Tutorial`. The check builds a static camera
+landmark and two eight-section tank columns inside that disposable world. It
+compares actual camera framebuffer pixels after player translation, height and
+yaw changes, and samples both beams at three heights per section from three
+angles. It also checks that inactive tanks have no beam, that the live feed
+renders daytime and nighttime skies, and that the local player appears in the
+feed in both first-person and third-person mode when inside the mounted camera's
+view and disappears when outside it. Add
+`-Ptutorial_fabulous` with another fresh profile for Fabulous graphics. Results
+and screenshots are written to `render-regression/` inside the profile; successful
+runs log `RENDER REGRESSION: all camera and tank checks passed` and exit. These
+fixtures are excluded from released mods. Remove disposable profiles when done.
+
 The older `tools/autofield_rendering.gradle` and broader Forge client/GameTest
 fixtures are historical 1.20.1 checks; they are not part of the NeoForge suite.
 Use the tutorial preview above for current client validation.
 
-Development target: Minecraft 1.21.1, NeoForge 21.1.215, Java 21, branch `1.21_neo`.
+Development target: Minecraft 26.1.2, NeoForge 26.1.2.99, Java 25, branch `26.1.2_neo`.
 Build with `./gradlew build` standalone, or `./gradlew :ArienteWorld:build` from MultiWorkspace.
-The workspace uses the included McJtyLib and The One Probe sources. Ariente and ArienteWorld also use included HoloGui/Ariente sources. Published Maven artifacts are standalone fallbacks.
+The workspace uses the included McJtyLib and The One Probe sources. These ports require McJtyLib **26.1.2-10.0.2** or newer. Ariente and ArienteWorld also use included HoloGui/Ariente sources. Published Maven artifacts are standalone fallbacks.
 Unpublished port dependencies can be provided with `-Pariente_dependency_repository=<repository URL>`; `-Pgradletools_path=<file>` selects an explicit shared Gradle script.
 
-The [NeoForge port checkpoint](PORT_1_21.md) documents current commands and validation. Earlier Forge fixture commands in this file are historical.
+The [26.1.2 port report](PORT_26_1_2.md) documents current commands and validation. Earlier Forge fixture commands in this file are historical.

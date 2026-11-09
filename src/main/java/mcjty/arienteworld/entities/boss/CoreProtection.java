@@ -1,5 +1,8 @@
 package mcjty.arienteworld.entities.boss;
 
+import mcjty.ariente.varia.Messages;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
+
 import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ai.CityAI;
@@ -15,7 +18,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDestroyBlockEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
 
 @EventBusSubscriber(modid = ArienteWorld.MODID)
@@ -35,15 +37,15 @@ public class CoreProtection {
     public static void startMiningCore(PlayerInteractEvent.LeftClickBlock event) {
         if (event.getLevel() instanceof ServerLevel level && isProtected(level, event.getPos())) {
             event.setCanceled(true);
-            event.getEntity().displayClientMessage(Component.translatable("message.arienteworld.core_guardian_protection"), true);
+            Messages.player(event.getEntity(), Component.translatable("message.arienteworld.core_guardian_protection"), true);
         }
     }
 
     @SubscribeEvent
-    public static void breakCore(BlockEvent.BreakEvent event) {
+    public static void breakCore(BreakBlockEvent event) {
         if (event.getLevel() instanceof ServerLevel level && isProtected(level, event.getPos())) {
             event.setCanceled(true);
-            event.getPlayer().displayClientMessage(Component.translatable("message.arienteworld.core_guardian_protection"), true);
+            Messages.player(event.getPlayer(), Component.translatable("message.arienteworld.core_guardian_protection"), true);
         }
     }
 

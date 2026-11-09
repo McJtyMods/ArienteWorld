@@ -75,14 +75,14 @@ public class CityTools {
     }
 
     public static City getCity(long seed, ChunkPos center) {
-        Random random = new Random(seed + center.x * 198491317L + center.z * 776531419L);
+        Random random = new Random(seed + center.x() * 198491317L + center.z() * 776531419L);
         random.nextFloat();
         random.nextFloat();
         CityPlan plan;
         do {
             plan = AssetRegistries.CITYPLANS.get(random.nextInt(AssetRegistries.CITYPLANS.getCount()));
         } while (!plan.isCity());
-        Random names = new Random(seed + center.x * 903932899L + center.z * 776531419L);
+        Random names = new Random(seed + center.x() * 903932899L + center.z() * 776531419L);
         return new City(center, plan, NameGenerator.randomName(names));
     }
 
@@ -90,14 +90,14 @@ public class CityTools {
     public static CityIndex getDungeonIndex(int chunkX, int chunkZ, ChunkPos center, CityPlan plan) {
         int width = plan.getPlan().get(0).length();
         int depth = plan.getPlan().size();
-        int x = chunkX + width / 2 - center.x;
-        int z = chunkZ + depth / 2 - center.z;
+        int x = chunkX + width / 2 - center.x();
+        int z = chunkZ + depth / 2 - center.z();
         return x >= 0 && x < width && z >= 0 && z < depth ? new CityIndex(width, depth, x, z) : null;
     }
 
     public static Map<String, Integer> getVariantSelections(long seed, City city) {
         ChunkPos center = city.getCenter();
-        Random random = new Random(seed + center.z * 198491317L + center.x * 776531419L);
+        Random random = new Random(seed + center.z() * 198491317L + center.x() * 776531419L);
         random.nextFloat();
         Map<String, Integer> variants = new LinkedHashMap<>();
         city.getPlan().getVariants().forEach((name, count) -> variants.put(name, random.nextInt(count)));
@@ -122,7 +122,7 @@ public class CityTools {
     }
 
     public static List<BuildingPart> getBuildingParts(long seed, City city, int chunkX, int chunkZ) {
-        if (!isCityCenter(seed, city.getCenter().x, city.getCenter().z)) {
+        if (!isCityCenter(seed, city.getCenter().x(), city.getCenter().z())) {
             return List.of();
         }
         CityPlan plan = city.getPlan();
@@ -171,7 +171,7 @@ public class CityTools {
                 tallest = Math.max(tallest, AssetRegistries.PARTS.get(part).getSliceCount());
             }
         }
-        return Math.min(y, height.getMaxBuildHeight() - tallest * 3 - 1);
+        return Math.min(y, height.getMaxY() - tallest * 3 - 1);
     }
 
     public static int getCityHeight(ServerLevel level, City city) {

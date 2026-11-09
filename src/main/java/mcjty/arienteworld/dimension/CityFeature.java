@@ -23,7 +23,7 @@ import mcjty.arienteworld.cities.Transform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -63,45 +63,45 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
         if (!level.getLevel().dimension().equals(DimensionRegister.DIMENSION)) {
             return false;
         }
-        ChunkPos chunk = new ChunkPos(context.origin());
+        ChunkPos chunk = ChunkPos.containing(context.origin());
         // Native tree features also place decorative BaseBlocks without tile suppliers.
-        var generated = level.getChunk(chunk.x, chunk.z);
+        var generated = level.getChunk(chunk.x(), chunk.z());
         for (BlockPos pos : List.copyOf(generated.getBlockEntitiesPos())) {
             if (!hasBlockEntity(generated.getBlockState(pos))) {
                 generated.removeBlockEntity(pos);
             }
         }
         CityChunk writer = new CityChunk(level, chunk);
-        if (PortalGenerator.isPortalChunk(chunk.x, chunk.z)) {
+        if (PortalGenerator.isPortalChunk(chunk.x(), chunk.z())) {
             PortalGenerator.generate(writer, chunk, context.chunkGenerator());
             return true;
         }
-        if (ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x, chunk.z)) {
-            ArienteLandscapeCity.generate(chunk.x, chunk.z, writer);
+        if (ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x(), chunk.z())) {
+            ArienteLandscapeCity.generate(chunk.x(), chunk.z(), writer);
         } else {
             generateCityWalls(writer, chunk);
         }
-        City city = CityTools.getCity(level.getSeed(), CityTools.getNearestDungeonCenter(chunk.x, chunk.z));
-        List<BuildingPart> parts = CityTools.getBuildingParts(level.getSeed(), city, chunk.x, chunk.z);
+        City city = CityTools.getCity(level.getSeed(), CityTools.getNearestDungeonCenter(chunk.x(), chunk.z()));
+        List<BuildingPart> parts = CityTools.getBuildingParts(level.getSeed(), city, chunk.x(), chunk.z());
         if (parts.isEmpty()) {
-            if (!ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x, chunk.z)) {
+            if (!ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x(), chunk.z())) {
                 blendNearbyCity(level, chunk, context.chunkGenerator());
             }
-            LevitatorNetworkGenerator.generate(chunk.x, chunk.z, writer, context.chunkGenerator());
+            LevitatorNetworkGenerator.generate(chunk.x(), chunk.z(), writer, context.chunkGenerator());
             return true;
         }
         int floor = CityTools.getCityHeight(city, context.chunkGenerator(), level, level.getLevel().getChunkSource().randomState());
-        int bottom = floor - CityTools.getCellarHeight(level.getSeed(), city, chunk.x, chunk.z);
+        int bottom = floor - CityTools.getCellarHeight(level.getSeed(), city, chunk.x(), chunk.z());
         int y = bottom;
         if (!city.getPlan().isFloating() && !city.getPlan().isUnderground()) {
             prepareTerrain(level, chunk, bottom);
         }
         Palette palette = AssetRegistries.PALETTES.get(city.getPlan().getPalette());
         for (BuildingPart part : parts) {
-            placePart(level, new BlockPos(chunk.getMinBlockX(), y, chunk.getMinBlockZ()), DungeonInteriors.vary(part, palette, level.getSeed(), chunk.x, chunk.z), palette);
+            placePart(level, new BlockPos(chunk.getMinBlockX(), y, chunk.getMinBlockZ()), DungeonInteriors.vary(part, palette, level.getSeed(), chunk.x(), chunk.z()), palette);
             y += part.getSliceCount();
         }
-        LevitatorNetworkGenerator.generate(chunk.x, chunk.z, writer, context.chunkGenerator());
+        LevitatorNetworkGenerator.generate(chunk.x(), chunk.z(), writer, context.chunkGenerator());
         return true;
     }
 
@@ -110,7 +110,7 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
         BlockState cap = LegacyBlockStates.read("ariente:marble_smooth@color=black");
         for (Direction direction : Direction.Plane.HORIZONTAL) {
             if (!ArienteLandscapeCity.isLandscapeCityChunk(writer.getLevel().getSeed(),
-                    chunk.x + direction.getStepX(), chunk.z + direction.getStepZ())) {
+                    chunk.x() + direction.getStepX(), chunk.z() + direction.getStepZ())) {
                 continue;
             }
             for (int i = 0; i < 16; i++) {
@@ -130,8 +130,8 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 heights[dx + 1][dz + 1] = -1;
-                int x = chunk.x + dx;
-                int z = chunk.z + dz;
+                int x = chunk.x() + dx;
+                int z = chunk.z() + dz;
                 if (CityTools.isDungeonChunk(level.getSeed(), x, z)) {
                     City city = CityTools.getCity(level.getSeed(), CityTools.getNearestDungeonCenter(x, z));
                     if (!city.getPlan().isUnderground() && !city.getPlan().isFloating()) {
@@ -205,9 +205,9 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                     level.setBlock(pos.set(x, y, z), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
                 }
                 // A continuous foundation joins sections over valleys and water.
-                for (int y = bottom - 1; y >= level.getMinBuildHeight(); y--) {
+                for (int y = bottom - 1; y >= level.getMinY(); y--) {
                     pos.set(x, y, z);
-                    if (level.getBlockState(pos).isSolidRender(level, pos)) {
+                    if (level.getBlockState(pos).isSolidRender()) {
                         break;
                     }
                     level.setBlock(pos, foundation, Block.UPDATE_CLIENTS);
@@ -308,14 +308,14 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
                             }
                             equipment.load(settings);
                             if (blockEntity instanceof StorageCubeTile storage && data.get("lootTable") instanceof String table) {
-                                StructureLoot.setLootTable(storage, ResourceLocation.parse(table));
+                                StructureLoot.setLootTable(storage, Identifier.parse(table));
                             }
                             if (mimic != null && blockEntity instanceof IFacadeSupport facade) {
                                 facade.setMimicBlock(mimic);
                             }
                             blockEntity.setChanged();
                         } else if (blockEntity instanceof SpawnerBlockEntity spawner && data.get("mob") instanceof String mob) {
-                            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(mob));
+                            EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse(mob));
                             if (type == null) {
                                 throw new IllegalArgumentException("Unknown city spawner mob: " + mob);
                             }

@@ -1,5 +1,13 @@
 package mcjty.arienteworld.tutorial;
 
+import mcjty.lib.varia.CapabilityTools;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.clock.WorldClocks;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.storage.LevelData;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+
 import com.mojang.authlib.GameProfile;
 import mcjty.ariente.api.AlarmType;
 import mcjty.ariente.api.MarbleColor;
@@ -64,9 +72,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.network.Filterable;
@@ -78,7 +85,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
@@ -193,23 +200,23 @@ public class TutorialWorld {
             // Dedicated servers create saves with cheats disabled. Enable them for the singleplayer tutorial.
             var levelFile = root.resolve("level.dat");
             CompoundTag saved = NbtIo.readCompressed(levelFile, NbtAccounter.unlimitedHeap());
-            saved.getCompound("Data").putBoolean("allowCommands", true);
+            saved.getCompoundOrEmpty("Data").putBoolean("allowCommands", true);
             NbtIo.writeCompressed(saved, levelFile);
             ArienteWorld.setup.getLogger().info("TUTORIAL: saved world permits survival/creative commands");
         }
     }
 
     private static void build(ServerLevel level) {
-        level.setDefaultSpawnPos(SPAWN, 180);
-        level.setDayTime(6000);
-        level.setWeatherParameters(0, 0, false, false);
+        level.setRespawnData(LevelData.RespawnData.of(level.dimension(), SPAWN, 180, 0));
+        level.getServer().clockManager().setTotalTicks(level.registryAccess().getOrThrow(WorldClocks.OVERWORLD), 6000);
+        level.getServer().setWeatherParameters(0, 0, false, false);
         GameRules rules = level.getGameRules();
-        rules.getRule(GameRules.RULE_DAYLIGHT).set(false, level.getServer());
-        rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, level.getServer());
-        rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, level.getServer());
-        rules.getRule(GameRules.RULE_KEEPINVENTORY).set(true, level.getServer());
-        rules.getRule(GameRules.RULE_DOFIRETICK).set(false, level.getServer());
-        rules.getRule(GameRules.RULE_SPAWN_RADIUS).set(0, level.getServer());
+        rules.set(GameRules.ADVANCE_TIME, false, level.getServer());
+        rules.set(GameRules.ADVANCE_WEATHER, false, level.getServer());
+        rules.set(GameRules.SPAWN_MOBS, false, level.getServer());
+        rules.set(GameRules.KEEP_INVENTORY, true, level.getServer());
+        rules.set(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0, level.getServer());
+        rules.set(GameRules.RESPAWN_RADIUS, 0, level.getServer());
         platform(level);
         power(level);
         automation(level);
@@ -342,25 +349,25 @@ public class TutorialWorld {
         put(level, INPUT, Registration.STORAGE.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH));
         OutputItemNodeTile output = (OutputItemNodeTile) node(level, INPUT.north(), Registration.OUTPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
         CompoundTag tag = output.saveWithoutMetadata(level.registryAccess());
-        tag.getCompound("Info").putBoolean("outBlacklist", true);
-        output.loadWithComponents(tag, level.registryAccess());
+        tag.getCompoundOrEmpty("Info").putBoolean("outBlacklist", true);
+        output.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
         part(level, INPUT.north(), Registration.ROUND_ROBIN_NODE.get().defaultBlockState()
                 .setValue(AbstractNodeTile.ORIENTATION, NodeOrientation.SOUTH_DE), PartSlot.SOUTH_DE_BACK);
         SensorItemNodeTile sensor = (SensorItemNodeTile) node(level, INPUT.south(), Registration.SENSOR_ITEM_NODE.get(), NodeOrientation.NORTH_DE);
         tag = sensor.saveWithoutMetadata(level.registryAccess());
-        tag.getCompound("Info").putInt("op", 3);
-        tag.getCompound("Info").putInt("amount", 1);
-        sensor.loadWithComponents(tag, level.registryAccess());
+        tag.getCompoundOrEmpty("Info").putInt("op", 3);
+        tag.getCompoundOrEmpty("Info").putInt("amount", 1);
+        sensor.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
         tag = output.saveWithoutMetadata(level.registryAccess());
-        tag.getCompound("Info").putInt("f0", 0);
-        output.loadWithComponents(tag, level.registryAccess());
+        tag.getCompoundOrEmpty("Info").putInt("f0", 0);
+        output.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
 
         put(level, SMELTER, Registration.SMELTER.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.SOUTH));
         categoryInput(level, SMELTER.west(), NodeOrientation.EAST_DN, ItemFilterCategory.DIRECT_SMELTABLE);
         OutputItemNodeTile products = (OutputItemNodeTile) node(level, SMELTER.north(), Registration.OUTPUT_ITEM_NODE.get(), NodeOrientation.SOUTH_DE);
         tag = products.saveWithoutMetadata(level.registryAccess());
-        tag.getCompound("Info").putBoolean("outBlacklist", true);
-        products.loadWithComponents(tag, level.registryAccess());
+        tag.getCompoundOrEmpty("Info").putBoolean("outBlacklist", true);
+        products.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
         BlockPos combiner = new BlockPos(123, 66, 120);
         put(level, combiner, Registration.POWER_COMBINER.get());
         ((PowerCombinerTile) level.getBlockEntity(combiner)).setPowerTransfer(2500);
@@ -430,8 +437,8 @@ public class TutorialWorld {
     private static void extractAll(ServerLevel level, BlockPos pos, NodeOrientation orientation) {
         OutputItemNodeTile output = (OutputItemNodeTile) node(level, pos, Registration.OUTPUT_ITEM_NODE.get(), orientation);
         CompoundTag tag = output.saveWithoutMetadata(level.registryAccess());
-        tag.getCompound("Info").putBoolean("outBlacklist", true);
-        output.loadWithComponents(tag, level.registryAccess());
+        tag.getCompoundOrEmpty("Info").putBoolean("outBlacklist", true);
+        output.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
     }
 
     private static void categoryInput(ServerLevel level, BlockPos pos, NodeOrientation orientation, ItemFilterCategory category) {
@@ -442,8 +449,8 @@ public class TutorialWorld {
             input.getInputFilter().set(1, new ItemStack(Registration.DUST_POSIRITE.get()));
         }
         CompoundTag tag = input.saveWithoutMetadata(level.registryAccess());
-        tag.getCompound("Info").putBoolean("inBlacklist", true);
-        input.loadWithComponents(tag, level.registryAccess());
+        tag.getCompoundOrEmpty("Info").putBoolean("inBlacklist", true);
+        input.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
         input.setInputCategory(category);
     }
 
@@ -492,7 +499,7 @@ public class TutorialWorld {
     private static ItemStack linkedModule(ServerLevel level, Item item, BlockPos target) {
         ItemStack stack = new ItemStack(item);
         CompoundTag link = new CompoundTag();
-        link.putString("Dimension", level.dimension().location().toString());
+        link.putString("Dimension", level.dimension().identifier().toString());
         link.putLong("Pos", target.asLong());
         link.putInt("Side", Direction.UP.get3DDataValue());
         link.putString("Block", BuiltInRegistries.BLOCK.getKey(level.getBlockState(target).getBlock()).toString());
@@ -536,7 +543,7 @@ public class TutorialWorld {
             CompoundTag tag = base.saveWithoutMetadata(base.getLevel().registryAccess());
             tag.putInt("Height", height);
             appearance.write(tag);
-            base.loadWithComponents(tag, base.getLevel().registryAccess());
+            base.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, base.getLevel().registryAccess(), tag));
             base.changed();
             bases[column] = base;
         }
@@ -547,8 +554,8 @@ public class TutorialWorld {
         InstalledModule module = new InstalledModule(stack, x, y);
         require(DisplayGeometry.canPlace(base, module.size(), x, y), "Module does not fit its tutorial display at " + base.getBlockPos());
         CompoundTag tag = base.saveWithoutMetadata(base.getLevel().registryAccess());
-        tag.getList("Modules", Tag.TAG_COMPOUND).add(module.save(false, base.getLevel().registryAccess()));
-        base.loadWithComponents(tag, base.getLevel().registryAccess());
+        tag.getListOrEmpty("Modules").add(module.save(false, base.getLevel().registryAccess()));
+        base.loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, base.getLevel().registryAccess(), tag));
         base.changed();
     }
 
@@ -758,8 +765,8 @@ public class TutorialWorld {
         ItemStack module = linkedModule(level, Registration.DISPLAY_CAMERA.get(), PROCESS_CAMERA);
         CompoundTag config = DisplayModuleItem.config(module);
         ListTag links = new ListTag();
-        links.add(config.getCompound("Link").copy());
-        links.add(DisplayModuleItem.config(linkedModule(level, Registration.DISPLAY_CAMERA.get(), DOCK_CAMERA)).getCompound("Link").copy());
+        links.add(config.getCompoundOrEmpty("Link").copy());
+        links.add(DisplayModuleItem.config(linkedModule(level, Registration.DISPLAY_CAMERA.get(), DOCK_CAMERA)).getCompoundOrEmpty("Link").copy());
         config.remove("Link");
         config.put("Cameras", links);
         config.putInt("Size", 2);
@@ -861,7 +868,7 @@ public class TutorialWorld {
         ItemStack card = new ItemStack(Registration.KEY_CARD.get());
         KeyCardItem.addSecurityTag(card, "Tutorial");
         card.set(DataComponents.CUSTOM_NAME, Component.literal("Tutorial door key"));
-        ItemStack manual = PatchouliAPI.get().getBookStack(ResourceLocation.fromNamespaceAndPath("ariente", "manual"));
+        ItemStack manual = PatchouliAPI.get().getBookStack(Identifier.fromNamespaceAndPath("ariente", "manual"));
         stock(level, WELCOME_STORAGE, guide(), card, new ItemStack(Registration.TABLET.get()),
                 new ItemStack(Registration.FLUX_LEVITATOR.get()), new ItemStack(Registration.FLUX_SHIP.get()), manual);
         for (Item item : new Item[]{Registration.POWERSUIT_HEAD.get(), Registration.POWERSUIT_CHEST.get(), Registration.POWERSUIT_LEGS.get(),
@@ -914,7 +921,7 @@ public class TutorialWorld {
     }
 
     private static IItemHandler inventory(ServerLevel level, BlockPos pos) {
-        return Objects.requireNonNull(level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null), "Missing inventory at " + pos);
+        return Objects.requireNonNull(CapabilityTools.itemHandler(level.getCapability(Capabilities.Item.BLOCK, pos, null)), "Missing inventory at " + pos);
     }
 
     private static void put(ServerLevel level, BlockPos pos, Block block) {
@@ -1068,6 +1075,9 @@ public class TutorialWorld {
     }
 
     private static void verify(ServerLevel level) {
+        TutorialPortChecks.mining(level, mockRider(level), SPAWN);
+        TutorialPortChecks.inventoryTransactions(level, WOOD);
+        TutorialPortChecks.inventoryTransactions(level, INGOTS);
         if (Boolean.getBoolean("ariente.tutorial.verify")) {
             require(level.getServer().getWorldData().getLevelSettings().allowCommands(), "Reloaded Tutorial must permit survival/creative commands");
         }
@@ -1143,7 +1153,7 @@ public class TutorialWorld {
             ItemStack selected = cameraModule.stack().copy();
             DisplayModuleItem.config(selected).putInt("CameraIndex", index);
             CompoundTag capture = new CameraDisplayModule().sample(level, selected, new CompoundTag());
-            require(!capture.contains("Status") && capture.getLongArray("Blocks").length > 0,
+            require(!capture.contains("Status") && capture.getLongArray("Blocks").orElseGet(() -> new long[0]).length > 0,
                     "Linked tutorial camera failed to capture its exhibit: " + index);
         }
         require(level.getBlockEntity(PROCESS_CAMERA) instanceof CameraTile && level.getBlockEntity(DOCK_CAMERA) instanceof CameraTile,
@@ -1177,7 +1187,7 @@ public class TutorialWorld {
         require(((SignalReceiverTile) level.getBlockEntity(new BlockPos(115, 65, 148))).getPowerOutput() == 15,
                 "Wireless button/receiver pair does not send redstone");
         require(level.getBlockState(KEYCARD_DOOR.above()).is(Registration.INVISIBLE_DOOR.get()), "Door marker did not create its door");
-        Set<ResourceLocation> coverage = new HashSet<>();
+        Set<Identifier> coverage = new HashSet<>();
         for (int x = 7; x <= 9; x++) {
             for (int z = 7; z <= 9; z++) {
                 for (BlockEntity tile : level.getChunk(x, z).getBlockEntities().values()) {
@@ -1256,7 +1266,12 @@ public class TutorialWorld {
 
     private static Player mockRider(ServerLevel level) {
         // NeoForge FakePlayer deliberately refuses mounts; use vanilla's GameTest player pattern.
-        return new Player(level, SPAWN, 0, new GameProfile(UUID.randomUUID(), "tutorial-rider")) {
+        return new Player(level, new GameProfile(UUID.randomUUID(), "tutorial-rider")) {
+
+            @Override
+            public GameType gameMode() {
+                return GameType.CREATIVE;
+            }
 
             @Override
             public boolean isSpectator() {
@@ -1270,15 +1285,21 @@ public class TutorialWorld {
         };
     }
 
+    private static CompoundTag saveEntity(Entity entity) {
+        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, entity.registryAccess());
+        entity.saveWithoutId(output);
+        return output.buildResult();
+    }
+
     private static void verifyShipTakeoff(ServerLevel level) {
         FluxShipEntity ship = ship(level);
-        CompoundTag parked = ship.saveWithoutId(new CompoundTag());
+        CompoundTag parked = saveEntity(ship);
         var pilot = mockRider(level);
         try {
             for (int heading = 0; heading < 360; heading += 45) {
-                ship.load(parked.copy());
+                ship.load(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), parked.copy()));
                 ship.setYRot(heading);
-                require(pilot.startRiding(ship, true), "Ship test pilot could not mount");
+                require(pilot.startRiding(ship, true, true), "Ship test pilot could not mount");
                 double altitude = ship.getY();
                 for (int tick = 0; tick < 15; tick++) {
                     ship.handleInput(pilot, 1, 0, 0, false, true, true, heading, -25);
@@ -1290,7 +1311,7 @@ public class TutorialWorld {
             }
         } finally {
             pilot.stopRiding();
-            ship.load(parked);
+            ship.load(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), parked));
             if (ship.getHoloGui() != null) {
                 ship.positionRider(ship.getHoloGui().getEntity());
             }
@@ -1306,12 +1327,12 @@ public class TutorialWorld {
             columns.put(new BlockPos(pos.getX(), 0, pos.getZ()), pos);
         });
         require(track.size() == 424, "Unexpected city circuit length: " + track.size());
-        CompoundTag parked = cart.saveWithoutId(new CompoundTag());
+        CompoundTag parked = saveEntity(cart);
         var rider = mockRider(level);
         try {
             for (int speed : new int[]{5, 80, -5, -80}) {
-                cart.load(parked.copy());
-                require(rider.startRiding(cart, true), "Circuit test rider could not mount");
+                cart.load(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), parked.copy()));
+                require(rider.startRiding(cart, true, true), "Circuit test rider could not mount");
                 cart.changeSpeed(speed);
                 Set<BlockPos> bends = new HashSet<>();
                 Set<BlockPos> slopes = new HashSet<>();
@@ -1351,7 +1372,7 @@ public class TutorialWorld {
             }
         } finally {
             rider.stopRiding();
-            cart.load(parked);
+            cart.load(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), parked));
             cart.positionRider(cart.getHoloGuiFront().getEntity());
             cart.positionRider(cart.getHoloGuiBack().getEntity());
         }

@@ -78,14 +78,14 @@ public class EditorCommands {
         })).build());
         root.addChild(Commands.literal("pacify").executes(ctx -> run(ctx.getSource(), player -> {
             City city = currentCity(player);
-            var system = CityAISystem.getCityAISystem(player.serverLevel());
+            var system = CityAISystem.getCityAISystem(player.level());
             system.getCityAI(city.getCenter()).pacify(player.level());
             system.saveSystem();
             return "Pacified " + city.getName();
         })).build());
         root.addChild(Commands.literal("citycard").executes(ctx -> run(ctx.getSource(), player -> {
             City city = currentCity(player);
-            String key = CityAISystem.getCityAISystem(player.serverLevel()).getCityAI(city.getCenter()).getStorageKeyId();
+            String key = CityAISystem.getCityAISystem(player.level()).getCityAI(city.getCenter()).getStorageKeyId();
             if (key == null || key.isEmpty()) {
                 throw new IllegalStateException("Load the complete city and let its AI initialize first");
             }
@@ -104,10 +104,10 @@ public class EditorCommands {
             throw new IllegalStateException("This command requires the Ariente dimension");
         }
         var chunk = player.chunkPosition();
-        if (!CityTools.isDungeonChunk(player.serverLevel().getSeed(), chunk.x, chunk.z)) {
+        if (!CityTools.isDungeonChunk(player.level().getSeed(), chunk.x(), chunk.z())) {
             throw new IllegalStateException("Stand inside a city complex");
         }
-        return CityTools.getCity(player.serverLevel().getSeed(), CityTools.getNearestDungeonCenter(chunk.x, chunk.z));
+        return CityTools.getCity(player.level().getSeed(), CityTools.getNearestDungeonCenter(chunk.x(), chunk.z()));
     }
 
     private static int run(CommandSourceStack source, Action action) throws CommandSyntaxException {

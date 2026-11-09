@@ -1,5 +1,7 @@
 package mcjty.arienteworld.tutorial;
 
+import net.minecraft.client.input.KeyEvent;
+
 import mcjty.ariente.blocks.defense.PanelInfo;
 import mcjty.ariente.blocks.defense.PentakisDodecahedron;
 import mcjty.ariente.blocks.utility.wireless.WirelessButtonTile;
@@ -59,7 +61,7 @@ public class TutorialForcefieldSoundCheck {
                 if (child instanceof Button button && (button.getMessage().getString().equals("Proceed")
                         || button.getMessage().getString().equals("Continue")
                         || button.getMessage().getString().equals("I know what I'm doing!"))) {
-                    button.onPress();
+                    button.onPress(new KeyEvent(257, 0, 0));
                     break;
                 }
             }
@@ -91,7 +93,7 @@ public class TutorialForcefieldSoundCheck {
             mc.getSingleplayerServer().execute(() -> {
                 var player = mc.getSingleplayerServer().getPlayerList().getPlayer(playerId);
                 player.setGameMode(GameType.SPECTATOR);
-                player.teleportTo(player.server.overworld(), 151.5, 65, 137, 180, 0);
+                TutorialSupport.teleport(player, player.level().getServer().overworld(), 151.5, 65, 137, 180, 0);
                 ready = true;
             });
             return;
@@ -132,9 +134,9 @@ public class TutorialForcefieldSoundCheck {
         boolean disable = ticks == 520;
         mc.getSingleplayerServer().execute(() -> {
             var player = mc.getSingleplayerServer().getPlayerList().getPlayer(playerId);
-            player.teleportTo(player.server.overworld(), 151.5, 65, z, 180, 0);
+            TutorialSupport.teleport(player, player.level().getServer().overworld(), 151.5, 65, z, 180, 0);
             if (disable) {
-                ((WirelessButtonTile) player.serverLevel().getBlockEntity(BUTTON)).setLocked(false);
+                ((WirelessButtonTile) player.level().getBlockEntity(BUTTON)).setLocked(false);
             }
         });
         ticks++;

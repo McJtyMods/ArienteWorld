@@ -47,7 +47,7 @@ public class PaneConnections {
         Set<ChunkPos> repair = new HashSet<>(chunks);
         for (ChunkPos chunk : chunks) {
             for (Direction direction : Direction.Plane.HORIZONTAL) {
-                repair.add(new ChunkPos(chunk.x + direction.getStepX(), chunk.z + direction.getStepZ()));
+                repair.add(new ChunkPos(chunk.x() + direction.getStepX(), chunk.z() + direction.getStepZ()));
             }
         }
         for (ChunkPos chunk : repair) {
@@ -56,7 +56,7 @@ public class PaneConnections {
     }
 
     public static void repair(ServerLevel level, ChunkPos pos) {
-        var chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+        var chunk = level.getChunkSource().getChunkNow(pos.x(), pos.z());
         if (chunk == null) {
             return;
         }
@@ -78,7 +78,7 @@ public class PaneConnections {
                         for (Direction direction : Direction.Plane.HORIZONTAL) {
                             BlockPos neighbor = blockPos.relative(direction);
                             if (level.getChunkSource().getChunkNow(neighbor.getX() >> 4, neighbor.getZ() >> 4) != null) {
-                                connected = connected.updateShape(direction, level.getBlockState(neighbor), level, blockPos, neighbor);
+                                connected = connected.updateShape(level, level, blockPos, direction, neighbor, level.getBlockState(neighbor), level.getRandom());
                             }
                         }
                         if (connected != state) {

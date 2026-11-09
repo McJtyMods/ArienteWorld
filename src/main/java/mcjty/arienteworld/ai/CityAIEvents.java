@@ -18,7 +18,7 @@ public class CityAIEvents {
         if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(DimensionRegister.DIMENSION)) {
             ChunkPos pos = event.getChunk().getPos();
             // Chunk events can arrive before promotion to a full chunk. Never scan or load neighbors here.
-            level.getServer().tell(new TickTask(level.getServer().getTickCount(),
+            level.getServer().schedule(new TickTask(level.getServer().getTickCount(),
                     () -> CityAISystem.getCityAISystem(level).chunkLoaded(pos)));
         }
     }
@@ -27,7 +27,7 @@ public class CityAIEvents {
     public static void chunkUnloaded(ChunkEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level && level.dimension().equals(DimensionRegister.DIMENSION)) {
             ChunkPos pos = event.getChunk().getPos();
-            level.getServer().tell(new TickTask(level.getServer().getTickCount(),
+            level.getServer().schedule(new TickTask(level.getServer().getTickCount(),
                     () -> CityAISystem.getCityAISystem(level).chunkUnloaded(pos)));
         }
     }

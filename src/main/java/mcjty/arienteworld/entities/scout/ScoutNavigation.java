@@ -1,9 +1,12 @@
 package mcjty.arienteworld.entities.scout;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.WeakHashMap;
+
 import java.util.UUID;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.TicketType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
@@ -14,28 +17,42 @@ import net.minecraft.world.phys.Vec3;
 /** Local avoidance considers the hull's width, terrain, momentum and the loaded chunk boundary. */
 public class ScoutNavigation {
 
-    private static final TicketType<UUID> FLIGHT = TicketType.create("ariente_scout_flight", UUID::compareTo, 60);
-    private static final TicketType<Long> LAUNCH = TicketType.create("ariente_scout_launch", Long::compareTo, 220);
+    private static final Map<ServerLevel, Map<UUID, FlightLease>> FLIGHTS = new WeakHashMap<>();
+
+    private record FlightLease(ChunkPos chunk, long expires) {
+    }
 
     public static void prepareLaunch(ServerLevel level, ChunkPos base) {
-        level.getChunkSource().addRegionTicket(LAUNCH, base, 3, base.toLong());
+        level.getChunkSource().addTicketWithRadius(mcjty.arienteworld.setup.Registration.SCOUT_LAUNCH.get(), base, 3);
     }
 
     public static void releaseLaunch(ServerLevel level, ChunkPos base) {
-        level.getChunkSource().removeRegionTicket(LAUNCH, base, 3, base.toLong());
+        level.getChunkSource().removeTicketWithRadius(mcjty.arienteworld.setup.Registration.SCOUT_LAUNCH.get(), base, 3);
     }
 
     public static void keepFlightLoaded(ServerLevel level, UUID ship, ChunkPos current, ChunkPos previous) {
-        // Only a small area follows the ship. Tickets expire if its pilot stops ticking or is killed.
-        level.getChunkSource().addRegionTicket(FLIGHT, current, 3, ship);
+        var flights = FLIGHTS.computeIfAbsent(level, key -> new HashMap<>());
+        flights.values().removeIf(lease -> lease.expires() < level.getGameTime());
+        flights.put(ship, new FlightLease(current, level.getGameTime() + 60));
+        level.getChunkSource().addTicketWithRadius(mcjty.arienteworld.setup.Registration.SCOUT_FLIGHT.get(), current, 3);
         if (previous != null && !previous.equals(current)) {
-            releaseFlight(level, ship, previous);
+            removeUnusedTicket(level, previous, flights);
         }
     }
 
     public static void releaseFlight(ServerLevel level, UUID ship, ChunkPos chunk) {
-        if (chunk != null) {
-            level.getChunkSource().removeRegionTicket(FLIGHT, chunk, 3, ship);
+        var flights = FLIGHTS.get(level);
+        if (flights != null) {
+            flights.remove(ship);
+            if (chunk != null) {
+                removeUnusedTicket(level, chunk, flights);
+            }
+        }
+    }
+
+    private static void removeUnusedTicket(ServerLevel level, ChunkPos chunk, Map<UUID, FlightLease> flights) {
+        if (flights.values().stream().noneMatch(lease -> lease.chunk().equals(chunk) && lease.expires() >= level.getGameTime())) {
+            level.getChunkSource().removeTicketWithRadius(mcjty.arienteworld.setup.Registration.SCOUT_FLIGHT.get(), chunk, 3);
         }
     }
 
@@ -45,10 +62,11 @@ public class ScoutNavigation {
 
     public static double floor(ServerLevel level, Vec3 point) {
         return loaded(level, point) ? level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                Mth.floor(point.x), Mth.floor(point.z)) : level.getMinBuildHeight();
+                Mth.floor(point.x), Mth.floor(point.z)) : level.getMinY();
     }
 
     /** Patrol close to the terrain instead of retaining the launch tower's altitude for the whole route. */
+
     public static Vec3 cruiseTarget(ServerLevel level, Vec3 position, Vec3 destination) {
         Vec3 offset = new Vec3(destination.x - position.x, 0, destination.z - position.z);
         Vec3 ahead = position.add(offset.normalize().scale(Math.min(40, offset.length())));

@@ -89,8 +89,8 @@ public class EditMode {
             int depth = plan.getPlan().size();
             for (int z = 0; z < depth; z++) {
                 for (int x = 0; x < width; x++) {
-                    int cx = center.x + x - width / 2;
-                    int cz = center.z + z - depth / 2;
+                    int cx = center.x() + x - width / 2;
+                    int cz = center.z() + z - depth / 2;
                     int y = city == null ? CityTools.getStationHeight() : CityTools.getCityHeight(level, city);
                     List<Placement> column = new ArrayList<>();
                     for (List<String> layer : List.of(plan.getCellar(), plan.getPlan(), plan.getLayer2(), plan.getTop())) {
@@ -300,7 +300,7 @@ public class EditMode {
     }
 
     public static Session begin(ServerPlayer player) {
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         if (!level.dimension().equals(DimensionRegister.DIMENSION) || !player.isCreative()) {
             throw new IllegalStateException("Edit mode requires creative mode in the Ariente dimension");
         }
@@ -308,23 +308,23 @@ public class EditMode {
             throw new IllegalStateException("Already editing; savecity then editmode off to finish");
         }
         ChunkPos chunk = player.chunkPosition();
-        ChunkPos center = CityTools.getNearestDungeonCenter(chunk.x, chunk.z);
+        ChunkPos center = CityTools.getNearestDungeonCenter(chunk.x(), chunk.z());
         if (SESSIONS.values().stream().anyMatch(session -> session.level == level && session.center.equals(center))) {
             throw new IllegalStateException("Another editor is already using this city/station region");
         }
         City city = CityTools.getCity(level.getSeed(), center);
         Session session;
-        boolean station = CityTools.isStationChunk(chunk.x, chunk.z) && player.getY() >= 30 && player.getY() < 48
-                && CityTools.getStationPart(level.getSeed(), chunk.x, chunk.z) != null;
-        if (station || CityTools.isDungeonChunk(level.getSeed(), chunk.x, chunk.z)) {
+        boolean station = CityTools.isStationChunk(chunk.x(), chunk.z()) && player.getY() >= 30 && player.getY() < 48
+                && CityTools.getStationPart(level.getSeed(), chunk.x(), chunk.z()) != null;
+        if (station || CityTools.isDungeonChunk(level.getSeed(), chunk.x(), chunk.z())) {
             CityPlan plan = station ? AssetRegistries.CITYPLANS.get("station") : city.getPlan();
             session = new Session(level, center, station ? null : city, plan, plan.getPalette());
             session.layout();
-        } else if (ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x, chunk.z)) {
-            String name = ArienteLandscapeCity.getBuildingPart(chunk.x, chunk.z).getLeft();
+        } else if (ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x(), chunk.z())) {
+            String name = ArienteLandscapeCity.getBuildingPart(chunk.x(), chunk.z()).getLeft();
             session = new Session(level, center, null, null, ArienteLandscapeCity.CITY_PALETTE);
             session.part(name);
-            session.placements.add(new Placement(new BlockPos(chunk.getMinBlockX(), ArienteLandscapeCity.getBuildingYOffset(chunk.x, chunk.z), chunk.getMinBlockZ()), name, null));
+            session.placements.add(new Placement(new BlockPos(chunk.getMinBlockX(), ArienteLandscapeCity.getBuildingYOffset(chunk.x(), chunk.z()), chunk.getMinBlockZ()), name, null));
         } else {
             throw new IllegalStateException("Stand inside a city, station, or landscape city plot");
         }
@@ -377,7 +377,7 @@ public class EditMode {
                         equipment.load(data);
                         tile.setChanged();
                     } else if (data != null && tile instanceof SpawnerBlockEntity spawner && data.get("mob") instanceof String mob) {
-                        EntityType.byString(mob).ifPresent(type -> spawner.setEntityId(type, level.random));
+                        EntityType.byString(mob).ifPresent(type -> spawner.setEntityId(type, level.getRandom()));
                         spawner.setChanged();
                     }
                 }
@@ -418,7 +418,7 @@ public class EditMode {
                         data.put(new BlockPos(x, y, z), equipment.save());
                     } else if (tile instanceof SpawnerBlockEntity spawner) {
                         spawner.getSpawner().getOrCreateDisplayEntity(level, pos);
-                        String mob = spawner.saveWithoutMetadata(level.registryAccess()).getCompound("SpawnData").getCompound("entity").getString("id");
+                        String mob = spawner.saveWithoutMetadata(level.registryAccess()).getCompoundOrEmpty("SpawnData").getCompoundOrEmpty("entity").getStringOr("id", "");
                         data.put(new BlockPos(x, y, z), Map.of("mob", mob));
                     }
                 }

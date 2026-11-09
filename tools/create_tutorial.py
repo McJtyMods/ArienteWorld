@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create and verify the playable Tutorial save using real NeoForge server ticks.
 
-Requires Java 21 in JAVA_HOME. The generated world and server logs stay under
+Requires Java 25 in JAVA_HOME. The generated world and server logs stay under
 build/tutorial. Supply --saves to install the verified save in a Minecraft client.
 Use --replace to explicitly replace an existing Tutorial save. Run --verify to check persistence
 by restarting the generated server world before installing it.
@@ -51,11 +51,12 @@ def main():
             'spawn-protection': '0', 'spawn-monsters': 'false', 'spawn-animals': 'false',
             'spawn-npcs': 'false', 'view-distance': '5', 'simulation-distance': '5',
             'server-ip': '127.0.0.1', 'server-port': '25579', 'enable-query': 'false',
-            'enable-rcon': 'false', 'max-tick-time': '-1', 'sync-chunk-writes': 'true'
+            'enable-rcon': 'false', 'max-tick-time': '-1', 'sync-chunk-writes': 'true',
+            'pause-when-empty-seconds': '-1'
         }
         (directory / 'server.properties').write_text(''.join(f'{k}={v}\n' for k, v in properties.items()))
         (directory / 'eula.txt').write_text('eula=true\n')
-    workspace = ROOT.parent if (ROOT.parent / 'settings.gradle').is_file() else ROOT
+    workspace = next((path for path in (ROOT.parent, ROOT.parent / 'Multi_neo') if (path / 'settings.gradle').is_file()), ROOT)
     task = ':ArienteWorld:runServer' if workspace != ROOT else ':runServer'
     log = directory / ('verify.log' if args.verify else 'create.log')
     command = [str(workspace / 'gradlew'), '-I', str(ROOT / 'tools/tutorial.gradle'),

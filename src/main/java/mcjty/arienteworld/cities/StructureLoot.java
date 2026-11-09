@@ -4,7 +4,7 @@ import java.util.List;
 import mcjty.ariente.blocks.storagecube.StorageCubeTile;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -19,12 +19,12 @@ public final class StructureLoot {
     private StructureLoot() {
     }
 
-    public static void setLootTable(StorageCubeTile storage, ResourceLocation table) {
+    public static void setLootTable(StorageCubeTile storage, Identifier table) {
         storage.setLootTable(table);
     }
 
     public static boolean fill(StorageCubeTile storage) {
-        ResourceLocation id = storage.getLootTable();
+        Identifier id = storage.getLootTable();
         if (id == null) {
             return false;
         }

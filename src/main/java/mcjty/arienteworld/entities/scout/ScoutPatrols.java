@@ -1,5 +1,10 @@
 package mcjty.arienteworld.entities.scout;
 
+import mcjty.ariente.varia.SavedDataMigration;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.saveddata.SavedDataType;
+
+import net.minecraft.core.UUIDUtil;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -21,7 +26,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
@@ -54,7 +58,9 @@ public class ScoutPatrols extends SavedData {
     }
 
     public static ScoutPatrols get(ServerLevel level) {
-        ScoutPatrols data = level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(ScoutPatrols::new, (tag, provider) -> load(tag)), "ArienteScoutPatrols");
+        Identifier id = Identifier.parse("arienteworld:scout_patrols");
+        SavedDataMigration.migrate(level, id, "ArienteScoutPatrols");
+        ScoutPatrols data = level.getDataStorage().computeIfAbsent(new SavedDataType<ScoutPatrols>(id, ScoutPatrols::new, CompoundTag.CODEC.xmap(ScoutPatrols::load, saved -> saved.save(new CompoundTag(), level.registryAccess()))));
         data.upgradeCadence(level);
         return data;
     }
@@ -142,7 +148,7 @@ public class ScoutPatrols extends SavedData {
     static List<FluxShipEntity> loadedScouts(ServerLevel level) {
         List<FluxShipEntity> fleet = new ArrayList<>();
         for (Entity entity : level.getAllEntities()) {
-            if (entity instanceof FluxShipEntity ship && ship.getPersistentData().getBoolean(SCOUT_SHIP)) {
+            if (entity instanceof FluxShipEntity ship && ship.getPersistentData().getBooleanOr(SCOUT_SHIP, false)) {
                 if (ship.getControllingPassenger() instanceof Player) {
                     // A captured ship is now an ordinary player vehicle.
                     releaseShip(level, ship);
@@ -232,7 +238,7 @@ public class ScoutPatrols extends SavedData {
             ScoutNavigation.releaseLaunch(level, city.getCenter());
             return null;
         }
-        int roof = level.getMinBuildHeight();
+        int roof = level.getMinY();
         // Include the whole hull and launch clearance; neighboring roof spires can be taller than the center column.
         for (int x = -6; x <= 6; x += 3) {
             for (int z = -6; z <= 6; z += 3) {
@@ -240,14 +246,14 @@ public class ScoutPatrols extends SavedData {
             }
         }
         Vec3 position = new Vec3(basePosition.x, Math.max(basePosition.y, roof + 6), basePosition.z);
-        if (position.y >= level.getMaxBuildHeight() - 5) {
+        if (position.y >= level.getMaxY() - 5) {
             return null;
         }
         FluxShipEntity ship = FluxShipEntity.create(level, position.x, position.y, position.z);
         if (!level.noCollision(ship, ship.getBoundingBox().inflate(3, 2, 3))) {
             return null;
         }
-        ScoutRoutes.FlightPlan route = ScoutRoutes.create(level, city.getCenter(), position, level.random);
+        ScoutRoutes.FlightPlan route = ScoutRoutes.create(level, city.getCenter(), position, level.getRandom());
         Vec3 direction = route.waypoints().get(0).subtract(position);
         ship.setYRot((float) (Math.atan2(-direction.x, direction.z) * 180 / Math.PI));
         ship.getPersistentData().putBoolean(SCOUT_SHIP, true);
@@ -257,7 +263,7 @@ public class ScoutPatrols extends SavedData {
         if (!level.addFreshEntity(ship)) {
             return null;
         }
-        if (!level.addFreshEntity(soldier) || !soldier.startRiding(ship, true)) {
+        if (!level.addFreshEntity(soldier) || !soldier.startRiding(ship, true, true)) {
             soldier.discard();
             ship.discard();
             return null;
@@ -269,12 +275,12 @@ public class ScoutPatrols extends SavedData {
     }
 
     boolean ready(ServerLevel level, ChunkPos base) {
-        Launch launch = bases.get(base.toLong());
+        Launch launch = bases.get(base.pack());
         if (launch == null) {
             launch = new Launch();
             // Stagger first encounters too, so a traveler can meet a patrol while passing a new base.
-            launch.nextLaunch = level.getGameTime() + 10 + level.random.nextInt(11);
-            bases.put(base.toLong(), launch);
+            launch.nextLaunch = level.getGameTime() + 10 + level.getRandom().nextInt(11);
+            bases.put(base.pack(), launch);
             setDirty();
         }
         return level.getGameTime() >= launch.nextLaunch
@@ -282,18 +288,18 @@ public class ScoutPatrols extends SavedData {
     }
 
     private boolean preparingSoon(ServerLevel level, ChunkPos base) {
-        Launch launch = bases.get(base.toLong());
+        Launch launch = bases.get(base.pack());
         return launch != null && launch.nextLaunch <= level.getGameTime() + 20
                 && (launch.ship == null || level.getGameTime() - launch.lastActive > LEASE_TIMEOUT);
     }
 
     private static int delay(ServerLevel level) {
         int minimum = AIConfiguration.SCOUT_LAUNCH_INTERVAL.get() * 20;
-        return minimum + level.random.nextInt(minimum + 1);
+        return minimum + level.getRandom().nextInt(minimum + 1);
     }
 
     void launched(ServerLevel level, ChunkPos base, UUID ship) {
-        Launch launch = bases.computeIfAbsent(base.toLong(), key -> new Launch());
+        Launch launch = bases.computeIfAbsent(base.pack(), key -> new Launch());
         launch.nextLaunch = level.getGameTime() + delay(level);
         launch.ship = ship;
         launch.lastActive = level.getGameTime();
@@ -301,7 +307,7 @@ public class ScoutPatrols extends SavedData {
     }
 
     public boolean heartbeat(ChunkPos base, UUID ship, long now) {
-        Launch launch = bases.computeIfAbsent(base.toLong(), key -> new Launch());
+        Launch launch = bases.computeIfAbsent(base.pack(), key -> new Launch());
         if (launch.ship != null && !launch.ship.equals(ship)) {
             return false;
         }
@@ -312,7 +318,7 @@ public class ScoutPatrols extends SavedData {
     }
 
     public void release(ChunkPos base, UUID ship) {
-        Launch launch = bases.get(base.toLong());
+        Launch launch = bases.get(base.pack());
         if (launch != null && ship.equals(launch.ship)) {
             launch.ship = null;
             setDirty();
@@ -321,20 +327,19 @@ public class ScoutPatrols extends SavedData {
 
     public static ScoutPatrols load(CompoundTag tag) {
         ScoutPatrols data = new ScoutPatrols();
-        data.cadenceVersion = tag.getInt("cadenceVersion");
-        ListTag entries = tag.getList("bases", Tag.TAG_COMPOUND);
+        data.cadenceVersion = tag.getIntOr("cadenceVersion", 0);
+        ListTag entries = tag.getListOrEmpty("bases");
         for (int i = 0; i < entries.size(); i++) {
-            CompoundTag entry = entries.getCompound(i);
+            CompoundTag entry = entries.getCompoundOrEmpty(i);
             Launch launch = new Launch();
-            launch.nextLaunch = entry.getLong("next");
-            launch.lastActive = entry.getLong("active");
-            launch.ship = entry.hasUUID("ship") ? entry.getUUID("ship") : null;
-            data.bases.put(entry.getLong("base"), launch);
+            launch.nextLaunch = entry.getLongOr("next", 0);
+            launch.lastActive = entry.getLongOr("active", 0);
+            launch.ship = entry.read("ship", UUIDUtil.CODEC).isPresent() ? entry.read("ship", UUIDUtil.CODEC).orElse(null) : null;
+            data.bases.put(entry.getLongOr("base", 0), launch);
         }
         return data;
     }
 
-    @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
         tag.putInt("cadenceVersion", cadenceVersion);
         ListTag entries = new ListTag();
@@ -344,7 +349,7 @@ public class ScoutPatrols extends SavedData {
             entry.putLong("next", launch.nextLaunch);
             entry.putLong("active", launch.lastActive);
             if (launch.ship != null) {
-                entry.putUUID("ship", launch.ship);
+                entry.store("ship", UUIDUtil.CODEC, launch.ship);
             }
             entries.add(entry);
         });

@@ -1,0 +1,15 @@
+// From Multi_neo: ./gradlew :ArienteWorld:runGameTestServer -I ../ArienteWorld_neo/tools/soldier_balance_tests.gradle
+gradle.afterProject { p ->
+    if (p.name == 'ArienteWorld') {
+        p.sourceSets.gameTest.java.setIncludes(['mcjty/arienteworld/SoldierBalanceTests.java'])
+        def classes = p.layout.buildDirectory.dir('verification/soldier-balance-tests/test-classes')
+        p.tasks.named('compileGameTestJava').configure { destinationDirectory.set(classes) }
+        p.sourceSets.gameTest.output.classesDirs.setFrom(classes)
+        p.runs {
+            gameTestServer {
+                workingDirectory p.file('build/verification/soldier-balance-tests')
+                systemProperty 'neoforge.enabledGameTestNamespaces', 'arienteworld'
+            }
+        }
+    }
+}

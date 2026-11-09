@@ -6,14 +6,14 @@ import mcjty.arienteworld.config.SpawningConfiguration;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
@@ -32,7 +32,7 @@ public class DarkbatEntity extends Phantom {
     private static final int SPAWN_ATTEMPTS = 64;
     private static final double SPAWN_RADIUS = 128.0D;
     private static final TagKey<Biome> SPAWNS = TagKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "darkbat_spawns"));
+            Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "darkbat_spawns"));
 
     public DarkbatEntity(EntityType<? extends DarkbatEntity> type, Level level) {
         super(type, level);
@@ -46,7 +46,7 @@ public class DarkbatEntity extends Phantom {
     }
 
     public static boolean checkDarkbatSpawnRules(EntityType<DarkbatEntity> type, ServerLevelAccessor level,
-                                                 MobSpawnType reason, BlockPos pos, RandomSource random) {
+                                                 EntitySpawnReason reason, BlockPos pos, RandomSource random) {
         return level.getLevel().dimension().equals(DimensionRegister.DIMENSION)
                 && level.getDifficulty() != Difficulty.PEACEFUL
                 && level.getBiome(pos).is(SPAWNS)
@@ -58,9 +58,9 @@ public class DarkbatEntity extends Phantom {
     }
 
     @Override
-    public boolean checkSpawnRules(LevelAccessor level, MobSpawnType reason) {
+    public boolean checkSpawnRules(LevelAccessor level, EntitySpawnReason reason) {
         return super.checkSpawnRules(level, reason)
-                && (reason != MobSpawnType.NATURAL || hasNaturalSpawnCapacity());
+                && (reason != EntitySpawnReason.NATURAL || hasNaturalSpawnCapacity());
     }
 
     private boolean hasNaturalSpawnCapacity() {
@@ -72,8 +72,8 @@ public class DarkbatEntity extends Phantom {
             if (player.isSpectator() || !player.isAlive() || horizontalDistanceToSqr(player) > SPAWN_RADIUS * SPAWN_RADIUS) {
                 continue;
             }
-            AABB area = new AABB(player.getX() - SPAWN_RADIUS, level.getMinBuildHeight(), player.getZ() - SPAWN_RADIUS,
-                    player.getX() + SPAWN_RADIUS, level.getMaxBuildHeight(), player.getZ() + SPAWN_RADIUS);
+            AABB area = new AABB(player.getX() - SPAWN_RADIUS, level.getMinY(), player.getZ() - SPAWN_RADIUS,
+                    player.getX() + SPAWN_RADIUS, level.getMaxY(), player.getZ() + SPAWN_RADIUS);
             int count = level.getEntitiesOfClass(DarkbatEntity.class, area,
                     bat -> bat.isAlive() && bat.horizontalDistanceToSqr(player) <= SPAWN_RADIUS * SPAWN_RADIUS).size();
             if (count >= limit) {
@@ -101,11 +101,6 @@ public class DarkbatEntity extends Phantom {
     public void setPhantomSize(int size) {
         // Fixed dimensions and damage; vanilla size changes also overwrite attack damage.
         super.setPhantomSize(0);
-    }
-
-    @Override
-    protected boolean isSunBurnTick() {
-        return false;
     }
 
     @Override

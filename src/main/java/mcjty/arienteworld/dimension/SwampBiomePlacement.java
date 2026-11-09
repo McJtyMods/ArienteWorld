@@ -7,7 +7,7 @@ import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.placement.PlacementContext;
@@ -19,7 +19,7 @@ public class SwampBiomePlacement extends PlacementModifier {
 
     public static final MapCodec<SwampBiomePlacement> CODEC = MapCodec.unit(SwampBiomePlacement::new);
     private static final ResourceKey<Biome> SWAMP = ResourceKey.create(Registries.BIOME,
-            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_swamp"));
+            Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_swamp"));
 
     @Override
     public Stream<BlockPos> getPositions(PlacementContext context, RandomSource random, BlockPos pos) {

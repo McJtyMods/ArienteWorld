@@ -13,7 +13,7 @@ NAMESPACE = 'arienteworld'
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--generated', type=Path, help='isolated runData --all output')
+    parser.add_argument('--generated', type=Path, help='isolated runClientData output')
     parser.add_argument('--jar', type=Path, help='NeoForge companion jar')
     args = parser.parse_args()
     files = {}
@@ -36,7 +36,7 @@ def main():
     def reference(identifier, kind, suffix):
         namespace, separator, path = identifier.partition(':')
         if separator and namespace in ('arienteworld', 'ariente', 'hologui'):
-            roots = [ROOT] if namespace == NAMESPACE else [ROOT.parent / ('Ariente' if namespace == 'ariente' else 'ModHoloGui')]
+            roots = [ROOT] if namespace == NAMESPACE else [ROOT.parent / ('Ariente_neo' if namespace == 'ariente' else 'ModHoloGui_neo')]
             name = f'assets/{namespace}/{kind}/{path}{suffix}'
             if not any((root / source / name).is_file() for root in roots
                        for source in ('src/main/resources', 'src/generated/resources')):
@@ -91,8 +91,8 @@ def main():
             feature = doc['feature']
             if feature.startswith(NAMESPACE + ':') and f'data/{NAMESPACE}/worldgen/configured_feature/{feature.split(":", 1)[1]}.json' not in docs:
                 errors.append(f'Missing configured feature: {feature}')
-    if docs.get('pack.mcmeta', {}).get('pack', {}).get('pack_format') != 34:
-        errors.append('Expected 1.21.1 resource pack format 34')
+    if docs.get('pack.mcmeta', {}).get('pack', {}).get('min_format') != 84:
+        errors.append('Expected Minecraft 26.1.2 resource pack format 84')
     registration = (ROOT / 'src/main/java/mcjty/arienteworld/setup/Registration.java').read_text()
     entities = re.findall(r'ENTITIES.register\("([^"]+)"', registration)
     for entity in entities:
@@ -105,7 +105,7 @@ def main():
                     mob = spawner['type']
                     if mob.startswith(NAMESPACE + ':') and mob.split(':', 1)[1] not in entities:
                         errors.append(f'Unknown biome spawn entity: {mob}')
-    blocks = re.findall(r'BLOCKS.register\("([^"]+)"', registration)
+    blocks = re.findall(r'BLOCKS.registerBlock\("([^"]+)"', registration)
     language = docs.get('assets/arienteworld/lang/en_us.json', {})
     for block in blocks:
         for name in (f'assets/{NAMESPACE}/blockstates/{block}.json', f'assets/{NAMESPACE}/models/item/{block}.json',
@@ -129,6 +129,8 @@ def main():
     if args.jar:
         with ZipFile(args.jar) as jar:
             names = jar.namelist()
+            if any(name.startswith('.cache/') for name in names):
+                errors.append('Datagen cache in release jar')
             if len(names) != len(set(names)):
                 errors.append('Duplicate jar entries')
             for name in names:
@@ -140,16 +142,18 @@ def main():
             for name, path in files.items():
                 if name not in names or jar.read(name) != path.read_bytes():
                     errors.append(f'Jar resource missing or stale: {name}')
-            for source in (ROOT / 'src/gameTest/java').rglob('*.java'):
-                prefix = source.relative_to(ROOT / 'src/gameTest/java').with_suffix('').as_posix()
-                if any(name == prefix + '.class' or name.startswith(prefix + '$') for name in names):
-                    errors.append(f'Fixture/test in release jar: {prefix}')
+            for source_set in ('gameTest', 'tutorial'):
+                source_root = ROOT / f'src/{source_set}/java'
+                for source in source_root.rglob('*.java'):
+                    prefix = source.relative_to(source_root).with_suffix('').as_posix()
+                    if any(name == prefix + '.class' or name.startswith(prefix + '$') for name in names):
+                        errors.append(f'Fixture/test in release jar: {prefix}')
             for name in ('mcjty/arienteworld/ArienteWorld.class', 'META-INF/neoforge.mods.toml'):
                 if name not in names:
                     errors.append(f'Missing jar entry: {name}')
             city_code = jar.read('mcjty/arienteworld/dimension/CityFeature.class')
-            if int.from_bytes(city_code[6:8], 'big') != 65:
-                errors.append('Release jar must target Java 21')
+            if int.from_bytes(city_code[6:8], 'big') != 69:
+                errors.append('Release jar must target Java 25')
             version = next(line.split('=', 1)[1] for line in (ROOT / 'gradle.properties').read_text().splitlines()
                            if line.startswith('version='))
             manifest = jar.read('META-INF/MANIFEST.MF').decode()

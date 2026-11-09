@@ -1,5 +1,10 @@
 package mcjty.arienteworld.entities.boss;
 
+import java.util.UUID;
+
+import com.mojang.serialization.MapCodec;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import javax.annotation.Nullable;
 import mcjty.ariente.api.ArmorUpgradeType;
 import mcjty.ariente.api.IForceFieldTile;
@@ -14,13 +19,12 @@ import mcjty.arienteworld.entities.drone.DroneMoveControl;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,7 +36,7 @@ import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.FlyingMob;
+import mcjty.arienteworld.entities.ArienteFlyingMob;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -52,16 +56,18 @@ import net.minecraft.world.level.pathfinder.PathFinder;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity, Enemy {
+public class CoreGuardianEntity extends ArienteFlyingMob implements IForcefieldImmunity, Enemy {
 
     public static final ResourceKey<DamageType> LIGHTNING_DAMAGE = ResourceKey.create(Registries.DAMAGE_TYPE,
-            ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "core_lightning"));
+            Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "core_lightning"));
     private static final EntityDataAccessor<Integer> CHARGE = SynchedEntityData.defineId(CoreGuardianEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> VICTIM = SynchedEntityData.defineId(CoreGuardianEntity.class, EntityDataSerializers.INT);
     private static final int ATTACK_INTERVAL = 100;
     private static final int CHARGE_TIME = 30;
     private static final int PURSUIT_TIMEOUT = 20 * 20;
-    private final ServerBossEvent bossEvent = new ServerBossEvent(getDisplayName(), BossEvent.BossBarColor.BLUE, BossEvent.BossBarOverlay.PROGRESS);
+    private static final int HOME_RADIUS = 80;
+    private static final int PURSUIT_RADIUS = HOME_RADIUS - 4;
+    private final ServerBossEvent bossEvent = new ServerBossEvent(UUID.randomUUID(), getDisplayName(), BossEvent.BossBarColor.BLUE, BossEvent.BossBarOverlay.PROGRESS);
     private BlockPos home;
     private ChunkPos cityCenter;
     private int attackCooldown = ATTACK_INTERVAL;
@@ -81,7 +87,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     public static AttributeSupplier.Builder registerAttributes() {
         return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 800)
                 .add(Attributes.ARMOR, 12).add(Attributes.KNOCKBACK_RESISTANCE, 1)
-                .add(Attributes.FOLLOW_RANGE, 64);
+                .add(Attributes.FOLLOW_RANGE, 96);
     }
 
     public void bindToCore(ChunkPos center, BlockPos core) {
@@ -143,7 +149,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     @Override
     protected void registerGoals() {
         targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false,
-                target -> home == null || target.distanceToSqr(Vec3.atCenterOf(home)) < 56 * 56));
+                (target, serverLevel) -> home == null || target.distanceToSqr(Vec3.atCenterOf(home)) < HOME_RADIUS * HOME_RADIUS));
     }
 
     @Override
@@ -163,8 +169,8 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     }
 
     @Override
-    protected void customServerAiStep() {
-        super.customServerAiStep();
+    protected void customServerAiStep(ServerLevel serverLevel) {
+        super.customServerAiStep(serverLevel);
         if (home == null) {
             home = blockPosition();
         }
@@ -207,7 +213,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
             destination = position();
         } else if (visible && target.distanceToSqr(origin) > 28 * 28) {
             Vec3 fromHome = target.position().add(0, 5, 0).subtract(origin);
-            destination = origin.add(fromHome.normalize().scale(Math.min(40, Math.max(0, fromHome.length() - 24))));
+            destination = origin.add(fromHome.normalize().scale(Math.min(HOME_RADIUS - 16, Math.max(0, fromHome.length() - 24))));
         } else if (!visible && lastSeenPosition != null) {
             destination = findPursuitPosition(origin);
         }
@@ -237,7 +243,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
 
     private boolean isValidTarget(@Nullable LivingEntity target, Vec3 origin) {
         return target != null && !target.isRemoved() && target.isAlive() && target.level() == level()
-                && canAttack(target) && target.distanceToSqr(origin) < 56 * 56;
+                && canAttack(target) && target.distanceToSqr(origin) < HOME_RADIUS * HOME_RADIUS;
     }
 
     private Vec3 findPursuitPosition(Vec3 origin) {
@@ -248,7 +254,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
             for (int dx : new int[]{-4, 0, 4}) {
                 for (int dz : new int[]{-4, 0, 4}) {
                     Vec3 point = lastSeenPosition.add(dx, height, dz);
-                    if (point.distanceToSqr(origin) > 52 * 52 || point.distanceToSqr(position()) >= bestDistance
+                    if (point.distanceToSqr(origin) > PURSUIT_RADIUS * PURSUIT_RADIUS || point.distanceToSqr(position()) >= bestDistance
                             || !level().hasChunkAt(BlockPos.containing(point))
                             || !level().noCollision(this, getBoundingBox().move(point.subtract(position())))) {
                         continue;
@@ -264,7 +270,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
             return best;
         }
         Vec3 fromHome = lastSeenPosition.add(0, 1, 0).subtract(origin);
-        return origin.add(fromHome.normalize().scale(Math.min(52, fromHome.length())));
+        return origin.add(fromHome.normalize().scale(Math.min(PURSUIT_RADIUS, fromHome.length())));
     }
 
     private boolean hasSightFrom(Vec3 position, Vec3 target) {
@@ -277,8 +283,8 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
                 || distanceToSqr(target) > 64 * 64 || !getSensing().hasLineOfSight(target)) {
             return false;
         }
-        DamageSource source = new DamageSource(server.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
-                .getHolderOrThrow(LIGHTNING_DAMAGE), this);
+        DamageSource source = new DamageSource(server.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE)
+                .getOrThrow(LIGHTNING_DAMAGE), this);
         // Ordinary armor cannot ground this overload. Working power armor and its field can.
         int upgrades = 0;
         for (EquipmentSlot slot : EquipmentSlot.values()) {
@@ -293,7 +299,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
         if (PersonalForcefield.isActive(target)) {
             damage *= 2.0f / 3.0f;
         }
-        boolean hit = target.hurt(source, damage);
+        boolean hit = target.hurtServer(server, source, damage);
         server.playSound(null, target.blockPosition(), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.HOSTILE, 3, 0.8f);
         entityData.set(VICTIM, target.getId());
         server.broadcastEntityEvent(this, (byte) 61);
@@ -347,7 +353,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     }
 
     @Override
-    public boolean canChangeDimensions(Level from, Level to) {
+    public boolean canTeleport(Level from, Level to) {
         return false;
     }
 
@@ -362,9 +368,9 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     }
 
     @Override
-    public boolean isInvulnerableTo(DamageSource source) {
+    public boolean isInvulnerableTo(ServerLevel serverLevel, DamageSource source) {
         return source.is(DamageTypes.LIGHTNING_BOLT) || source.is(DamageTypes.IN_WALL)
-                || source.is(DamageTypes.DROWN) || super.isInvulnerableTo(source);
+                || source.is(DamageTypes.DROWN) || super.isInvulnerableTo(serverLevel, source);
     }
 
     @Override
@@ -398,25 +404,38 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
         bossEvent.setName(getDisplayName());
     }
 
-    @Override
-    public void addAdditionalSaveData(CompoundTag tag) {
-        super.addAdditionalSaveData(tag);
+    public void writeEntityData(CompoundTag tag) {
+
         if (home != null) {
-            tag.put("Home", NbtUtils.writeBlockPos(home));
+            tag.store("Home", BlockPos.CODEC, home);
         }
         if (cityCenter != null) {
-            tag.putInt("CityX", cityCenter.x);
-            tag.putInt("CityZ", cityCenter.z);
+            tag.putInt("CityX", cityCenter.x());
+            tag.putInt("CityZ", cityCenter.z());
         }
         tag.putInt("AttackCooldown", attackCooldown);
     }
 
-    @Override
-    public void readAdditionalSaveData(CompoundTag tag) {
-        super.readAdditionalSaveData(tag);
-        home = tag.contains("Home") ? NbtUtils.readBlockPos(tag, "Home").orElse(null) : null;
-        cityCenter = tag.contains("CityX") ? new ChunkPos(tag.getInt("CityX"), tag.getInt("CityZ")) : null;
-        attackCooldown = tag.contains("AttackCooldown") ? Math.max(CHARGE_TIME + 1, tag.getInt("AttackCooldown")) : ATTACK_INTERVAL;
+    public void readEntityData(CompoundTag tag) {
+
+        home = tag.contains("Home") ? tag.read("Home", BlockPos.CODEC).orElse(null) : null;
+        cityCenter = tag.contains("CityX") ? new ChunkPos(tag.getIntOr("CityX", 0), tag.getIntOr("CityZ", 0)) : null;
+        attackCooldown = tag.contains("AttackCooldown") ? Math.max(CHARGE_TIME + 1, tag.getIntOr("AttackCooldown", 0)) : ATTACK_INTERVAL;
         bossEvent.setName(getDisplayName());
     }
+
+    @Override
+    public void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        readEntityData(input.read(MapCodec.assumeMapUnsafe(CompoundTag.CODEC)).orElseGet(CompoundTag::new));
+    }
+
+    @Override
+    public void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        CompoundTag tag = new CompoundTag();
+        writeEntityData(tag);
+        output.store(tag);
+    }
+
 }

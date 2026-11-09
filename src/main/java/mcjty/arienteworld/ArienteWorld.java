@@ -41,8 +41,8 @@ public class ArienteWorld {
 
     private void processIMC(final InterModProcessEvent event) {
         event.getIMCStream().forEach(message -> {
-            if ("getArienteWorld".equalsIgnoreCase(message.getMethod())) {
-                Supplier<Function<IArienteWorld, Void>> supplier = message.getMessageSupplier();
+            if ("getArienteWorld".equalsIgnoreCase(message.method())) {
+                Supplier<Function<IArienteWorld, Void>> supplier = (Supplier<Function<IArienteWorld, Void>>) (Supplier<?>) message.messageSupplier();
                 supplier.get().apply(arienteWorldImplementation);
             }
         });

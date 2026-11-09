@@ -18,7 +18,7 @@ public class CityAISettings {
     }
 
     public void readFromNBT(CompoundTag compound) {
-        numSentinels = compound.getInt("sentinels");
+        numSentinels = compound.getIntOr("sentinels", 0);
     }
 
     public void writeToNBT(CompoundTag compound) {

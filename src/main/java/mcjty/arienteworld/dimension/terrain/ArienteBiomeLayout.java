@@ -57,7 +57,7 @@ public class ArienteBiomeLayout {
         }
 
         private int get(int x, int z) {
-            long key = ChunkPos.asLong(x, z);
+            long key = ChunkPos.pack(x, z);
             Integer cached = cache.getIfPresent(key);
             if (cached != null) {
                 return cached;

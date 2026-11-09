@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import mcjty.ariente.varia.WeightedRandom;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import org.apache.commons.lang3.StringUtils;
 
@@ -91,6 +91,16 @@ public class CityPlan implements IAsset {
 
     public boolean isCity() {
         return isCity;
+    }
+
+    public boolean isSmallDungeon() {
+        return isCity && !underground && !plan.isEmpty() && plan.size() <= 3
+                && plan.stream().allMatch(row -> row.length() <= 3);
+    }
+
+    public int scaleSoldierReinforcements(int count) {
+        // Round down so even odd-sized waves are reduced by at least half.
+        return isSmallDungeon() ? count / 2 : count;
     }
 
     public List<String> getPlan() {
@@ -348,9 +358,9 @@ public class CityPlan implements IAsset {
             if (id == null) {
                 loot.add(new Loot(null, meta, blueprint, maxAmount, chance));
             } else {
-                Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
+                Item item = BuiltInRegistries.ITEM.getValue(Identifier.parse(id));
                 if (item != null) {
-                    loot.add(new Loot(ResourceLocation.parse(id), meta, blueprint, maxAmount, chance));
+                    loot.add(new Loot(Identifier.parse(id), meta, blueprint, maxAmount, chance));
                 }
             }
         }

@@ -1,5 +1,8 @@
 package mcjty.arienteworld.entities.drone;
 
+import com.mojang.serialization.MapCodec;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import mcjty.ariente.api.*;
 import javax.annotation.Nullable;
 import mcjty.ariente.entities.LaserEntity;
@@ -7,13 +10,11 @@ import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ModSounds;
 import mcjty.arienteworld.ai.CityAI;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -21,9 +22,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.FlyingMob;
+import mcjty.arienteworld.entities.ArienteFlyingMob;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
@@ -35,21 +36,20 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.Vec3;
 
 import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
 
-public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDrone {
+public class DroneEntity extends ArienteFlyingMob implements IForcefieldImmunity, IDrone {
 
     private static final EntityDataAccessor<Boolean> ATTACKING = SynchedEntityData.defineId(DroneEntity.class, EntityDataSerializers.BOOLEAN);
 
-    public static final ResourceLocation LOOT = ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "entities/drone");
+    public static final Identifier LOOT = Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "entities/drone");
 
     // If this drone is controlled by a city then this will be set
     private ChunkPos cityCenter;
 
-    public DroneEntity(EntityType<? extends FlyingMob> type, Level worldIn) {
+    public DroneEntity(EntityType<? extends ArienteFlyingMob> type, Level worldIn) {
         super(type, worldIn);
         this.xpReward = 5;
         this.moveControl = new DroneMoveControl(this);
@@ -77,7 +77,7 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
         this.goalSelector.addGoal(5, new AIDroneFly(this));
         this.goalSelector.addGoal(7, new AILookAround(this));
         this.goalSelector.addGoal(7, new AILaserAttack(this));
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, (p_213812_1_) -> {
+        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, (p_213812_1_, serverLevel) -> {
             return Math.abs(p_213812_1_.getY() - this.getY()) <= 4.0D;
         }));
     }
@@ -102,7 +102,7 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
     public void tick() {
         super.tick();
 
-        if (!this.getCommandSenderWorld().isClientSide && this.getCommandSenderWorld().getDifficulty() == Difficulty.PEACEFUL) {
+        if (!this.level().isClientSide() && this.level().getDifficulty() == Difficulty.PEACEFUL) {
             this.remove(RemovalReason.DISCARDED);
         }
     }
@@ -143,11 +143,6 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
         return ModSounds.droneDeath.get();
     }
 
-    @Override
-    protected ResourceKey<LootTable> getDefaultLootTable() {
-        return ResourceKey.create(Registries.LOOT_TABLE, LOOT);
-    }
-
     /**
      * Returns the volume for the sounds this mob makes.
      */
@@ -157,8 +152,8 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
     }
 
     // @todo 1.18 @Override
-    public boolean checkSpawnRules(Level worldIn, MobSpawnType spawnReasonIn) {
-        boolean b = (this.random.nextInt(100) == 0) && super.checkSpawnRules(worldIn, spawnReasonIn) && this.getCommandSenderWorld().getDifficulty() != Difficulty.PEACEFUL;
+    public boolean checkSpawnRules(Level worldIn, EntitySpawnReason spawnReasonIn) {
+        boolean b = (this.random.nextInt(100) == 0) && super.checkSpawnRules(worldIn, spawnReasonIn) && this.level().getDifficulty() != Difficulty.PEACEFUL;
         return b;
     }
 
@@ -189,23 +184,21 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
     /**
      * (abstract) Protected helper method to write subclass entity data to NBT.
      */
-    @Override
-    public void addAdditionalSaveData(CompoundTag compound) {
-        super.addAdditionalSaveData(compound);
+    public void writeEntityData(CompoundTag compound) {
+
         if (cityCenter != null) {
-            compound.putInt("cityX", cityCenter.x);
-            compound.putInt("cityZ", cityCenter.z);
+            compound.putInt("cityX", cityCenter.x());
+            compound.putInt("cityZ", cityCenter.z());
         }
     }
 
     /**
      * (abstract) Protected helper method to read subclass entity data from NBT.
      */
-    @Override
-    public void readAdditionalSaveData(CompoundTag compound) {
-        super.readAdditionalSaveData(compound);
+    public void readEntityData(CompoundTag compound) {
+
         if (compound.contains("cityX")) {
-            cityCenter = new ChunkPos(compound.getInt("cityX"), compound.getInt("cityZ"));
+            cityCenter = new ChunkPos(compound.getIntOr("cityX", 0), compound.getIntOr("cityZ", 0));
         }
     }
 
@@ -250,7 +243,7 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
             double d0 = 64.0D;
 
             if (target.distanceToSqr(this.drone) < 4096.0D && this.drone.getSensing().hasLineOfSight(target)) {
-                Level world = this.drone.getCommandSenderWorld();
+                Level world = this.drone.level();
                 ++this.attackTimer;
 
                 if (this.attackTimer == 10) {
@@ -376,4 +369,19 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
             }
         }
     }
+
+    @Override
+    public void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        readEntityData(input.read(MapCodec.assumeMapUnsafe(CompoundTag.CODEC)).orElseGet(CompoundTag::new));
+    }
+
+    @Override
+    public void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        CompoundTag tag = new CompoundTag();
+        writeEntityData(tag);
+        output.store(tag);
+    }
+
 }

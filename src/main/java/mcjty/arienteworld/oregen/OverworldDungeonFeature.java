@@ -14,12 +14,12 @@ public class OverworldDungeonFeature extends Feature<NoneFeatureConfiguration> {
 
     @Override
     public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        ChunkPos chunk = new ChunkPos(context.origin());
-        if (!OverworldDungeonGen.isDungeonChunk(context.level(), chunk.x, chunk.z)) {
+        ChunkPos chunk = ChunkPos.containing(context.origin());
+        if (!OverworldDungeonGen.isDungeonChunk(context.level(), chunk.x(), chunk.z())) {
             return false;
         }
-        OverworldDungeonGen.generate(new Random(context.level().getSeed() + chunk.x * 341873128712L + chunk.z * 132897987541L),
-                chunk.x, chunk.z, context.level());
+        OverworldDungeonGen.generate(new Random(context.level().getSeed() + chunk.x() * 341873128712L + chunk.z() * 132897987541L),
+                chunk.x(), chunk.z(), context.level());
         return true;
     }
 }

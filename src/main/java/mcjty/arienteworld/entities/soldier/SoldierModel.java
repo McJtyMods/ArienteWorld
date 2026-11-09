@@ -1,13 +1,12 @@
 package mcjty.arienteworld.entities.soldier;
 
-import mcjty.ariente.items.EnergyLanceItem;
 import net.minecraft.client.model.AnimationUtils;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.world.entity.HumanoidArm;
 
-public class SoldierModel<T extends SoldierEntity> extends HumanoidModel<T> {
+public class SoldierModel extends HumanoidModel<SoldierRender.State> {
 
     public SoldierModel(float modelSize, boolean p_i1168_2_) {
         this(modelSize, 0.0F, 64, p_i1168_2_ ? 32 : 64);
@@ -19,16 +18,13 @@ public class SoldierModel<T extends SoldierEntity> extends HumanoidModel<T> {
     }
 
     @Override
-    public void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float headYaw, float headPitch) {
-        boolean rightHanded = entity.getMainArm() == HumanoidArm.RIGHT;
-        rightArmPose = (rightHanded ? entity.getMainHandItem() : entity.getOffhandItem()).isEmpty() ? ArmPose.EMPTY : ArmPose.ITEM;
-        leftArmPose = (rightHanded ? entity.getOffhandItem() : entity.getMainHandItem()).isEmpty() ? ArmPose.EMPTY : ArmPose.ITEM;
-        super.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, headYaw, headPitch);
-        if (EnergyLanceItem.canFire(entity)) {
-            // Keep the supporting hand on the shaft while walking, idling and aiming.
+    public void setupAnim(SoldierRender.State state) {
+        super.setupAnim(state);
+        boolean rightHanded = state.mainArm == HumanoidArm.RIGHT;
+        if (state.aiming) {
             AnimationUtils.animateCrossbowHold(rightArm, leftArm, head, rightHanded);
-        } else if (entity.isAggressive()) {
-            AnimationUtils.swingWeaponDown(rightArm, leftArm, entity, attackTime, ageInTicks);
+        } else if (state.aggressive) {
+            AnimationUtils.swingWeaponDown(rightArm, leftArm, state.mainArm, state.attackTime, state.ageInTicks);
         }
     }
 }

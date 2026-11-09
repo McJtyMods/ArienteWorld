@@ -14,23 +14,22 @@ public class LegacySpawnerData {
     @SubscribeEvent
     public static void loadChunk(ChunkDataEvent.Load event) {
         // Chunk NBT is private to this asynchronous load. Avoid accessing the level.
-        for (Tag entry : event.getData().getList("block_entities", Tag.TAG_COMPOUND)) {
-            CompoundTag blockEntity = (CompoundTag) entry;
-            if ("minecraft:mob_spawner".equals(blockEntity.getString("id"))) {
-                boolean changed = migrateSpawnData(blockEntity.getCompound("SpawnData"));
-                for (Tag potential : blockEntity.getList("SpawnPotentials", Tag.TAG_COMPOUND)) {
-                    changed |= migrateSpawnData(((CompoundTag) potential).getCompound("data"));
+        for (CompoundTag blockEntity : event.getData().blockEntities()) {
+            if ("minecraft:mob_spawner".equals(blockEntity.getStringOr("id", ""))) {
+                boolean changed = migrateSpawnData(blockEntity.getCompoundOrEmpty("SpawnData"));
+                for (Tag potential : blockEntity.getListOrEmpty("SpawnPotentials")) {
+                    changed |= migrateSpawnData(((CompoundTag) potential).getCompoundOrEmpty("data"));
                 }
                 if (changed) {
-                    event.getChunk().setUnsaved(true);
+                    event.getChunk().markUnsaved();
                 }
             }
         }
     }
 
     private static boolean migrateSpawnData(CompoundTag spawnData) {
-        CompoundTag entity = spawnData.getCompound("entity");
-        String replacement = switch (entity.getString("id")) {
+        CompoundTag entity = spawnData.getCompoundOrEmpty("entity");
+        String replacement = switch (entity.getStringOr("id", "")) {
             case "ariente:soldier" -> "arienteworld:soldier";
             case "ariente:master_soldier" -> "arienteworld:master_soldier";
             default -> null;

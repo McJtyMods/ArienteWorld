@@ -117,12 +117,12 @@ public class OverworldDungeonGen {
         if (!world.dimension().equals(Level.OVERWORLD)) {
             return null;
         }
-        ChunkPos center = new ChunkPos(origin);
+        ChunkPos center = ChunkPos.containing(origin);
         List<BlockPos> candidates = new ArrayList<>();
         // Only seeded entrance candidates are loaded; ordinary chunks in the
         // search area are not generated.
-        for (int x = center.x - radius; x <= center.x + radius; x++) {
-            for (int z = center.z - radius; z <= center.z + radius; z++) {
+        for (int x = center.x() - radius; x <= center.x() + radius; x++) {
+            for (int z = center.z() - radius; z <= center.z() + radius; z++) {
                 if (isDungeonChunk(world, x, z)) {
                     candidates.add(new BlockPos(x * 16 + 8, 0, z * 16 + 8));
                 }
@@ -237,8 +237,8 @@ public class OverworldDungeonGen {
         BlockPos original = new BlockPos(chunkX * 16 + 8, getDungeonHeight(world, chunkX, chunkZ), chunkZ * 16 + 8);
         Placement best = new Placement(original, null);
         int bestScore = Integer.MAX_VALUE;
-        int minY = Math.max(-48, world.getMinBuildHeight() + 8);
-        int maxY = Math.min(48, world.getMaxBuildHeight() - ROOM_HEIGHT - 4);
+        int minY = Math.max(-48, world.getMinY() + 8);
+        int maxY = Math.min(48, world.getMaxY() - ROOM_HEIGHT - 4);
         for (int y = minY; y <= maxY; y++) {
             BlockPos floor = new BlockPos(original.getX(), y, original.getZ());
             if (!hasCover(world, floor)) {

@@ -19,8 +19,8 @@ public final class UndergroundCeiling {
             }
         }
         ChunkPos center = CityTools.getNearestDungeonCenter(chunkX, chunkZ);
-        int offsetX = (chunkX - center.x + 2) * 16;
-        int offsetZ = (chunkZ - center.z + 2) * 16;
+        int offsetX = (chunkX - center.x() + 2) * 16;
+        int offsetZ = (chunkZ - center.z() + 2) * 16;
         for (int z = 0; z < part.getZSize(); z++) {
             for (int x = 0; x < part.getXSize(); x++) {
                 int panelX = Math.floorMod(offsetX + x, 7);

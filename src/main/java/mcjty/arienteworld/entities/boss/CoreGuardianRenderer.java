@@ -1,20 +1,21 @@
 package mcjty.arienteworld.entities.boss;
 
+import mcjty.ariente.client.ExtractedEntityRenderer;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.Random;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 /** Procedural translucent energy shells, with a jagged discharge from the sphere to its victim. */
-public class CoreGuardianRenderer extends EntityRenderer<CoreGuardianEntity> {
+public class CoreGuardianRenderer extends ExtractedEntityRenderer<CoreGuardianEntity> {
 
     public CoreGuardianRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -22,7 +23,7 @@ public class CoreGuardianRenderer extends EntityRenderer<CoreGuardianEntity> {
     }
 
     @Override
-    public ResourceLocation getTextureLocation(CoreGuardianEntity entity) {
+    public Identifier getTextureLocation(CoreGuardianEntity entity) {
         return TextureAtlas.LOCATION_BLOCKS;
     }
 
@@ -32,7 +33,7 @@ public class CoreGuardianRenderer extends EntityRenderer<CoreGuardianEntity> {
         poses.pushPose();
         poses.translate(0, guardian.getBbHeight() / 2, 0);
         Matrix4f matrix = poses.last().pose();
-        VertexConsumer shell = buffers.getBuffer(RenderType.debugQuads());
+        VertexConsumer shell = buffers.getBuffer(RenderTypes.debugQuads());
         float time = guardian.tickCount + partialTick;
         float charge = Math.min(1, guardian.getCharge() / 30.0f);
         sphere(shell, matrix, 1.95f, time * 0.012f, 0.25f + charge * 0.5f, 0.65f, 1, 0.28f + charge * 0.12f);
@@ -41,7 +42,7 @@ public class CoreGuardianRenderer extends EntityRenderer<CoreGuardianEntity> {
         if (target != null && guardian.getLightningTicks() > 0) {
             Vec3 start = guardian.getPosition(partialTick).add(0, guardian.getBbHeight() / 2, 0);
             Vec3 end = target.getPosition(partialTick).add(0, target.getBbHeight() / 2, 0).subtract(start);
-            bolt(buffers.getBuffer(RenderType.lightning()), matrix, end, guardian.tickCount / 2);
+            bolt(buffers.getBuffer(RenderTypes.lightning()), matrix, end, guardian.tickCount / 2);
         }
         poses.popPose();
         super.render(guardian, yaw, partialTick, poses, buffers, light);

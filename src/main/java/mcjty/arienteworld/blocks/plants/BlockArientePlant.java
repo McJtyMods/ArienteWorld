@@ -20,13 +20,13 @@ public class BlockArientePlant extends BushBlock implements IShearable {
 
     private static final VoxelShape SHAPE = Shapes.box(0.1, 0.0, 0.1, 0.9, 0.8, 0.9);
 
-    public BlockArientePlant() {
-        super(Properties.of().mapColor(MapColor.PLANT).noCollission().instabreak().replaceable().sound(SoundType.GRASS));
+    public BlockArientePlant(Properties properties) {
+        super(properties.mapColor(MapColor.PLANT).noCollision().instabreak().replaceable().sound(SoundType.GRASS));
     }
 
     @Override
-    protected MapCodec<? extends BushBlock> codec() {
-        return MapCodec.unit(BlockArientePlant::new);
+    public MapCodec<BushBlock> codec() {
+        return simpleCodec(BlockArientePlant::new);
     }
 
     @Override

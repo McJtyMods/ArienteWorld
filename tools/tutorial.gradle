@@ -24,13 +24,15 @@ gradle.afterProject { p ->
         }
         def positionCheck = p.hasProperty('tutorial_position_check')
         def soundCheck = p.hasProperty('tutorial_forcefield_sound_check')
-        if (p.hasProperty('tutorial_preview') || positionCheck || soundCheck) {
+        def renderCheck = p.hasProperty('tutorial_render_regression')
+        if (p.hasProperty('tutorial_preview') || positionCheck || soundCheck || renderCheck) {
             p.runs {
                 client {
                     modSource p.sourceSets.tutorial
                     workingDirectory p.file(p.findProperty('tutorial_client_directory') ?: 'build/tutorial/client')
                     systemProperty 'ariente.tutorial.fabulous', p.hasProperty('tutorial_fabulous').toString()
-                    systemProperty 'ariente.tutorial.preview', (!positionCheck && !soundCheck).toString()
+                    systemProperty 'ariente.tutorial.preview', (!positionCheck && !soundCheck && !renderCheck).toString()
+                    systemProperty 'ariente.tutorial.renderRegression', renderCheck.toString()
                     systemProperty 'ariente.tutorial.positionCheck', positionCheck.toString()
                     systemProperty 'ariente.tutorial.forcefieldSoundCheck', soundCheck.toString()
                     systemProperty 'ariente.tutorial.soundBaseline', p.hasProperty('tutorial_sound_baseline').toString()
@@ -40,7 +42,7 @@ gradle.afterProject { p ->
             }
         }
         p.tasks.withType(JavaExec).configureEach {
-            if (name == 'runServer' || (name == 'runClient' && (p.hasProperty('tutorial_preview') || positionCheck || soundCheck))) {
+            if (name == 'runServer' || (name == 'runClient' && (p.hasProperty('tutorial_preview') || positionCheck || soundCheck || renderCheck))) {
                 dependsOn p.tasks.named('tutorialClasses')
             }
         }

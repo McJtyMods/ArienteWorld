@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:random_patch",
+  "type": "arienteworld:plant_patch",
   "config": {
     "tries": 64,
     "xz_spread": 7,

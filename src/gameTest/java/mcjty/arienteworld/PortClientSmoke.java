@@ -1,5 +1,11 @@
 package mcjty.arienteworld;
 
+import java.util.Set;
+import mcjty.ariente.client.StandaloneModels;
+import net.minecraft.client.gui.components.AbstractButton;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.world.entity.EntitySpawnReason;
+
 import mcjty.ariente.Ariente;
 import mcjty.ariente.blocks.storagecube.StorageCubeTile;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
@@ -8,7 +14,6 @@ import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
-import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -42,11 +47,11 @@ public final class PortClientSmoke {
             if (++waitingTicks % 60 == 0 && mc.screen != null) {
                 System.out.println("Port client screen: " + mc.screen.getClass().getSimpleName());
                 for (var listener : mc.screen.children()) {
-                    if (listener instanceof net.minecraft.client.gui.components.AbstractButton button) {
+                    if (listener instanceof AbstractButton button) {
                         String text = button.getMessage().getString();
                         System.out.println("Port client button: " + text);
                         if (text.equals("Proceed") || text.equals("I know what I'm doing!") || text.equals("Yes")) {
-                            button.onPress();
+                            button.onPress(new KeyEvent(257, 0, 0));
                             break;
                         }
                     }
@@ -59,12 +64,12 @@ public final class PortClientSmoke {
         }
         if (stage == 0) {
             stage = 1;
-            if (mc.getModelManager().getModel(ModelResourceLocation.standalone(FluxShipRender.MODEL)) == mc.getModelManager().getMissingModel()) {
+            if (StandaloneModels.get(FluxShipRender.MODEL).getAll().isEmpty()) {
                 throw new AssertionError("Flux Ship model did not bake");
             }
             mc.getSingleplayerServer().execute(() -> {
                 ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().getFirst();
-                var level = player.server.overworld();
+                var level = player.level().getServer().overworld();
                 player.setGameMode(GameType.CREATIVE);
                 player.getAbilities().flying = true;
                 player.onUpdateAbilities();
@@ -77,29 +82,29 @@ public final class PortClientSmoke {
                 level.setBlockAndUpdate(pos, Registration.HOLO_STORAGE_1.get().defaultBlockState());
                 StorageCubeTile storage = (StorageCubeTile) level.getBlockEntity(pos);
                 storage.getAutomationHandler(null).insertItem(0, new ItemStack(Items.DIAMOND, 23), false);
-                player.teleportTo(level, 2.5, 71, -4.5, 25, 15);
+                player.teleportTo(level, 2.5, 71, -4.5, Set.of(), 25, 15, true);
                 player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Registration.POWERSUIT_HEAD.get()));
                 Ariente.guiHandler.openHoloGui(level, pos, player);
-                FluxShipEntity ship = Registration.ENTITY_FLUX_SHIP.get().create(level);
+                FluxShipEntity ship = Registration.ENTITY_FLUX_SHIP.get().create(level, EntitySpawnReason.TRIGGERED);
                 ship.setPos(-2, 70, 1);
                 level.addFreshEntity(ship);
             });
         }
         if (++ticks == 160) {
-            Screenshot.grab(mc.gameDirectory, "port-overworld.png", mc.getMainRenderTarget(), message -> {});
+            Screenshot.grab(mc.gameDirectory, "port-overworld.png", mc.getMainRenderTarget(), 1, message -> {});
             mc.getSingleplayerServer().execute(() -> {
                 ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().getFirst();
-                var dimension = player.server.getLevel(DimensionRegister.DIMENSION);
+                var dimension = player.level().getServer().getLevel(DimensionRegister.DIMENSION);
                 if (dimension == null) {
                     throw new AssertionError("Ariente dimension is missing");
                 }
-                player.teleportTo(dimension, 1048, 150, 1048, 0, 25);
+                player.teleportTo(dimension, 1048, 150, 1048, Set.of(), 0, 25, true);
             });
         } else if (ticks == 320) {
             if (!mc.level.dimension().equals(DimensionRegister.DIMENSION)) {
                 throw new AssertionError("Client did not enter the Ariente dimension");
             }
-            Screenshot.grab(mc.gameDirectory, "port-ariente.png", mc.getMainRenderTarget(), message -> {});
+            Screenshot.grab(mc.gameDirectory, "port-ariente.png", mc.getMainRenderTarget(), 1, message -> {});
             mc.stop();
         }
     }

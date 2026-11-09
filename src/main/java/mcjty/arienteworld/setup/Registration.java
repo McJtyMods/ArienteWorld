@@ -1,5 +1,11 @@
 package mcjty.arienteworld.setup;
 
+import mcjty.arienteworld.dimension.features.PlantPatchFeature;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.block.TintedParticleLeavesBlock;
+
 import com.mojang.serialization.MapCodec;
 import java.util.function.Supplier;
 import mcjty.arienteworld.ModSounds;
@@ -63,32 +69,33 @@ public class Registration {
     public static final Supplier<EntityType<DarkbatEntity>> ENTITY_DARKBAT = ENTITIES.register("darkbat", () -> EntityType.Builder.of(DarkbatEntity::new, MobCategory.MONSTER)
             .sized(0.9F * DarkbatEntity.SCALE, 0.5F * DarkbatEntity.SCALE)
             .clientTrackingRange(8)
-            .build("darkbat"));
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "darkbat"))));
 
     public static final Supplier<EntityType<MasterSoldierEntity>> ENTITY_MASTER_SOLDIER = ENTITIES.register("master_soldier", () -> EntityType.Builder.of(MasterSoldierEntity::new, MobCategory.MONSTER)
             .sized(0.7F, 2.7F)
             .setShouldReceiveVelocityUpdates(false)
-            .build("master_soldier"));
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "master_soldier"))));
     public static final Supplier<EntityType<SoldierEntity>> ENTITY_SOLDIER = ENTITIES.register("soldier", () -> EntityType.Builder.of(SoldierEntity::new, MobCategory.MONSTER)
             .sized(0.6F, 1.95F)
             .clientTrackingRange(16)
             .setShouldReceiveVelocityUpdates(false)
-            .build("soldier"));
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "soldier"))));
     public static final Supplier<EntityType<SentinelDroneEntity>> ENTITY_SENTINEL_DRONE = ENTITIES.register("ariente_sentinel_drone", () -> EntityType.Builder.of(SentinelDroneEntity::new, MobCategory.MISC)
             .sized(1.3F, 1.3F)
             .setShouldReceiveVelocityUpdates(false)
-            .build("ariente_sentinel_drone"));
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "ariente_sentinel_drone"))));
     public static final Supplier<EntityType<DroneEntity>> ENTITY_DRONE = ENTITIES.register("ariente_drone", () -> EntityType.Builder.of(DroneEntity::new, MobCategory.MISC)
             .sized(2.0F, 2.0F)
             .setShouldReceiveVelocityUpdates(false)
-            .build("ariente_drone"));
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "ariente_drone"))));
 
     public static final Supplier<EntityType<CoreGuardianEntity>> ENTITY_CORE_GUARDIAN = ENTITIES.register("core_guardian",
             () -> EntityType.Builder.of(CoreGuardianEntity::new, MobCategory.MISC).sized(4, 4)
-                    .fireImmune().clientTrackingRange(8).updateInterval(1).build("core_guardian"));
+                    .fireImmune().clientTrackingRange(8).updateInterval(1).build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "core_guardian"))));
 
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(BuiltInRegistries.FEATURE, MODID);
     public static final Supplier<OverworldDungeonFeature> ENTRANCE = FEATURES.register("overworld_dungeon", OverworldDungeonFeature::new);
+    public static final Supplier<PlantPatchFeature> PLANT_PATCH = FEATURES.register("plant_patch", PlantPatchFeature::new);
     public static final Supplier<CityFeature> CITY = FEATURES.register("city", CityFeature::new);
     public static final Supplier<SpiralTreeFeature> SPIRAL_TREE = FEATURES.register("spiral_tree", SpiralTreeFeature::new);
     public static final Supplier<CrystalFormationFeature> CRYSTAL_FORMATION = FEATURES.register("crystal_formation", CrystalFormationFeature::new);
@@ -97,8 +104,13 @@ public class Registration {
     public static final Supplier<PlacementModifierType<FlowerHeightPlacement>> FLOWER_HEIGHT = PLACEMENTS.register("flower_height", () -> () -> FlowerHeightPlacement.CODEC);
     public static final Supplier<PlacementModifierType<SwampBiomePlacement>> SWAMP_BIOME = PLACEMENTS.register("swamp_biome", () -> () -> SwampBiomePlacement.CODEC);
 
-    public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(BuiltInRegistries.BLOCK, MODID);
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(BuiltInRegistries.ITEM, MODID);
+    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
+    public static final DeferredRegister<TicketType> TICKETS = DeferredRegister.create(Registries.TICKET_TYPE, MODID);
+    public static final Supplier<TicketType> SCOUT_FLIGHT = TICKETS.register("scout_flight",
+            () -> new TicketType(60, TicketType.FLAG_LOADING | TicketType.FLAG_SIMULATION));
+    public static final Supplier<TicketType> SCOUT_LAUNCH = TICKETS.register("scout_launch",
+            () -> new TicketType(220, TicketType.FLAG_LOADING | TicketType.FLAG_SIMULATION));
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(BuiltInRegistries.SOUND_EVENT, MODID);
 
     public static Item.Properties createStandardProperties() {
@@ -143,55 +155,56 @@ public class Registration {
         BLOCKS.register(bus);
         ITEMS.register(bus);
         SOUNDS.register(bus);
+        TICKETS.register(bus);
     }
 
-    public static final Supplier<BaseBlock> GUARD_DUMMY = BLOCKS.register("guard_dummy", () -> new DummyBlock(new BlockBuilder()));
-    public static final Supplier<Item> GUARD_DUMMY_ITEM = ITEMS.register("guard_dummy", () -> new BlockItem(GUARD_DUMMY.get(), createStandardProperties()));
+    public static final Supplier<BaseBlock> GUARD_DUMMY = BLOCKS.registerBlock("guard_dummy", properties -> new DummyBlock(new BlockBuilder().properties(properties)));
+    public static final Supplier<Item> GUARD_DUMMY_ITEM = ITEMS.registerItem("guard_dummy", properties -> new BlockItem(GUARD_DUMMY.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<BaseBlock> SOLDIER_DUMMY = BLOCKS.register("solider_dummy", () -> new DummyBlock(new BlockBuilder()));
-    public static final Supplier<Item> SOLDIER_DUMMY_ITEM = ITEMS.register("solider_dummy", () -> new BlockItem(SOLDIER_DUMMY.get(), createStandardProperties()));
+    public static final Supplier<BaseBlock> SOLDIER_DUMMY = BLOCKS.registerBlock("solider_dummy", properties -> new DummyBlock(new BlockBuilder().properties(properties)));
+    public static final Supplier<Item> SOLDIER_DUMMY_ITEM = ITEMS.registerItem("solider_dummy", properties -> new BlockItem(SOLDIER_DUMMY.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<BaseBlock> MASTER_SOLDIER_DUMMY = BLOCKS.register("master_solider_dummy", () -> new DummyBlock(new BlockBuilder()));
-    public static final Supplier<Item> MASTER_SOLDIER_DUMMY_ITEM = ITEMS.register("master_solider_dummy", () -> new BlockItem(MASTER_SOLDIER_DUMMY.get(), createStandardProperties()));
+    public static final Supplier<BaseBlock> MASTER_SOLDIER_DUMMY = BLOCKS.registerBlock("master_solider_dummy", properties -> new DummyBlock(new BlockBuilder().properties(properties)));
+    public static final Supplier<Item> MASTER_SOLDIER_DUMMY_ITEM = ITEMS.registerItem("master_solider_dummy", properties -> new BlockItem(MASTER_SOLDIER_DUMMY.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<Block> GLOWLOG = BLOCKS.register("glowlog", () -> new Block(Block.Properties.of().mapColor(MapColor.WOOD).strength(2).sound(SoundType.WOOD).lightLevel(state -> 10)));
-    public static final Supplier<Item> GLOWLOG_ITEM = ITEMS.register("glowlog", () -> new BlockItem(GLOWLOG.get(), createStandardProperties()));
+    public static final Supplier<Block> GLOWLOG = BLOCKS.registerBlock("glowlog", properties -> new Block(properties.mapColor(MapColor.WOOD).strength(2).sound(SoundType.WOOD).lightLevel(state -> 10)));
+    public static final Supplier<Item> GLOWLOG_ITEM = ITEMS.registerItem("glowlog", properties -> new BlockItem(GLOWLOG.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<Block> BLUELOG = BLOCKS.register("bluelog", () -> new Block(Block.Properties.of().mapColor(MapColor.WOOD).strength(2).sound(SoundType.WOOD)));
-    public static final Supplier<Item> BLUELOG_ITEM = ITEMS.register("bluelog", () -> new BlockItem(BLUELOG.get(), createStandardProperties()));
+    public static final Supplier<Block> BLUELOG = BLOCKS.registerBlock("bluelog", properties -> new Block(properties.mapColor(MapColor.WOOD).strength(2).sound(SoundType.WOOD)));
+    public static final Supplier<Item> BLUELOG_ITEM = ITEMS.registerItem("bluelog", properties -> new BlockItem(BLUELOG.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<LeavesBlock> GLOWLEAVES = BLOCKS.register("glowleaves", () -> new LeavesBlock(Block.Properties.of().mapColor(MapColor.PLANT).strength(.2f).sound(SoundType.GRASS).noOcclusion().randomTicks().lightLevel(state -> 10)));
-    public static final Supplier<Item> GLOWLEAVES_ITEM = ITEMS.register("glowleaves", () -> new BlockItem(GLOWLEAVES.get(), createStandardProperties()));
+    public static final Supplier<LeavesBlock> GLOWLEAVES = BLOCKS.registerBlock("glowleaves", properties -> new TintedParticleLeavesBlock(0, properties.mapColor(MapColor.PLANT).strength(.2f).sound(SoundType.GRASS).noOcclusion().randomTicks().lightLevel(state -> 10)));
+    public static final Supplier<Item> GLOWLEAVES_ITEM = ITEMS.registerItem("glowleaves", properties -> new BlockItem(GLOWLEAVES.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<LeavesBlock> BLUELEAVES = BLOCKS.register("blueleaves", () -> new LeavesBlock(Block.Properties.of().mapColor(MapColor.PLANT).strength(.2f).sound(SoundType.GRASS).noOcclusion().randomTicks()));
-    public static final Supplier<Item> BLUELEAVES_ITEM = ITEMS.register("blueleaves", () -> new BlockItem(BLUELEAVES.get(), createStandardProperties()));
+    public static final Supplier<LeavesBlock> BLUELEAVES = BLOCKS.registerBlock("blueleaves", properties -> new TintedParticleLeavesBlock(0, properties.mapColor(MapColor.PLANT).strength(.2f).sound(SoundType.GRASS).noOcclusion().randomTicks()));
+    public static final Supplier<Item> BLUELEAVES_ITEM = ITEMS.registerItem("blueleaves", properties -> new BlockItem(BLUELEAVES.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<LeavesBlock> DARKLEAVES = BLOCKS.register("darkleaves", () -> new LeavesBlock(Block.Properties.of().mapColor(MapColor.PLANT).strength(.2f).sound(SoundType.GRASS).noOcclusion().randomTicks()));
-    public static final Supplier<Item> DARKLEAVES_ITEM = ITEMS.register("darkleaves", () -> new BlockItem(DARKLEAVES.get(), createStandardProperties()));
+    public static final Supplier<LeavesBlock> DARKLEAVES = BLOCKS.registerBlock("darkleaves", properties -> new TintedParticleLeavesBlock(0, properties.mapColor(MapColor.PLANT).strength(.2f).sound(SoundType.GRASS).noOcclusion().randomTicks()));
+    public static final Supplier<Item> DARKLEAVES_ITEM = ITEMS.registerItem("darkleaves", properties -> new BlockItem(DARKLEAVES.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<BlockArientePlant> BLACKBUSH = BLOCKS.register("black_bush", BlockArientePlant::new);
-    public static final Supplier<Item> BLACKBUSH_ITEM = ITEMS.register("black_bush", () -> new BlockItem(BLACKBUSH.get(), createStandardProperties()));
+    public static final Supplier<BlockArientePlant> BLACKBUSH = BLOCKS.registerBlock("black_bush", BlockArientePlant::new);
+    public static final Supplier<Item> BLACKBUSH_ITEM = ITEMS.registerItem("black_bush", properties -> new BlockItem(BLACKBUSH.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<BlockArientePlant> DARKGRASS = BLOCKS.register("dark_grass", BlockArientePlant::new);
-    public static final Supplier<Item> DARKGRASS_ITEM = ITEMS.register("dark_grass", () -> new BlockItem(DARKGRASS.get(), createStandardProperties()));
+    public static final Supplier<BlockArientePlant> DARKGRASS = BLOCKS.registerBlock("dark_grass", BlockArientePlant::new);
+    public static final Supplier<Item> DARKGRASS_ITEM = ITEMS.registerItem("dark_grass", properties -> new BlockItem(DARKGRASS.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<DoublePlantBlock> TALLDARKGRASS = BLOCKS.register("tall_dark_grass", () -> new DoublePlantBlock(Block.Properties.of()
-            .mapColor(MapColor.PLANT).noCollission().instabreak().replaceable().sound(SoundType.GRASS)));
-    public static final Supplier<Item> TALLDARKGRASS_ITEM = ITEMS.register("tall_dark_grass", () -> new DoubleHighBlockItem(TALLDARKGRASS.get(), createStandardProperties()));
+    public static final Supplier<DoublePlantBlock> TALLDARKGRASS = BLOCKS.registerBlock("tall_dark_grass", properties -> new DoublePlantBlock(properties
+            .mapColor(MapColor.PLANT).noCollision().instabreak().replaceable().sound(SoundType.GRASS)));
+    public static final Supplier<Item> TALLDARKGRASS_ITEM = ITEMS.registerItem("tall_dark_grass", properties -> new DoubleHighBlockItem(TALLDARKGRASS.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<BlockArientePlant> SMALLFLOWER = BLOCKS.register("small_flower", BlockArientePlant::new);
-    public static final Supplier<Item> SMALLFLOWER_ITEM = ITEMS.register("small_flower", () -> new BlockItem(SMALLFLOWER.get(), createStandardProperties()));
+    public static final Supplier<BlockArientePlant> SMALLFLOWER = BLOCKS.registerBlock("small_flower", BlockArientePlant::new);
+    public static final Supplier<Item> SMALLFLOWER_ITEM = ITEMS.registerItem("small_flower", properties -> new BlockItem(SMALLFLOWER.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<Block> LAPISORE = BLOCKS.register("lapisore", () -> new Block(Block.Properties.of().mapColor(MapColor.STONE).strength(3.0f)));
-    public static final Supplier<Item> LAPISORE_ITEM = ITEMS.register("lapisore", () -> new BlockItem(LAPISORE.get(), createStandardProperties()));
+    public static final Supplier<Block> LAPISORE = BLOCKS.registerBlock("lapisore", properties -> new Block(properties.mapColor(MapColor.STONE).strength(3.0f)));
+    public static final Supplier<Item> LAPISORE_ITEM = ITEMS.registerItem("lapisore", properties -> new BlockItem(LAPISORE.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<Block> GLOWSTONE = BLOCKS.register("glowstoneore", () -> new Block(Block.Properties.of().mapColor(MapColor.STONE).strength(3.0f)));
-    public static final Supplier<Item> GLOWSTONE_ITEM = ITEMS.register("glowstoneore", () -> new BlockItem(GLOWSTONE.get(), createStandardProperties()));
+    public static final Supplier<Block> GLOWSTONE = BLOCKS.registerBlock("glowstoneore", properties -> new Block(properties.mapColor(MapColor.STONE).strength(3.0f)));
+    public static final Supplier<Item> GLOWSTONE_ITEM = ITEMS.registerItem("glowstoneore", properties -> new BlockItem(GLOWSTONE.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<CrystalBlock> NEGARITE_CRYSTAL = BLOCKS.register("negarite_crystal", () -> new CrystalBlock(MapColor.COLOR_YELLOW));
-    public static final Supplier<Item> NEGARITE_CRYSTAL_ITEM = ITEMS.register("negarite_crystal", () -> new BlockItem(NEGARITE_CRYSTAL.get(), createStandardProperties()));
+    public static final Supplier<CrystalBlock> NEGARITE_CRYSTAL = BLOCKS.registerBlock("negarite_crystal", properties -> new CrystalBlock(properties, MapColor.COLOR_YELLOW));
+    public static final Supplier<Item> NEGARITE_CRYSTAL_ITEM = ITEMS.registerItem("negarite_crystal", properties -> new BlockItem(NEGARITE_CRYSTAL.get(), properties.useBlockDescriptionPrefix()));
 
-    public static final Supplier<CrystalBlock> POSIRITE_CRYSTAL = BLOCKS.register("posirite_crystal", () -> new CrystalBlock(MapColor.COLOR_BLUE));
-    public static final Supplier<Item> POSIRITE_CRYSTAL_ITEM = ITEMS.register("posirite_crystal", () -> new BlockItem(POSIRITE_CRYSTAL.get(), createStandardProperties()));
+    public static final Supplier<CrystalBlock> POSIRITE_CRYSTAL = BLOCKS.registerBlock("posirite_crystal", properties -> new CrystalBlock(properties, MapColor.COLOR_BLUE));
+    public static final Supplier<Item> POSIRITE_CRYSTAL_ITEM = ITEMS.registerItem("posirite_crystal", properties -> new BlockItem(POSIRITE_CRYSTAL.get(), properties.useBlockDescriptionPrefix()));
 
 }

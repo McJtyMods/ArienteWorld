@@ -20,31 +20,31 @@ players to explore
 [[dependencies.arienteworld]]
     modId="neoforge"
     type="required"
-    versionRange="[21.1.215,)"
+    versionRange="[26.1.2.99,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.arienteworld]]
     modId="mcjtylib"
     type="required"
-    versionRange="[1.21-9.0.21,)"
+    versionRange="[26.1.2-10.0.2,)"
     ordering="AFTER"
     side="BOTH"
 [[dependencies.arienteworld]]
     modId="ariente"
     type="required"
-    versionRange="[1.21-0.0.31-alpha,)"
+    versionRange="[26.1.2-0.0.31-alpha,)"
     ordering="AFTER"
     side="BOTH"
 [[dependencies.arienteworld]]
     modId="hologui"
     type="required"
-    versionRange="[1.21-0.0.10-beta,)"
+    versionRange="[26.1.2-0.0.10-beta,)"
     ordering="AFTER"
     side="BOTH"
 
 [[dependencies.arienteworld]]
     modId="minecraft"
     type="required"
-    versionRange="[1.21.1,1.21.2)"
+    versionRange="[26.1.2]"
     ordering="NONE"
     side="BOTH"

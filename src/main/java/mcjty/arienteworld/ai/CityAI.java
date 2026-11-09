@@ -1,5 +1,8 @@
 package mcjty.arienteworld.ai;
 
+import net.minecraft.world.entity.EntitySpawnReason;
+
+import net.minecraft.core.UUIDUtil;
 import mcjty.ariente.api.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,7 +41,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -141,6 +144,7 @@ public class CityAI implements ICityAI {
     }
 
     /** Run from a loaded core, without requiring the entire nine-chunk-wide complex to tick. */
+
     public void ensureGuardian(BlockPos core) {
         if (!isCoreProtected() || EditMode.isEditing(level, center)) {
             return;
@@ -157,10 +161,10 @@ public class CityAI implements ICityAI {
                 guardianMissingSince = -1;
                 return;
             }
-            ChunkPos lastChunk = guardianChunk != null ? guardianChunk : new ChunkPos(home);
+            ChunkPos lastChunk = guardianChunk != null ? guardianChunk : ChunkPos.containing(home);
             // A full terrain chunk does not imply that its asynchronously loaded entities are available.
-            if (level.getChunkSource().getChunkNow(lastChunk.x, lastChunk.z) == null
-                    || !level.areEntitiesLoaded(lastChunk.toLong())) {
+            if (level.getChunkSource().getChunkNow(lastChunk.x(), lastChunk.z()) == null
+                    || !level.areEntitiesLoaded(lastChunk.pack())) {
                 guardianMissingSince = -1;
                 return;
             }
@@ -175,7 +179,7 @@ public class CityAI implements ICityAI {
         if (!level.hasChunkAt(home)) {
             return;
         }
-        CoreGuardianEntity guardian = Registration.ENTITY_CORE_GUARDIAN.get().create(level);
+        CoreGuardianEntity guardian = Registration.ENTITY_CORE_GUARDIAN.get().create(level, EntitySpawnReason.TRIGGERED);
         if (guardian == null) {
             return;
         }
@@ -211,7 +215,7 @@ public class CityAI implements ICityAI {
     }
 
     private void initializeCubePatrol(Mob mob, int floor) {
-        if (mob.getPersistentData().getBoolean("arienteworldCubePatrol")) {
+        if (mob.getPersistentData().getBooleanOr("arienteworldCubePatrol", false)) {
             return;
         }
         double dx = Math.abs(mob.getX() - center.getMiddleBlockX());
@@ -271,8 +275,8 @@ public class CityAI implements ICityAI {
             initialize(world);
         }
         for (ChunkPos chunk : getCityChunks()) {
-            if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) {
-                scannedChunks.remove(chunk.toLong());
+            if (level.getChunkSource().getChunkNow(chunk.x(), chunk.z()) == null) {
+                scannedChunks.remove(chunk.pack());
             } else {
                 initializeChunk(chunk);
             }
@@ -284,8 +288,8 @@ public class CityAI implements ICityAI {
         int width = pattern.get(0).length();
         int depth = pattern.size();
         List<ChunkPos> chunks = new ArrayList<>();
-        for (int x = center.x - width / 2; x < center.x - width / 2 + width; x++) {
-            for (int z = center.z - depth / 2; z < center.z - depth / 2 + depth; z++) {
+        for (int x = center.x() - width / 2; x < center.x() - width / 2 + width; x++) {
+            for (int z = center.z() - depth / 2; z < center.z() - depth / 2 + depth; z++) {
                 chunks.add(new ChunkPos(x, z));
             }
         }
@@ -293,11 +297,11 @@ public class CityAI implements ICityAI {
     }
 
     public boolean initializeChunk(ChunkPos pos) {
-        LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+        LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x(), pos.z());
         if (chunk == null || EditMode.isEditing(level, center)) {
             return false;
         }
-        if (scannedChunks.contains(pos.toLong())) {
+        if (scannedChunks.contains(pos.pack())) {
             return true;
         }
         if (!initialized) {
@@ -308,14 +312,15 @@ public class CityAI implements ICityAI {
     }
 
     public void chunkUnloaded(ChunkPos pos) {
-        scannedChunks.remove(pos.toLong());
+        scannedChunks.remove(pos.pack());
     }
 
     /** Loaded outer rooms must keep defending themselves when the core's chunk is outside view distance. */
+
     public boolean tickLoadedSections() {
         IAICoreTile core = findFirstValidAICore(level);
         if (!initialized || EditMode.isEditing(level, center)
-                || core != null && level.getChunkSource().isPositionTicking(new ChunkPos(core.getCorePos()).toLong())
+                || core != null && level.getChunkSource().isPositionTicking(ChunkPos.containing(core.getCorePos()).pack())
                 || scannedChunks.stream().noneMatch(chunk -> level.getChunkSource()
                 .getChunkNow(ChunkPos.getX(chunk), ChunkPos.getZ(chunk)) != null)) {
             return false;
@@ -380,6 +385,7 @@ public class CityAI implements ICityAI {
     }
 
     /** Unlike isDead(), patrol eligibility requires evidence of a real core, even before city initialization. */
+
     public boolean hasOperationalCore() {
         boolean changed = aiCores.removeIf(pos -> level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) != null
                 && !(level.getBlockEntity(pos) instanceof IAICoreTile));
@@ -387,8 +393,8 @@ public class CityAI implements ICityAI {
             List<String> pattern = city.getPlan().getPlan();
             int width = pattern.get(0).length();
             int depth = pattern.size();
-            for (int x = center.x - width / 2; x < center.x - width / 2 + width; x++) {
-                for (int z = center.z - depth / 2; z < center.z - depth / 2 + depth; z++) {
+            for (int x = center.x() - width / 2; x < center.x() - width / 2 + width; x++) {
+                for (int z = center.z() - depth / 2; z < center.z() - depth / 2 + depth; z++) {
                     var chunk = level.getChunkSource().getChunkNow(x, z);
                     if (chunk == null) {
                         continue;
@@ -438,7 +444,7 @@ public class CityAI implements ICityAI {
         for (BlockPos pos : aiCores) {
             BlockEntity te = getLoadedBlockEntity(pos);
             if (te instanceof IAICoreTile core) {
-                if (level.getChunkSource().isPositionTicking(new ChunkPos(pos).toLong())) {
+                if (level.getChunkSource().isPositionTicking(ChunkPos.containing(pos).pack())) {
                     return core;
                 }
                 if (firstLoaded == null) {
@@ -512,7 +518,7 @@ public class CityAI implements ICityAI {
             int dimX = pattern.get(0).length() * 16 * 2;
             int dimZ = pattern.size() * 16 * 2;
 
-            BlockPos ctr = new BlockPos(center.x * 16 + 8, 50, center.z * 16 + 8);
+            BlockPos ctr = new BlockPos(center.x() * 16 + 8, 50, center.z() * 16 + 8);
 
             // To avoid creating the list we use the filter as a consumer here to increment our counter
             AtomicInteger soldiers = new AtomicInteger(0);
@@ -546,7 +552,7 @@ public class CityAI implements ICityAI {
     }
 
     private void handleAI(Level world) {
-        if (!sentinelsInitialized && level.getChunkSource().getChunkNow(center.x, center.z) != null) {
+        if (!sentinelsInitialized && level.getChunkSource().getChunkNow(center.x(), center.z()) != null) {
             initSentinels(world);
             sentinelsInitialized = true;
         }
@@ -620,7 +626,7 @@ public class CityAI implements ICityAI {
                     RailShape dir = Ariente.arienteSystem.getBeamDirection(state);
                     double d0 = 0.0D;
 
-                    if (dir.isAscending()) {
+                    if (dir.isSlope()) {
                         d0 = 0.5D;
                     }
 
@@ -655,7 +661,7 @@ public class CityAI implements ICityAI {
 
     private BlockPos isValidBeam(Level world, ChunkPos c, Direction direction, int minOffset, int maxOffset) {
         for (int i = minOffset; i <= maxOffset; i++) {
-            BlockPos pos = new BlockPos(c.x * 16 + 8 + direction.getStepX() * i, 32, (c.z * 16) + 8 + direction.getStepZ() * i);
+            BlockPos pos = new BlockPos(c.x() * 16 + 8 + direction.getStepX() * i, 32, (c.z() * 16) + 8 + direction.getStepZ() * i);
             if (!world.hasChunkAt(pos)) {
                 return null;
             }
@@ -700,9 +706,9 @@ public class CityAI implements ICityAI {
         CityAISystem system = CityAISystem.getCityAISystem(level);
         List<LevitatorPath> positions = new ArrayList<>();
         for (Direction facing : OrientationTools.HORIZONTAL_DIRECTION_VALUES) {
-            ChunkPos otherCoord = new ChunkPos(center.x + facing.getStepX() * 16,
-                    center.z + facing.getStepZ() * 16);
-            if (!CityTools.isCityCenter(level.getSeed(), otherCoord.x, otherCoord.z)) {
+            ChunkPos otherCoord = new ChunkPos(center.x() + facing.getStepX() * 16,
+                    center.z() + facing.getStepZ() * 16);
+            if (!CityTools.isCityCenter(level.getSeed(), otherCoord.x(), otherCoord.z())) {
                 continue;
             }
             CityAI otherCity = system.getCityAI(otherCoord);
@@ -769,7 +775,7 @@ public class CityAI implements ICityAI {
             Player player = world.getServer().getPlayerList().getPlayer(uuid);
             if (player != null && player.level().dimension().equals(world.dimension())) {
                 BlockPos pos = entry.getValue();    // Use the last known position
-                double sq = pos.distSqr(new BlockPos(center.x * 16 + 8, 50, center.z * 16 + 8));
+                double sq = pos.distSqr(new BlockPos(center.x() * 16 + 8, 50, center.z() * 16 + 8));
                 if (sq < 80 * 80) {
                     players.add(pos);
                 }
@@ -790,7 +796,7 @@ public class CityAI implements ICityAI {
             droneTicker = 10;
 
             CityPlan plan = city.getPlan();
-            int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x, center.z);
+            int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x(), center.z());
 
             int desiredMinimumCount = 0;
             int newWaveMaximum = 0;
@@ -849,6 +855,9 @@ public class CityAI implements ICityAI {
                 newWaveMaximum *= 2;
             }
 
+            desiredMinimumCount = plan.scaleSoldierReinforcements(desiredMinimumCount);
+            newWaveMaximum = plan.scaleSoldierReinforcements(newWaveMaximum);
+
             int cnt = info.getCountSoldier(world);
             while (cnt < desiredMinimumCount) {
                 spawnSoldier(world);
@@ -905,7 +914,7 @@ public class CityAI implements ICityAI {
         ItemStack helmet = new ItemStack(POWERSUIT_HEAD.get());
         CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
-        compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
+        compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBooleanOr(ArmorUpgradeType.ARMOR.getModuleKey(), false));
         ItemData.set(helmet, compound);
         return helmet;
     }
@@ -914,7 +923,7 @@ public class CityAI implements ICityAI {
         ItemStack helmet = new ItemStack(POWERSUIT_FEET.get());
         CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
-        compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
+        compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBooleanOr(ArmorUpgradeType.ARMOR.getModuleKey(), false));
         ItemData.set(helmet, compound);
         return helmet;
     }
@@ -923,11 +932,11 @@ public class CityAI implements ICityAI {
         ItemStack helmet = new ItemStack(POWERSUIT_CHEST.get());
         CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
-        compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
+        compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBooleanOr(ArmorUpgradeType.ARMOR.getModuleKey(), false));
         if (random.nextFloat() < plan.getForcefieldChance()) {
             compound.putBoolean(ArmorUpgradeType.ENERGY.getModuleKey(), true);
             compound.putBoolean(ArmorUpgradeType.FORCEFIELD.getModuleKey(), true);
-            compound.putBoolean(ArmorUpgradeType.FORCEFIELD.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.FORCEFIELD.getModuleKey()));
+            compound.putBoolean(ArmorUpgradeType.FORCEFIELD.getWorkingKey(), compound.getBooleanOr(ArmorUpgradeType.FORCEFIELD.getModuleKey(), false));
         }
         ItemData.set(helmet, compound);
         return helmet;
@@ -937,20 +946,20 @@ public class CityAI implements ICityAI {
         ItemStack helmet = new ItemStack(POWERSUIT_LEGS.get());
         CompoundTag compound = new CompoundTag();
         compound.putBoolean(ArmorUpgradeType.ARMOR.getModuleKey(), true);
-        compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBoolean(ArmorUpgradeType.ARMOR.getModuleKey()));
+        compound.putBoolean(ArmorUpgradeType.ARMOR.getWorkingKey(), compound.getBooleanOr(ArmorUpgradeType.ARMOR.getModuleKey(), false));
         ItemData.set(helmet, compound);
         return helmet;
     }
 
     private void spawnDrone(Level world, int height) {
-        if (level.getChunkSource().getChunkNow(center.x, center.z) == null) {
+        if (level.getChunkSource().getChunkNow(center.x(), center.z()) == null) {
             return;
         }
         // Too few drones. Spawn a new one
         LivingEntity entity = DroneEntity.create(world, center);
-        int cx = center.x * 16 + 8;
+        int cx = center.x() * 16 + 8;
         int cy = isLargeCube() ? CityTools.getCityHeight(level, city) + 36 : height;
-        int cz = center.z * 16 + 8;
+        int cz = center.z() * 16 + 8;
         entity.setPos(cx, cy, cz);
         world.addFreshEntity(entity);
     }
@@ -970,7 +979,7 @@ public class CityAI implements ICityAI {
         if (random.nextFloat() < .1f) {
             if (info.getCountSentinel(world) == 0) {
                 CityPlan plan = city.getPlan();
-                int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x, center.z);
+                int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x(), center.z());
                 for (int i = 0; i < settings.getNumSentinels(); i++) {
                     createSentinel(world, i, droneHeight);
                 }
@@ -1042,12 +1051,12 @@ public class CityAI implements ICityAI {
         }
 
         CityPlan plan = city.getPlan();
-        int droneHeight = plan.getSentinelRelHeight() + getLowestHeight(center.x, center.z);
+        int droneHeight = plan.getSentinelRelHeight() + getLowestHeight(center.x(), center.z());
 
         int angleI = (sentinelAngleOffset + sentinelId * 12 / settings.getNumSentinels()) % 12;
-        int cx = center.x * 16 + 8;
+        int cx = center.x() * 16 + 8;
         int cy = droneHeight;
-        int cz = center.z * 16 + 8;
+        int cz = center.z() * 16 + 8;
 
         double angle = angleI * Math.PI * 2 / 12;
         float distance = plan.getSentinelDistance();
@@ -1097,9 +1106,9 @@ public class CityAI implements ICityAI {
 
     private void findEquipment(LevelChunk chunk) {
         ChunkPos pos = chunk.getPos();
-        boolean firstTime = !initializedChunks.contains(pos.toLong());
-        int bottom = getLowestHeight(pos.x, pos.z);
-        int top = bottom + CityTools.getBuildingParts(level.getSeed(), city, pos.x, pos.z).stream()
+        boolean firstTime = !initializedChunks.contains(pos.pack());
+        int bottom = getLowestHeight(pos.x(), pos.z());
+        int top = bottom + CityTools.getBuildingParts(level.getSeed(), city, pos.x(), pos.z()).stream()
                 .mapToInt(BuildingPart::getSliceCount).sum();
         for (int x = pos.getMinBlockX(); x <= pos.getMaxBlockX(); x++) {
             for (int z = pos.getMinBlockZ(); z <= pos.getMaxBlockZ(); z++) {
@@ -1164,10 +1173,10 @@ public class CityAI implements ICityAI {
                 }
             }
         }
-        pendingCores.removeIf(core -> new ChunkPos(core).equals(pos));
+        pendingCores.removeIf(core -> ChunkPos.containing(core).equals(pos));
         soldierBoundingbox = null;
-        initializedChunks.add(pos.toLong());
-        scannedChunks.add(pos.toLong());
+        initializedChunks.add(pos.pack());
+        scannedChunks.add(pos.pack());
         CityAISystem.getCityAISystem(level).saveSystem();
     }
 
@@ -1233,7 +1242,7 @@ public class CityAI implements ICityAI {
                 } else {
                     amount = 1 + random.nextInt(l.getMaxAmount());
                 }
-                ResourceLocation id = l.getId();
+                Identifier id = l.getId();
                 te.setLoot(id, i, l.isBlueprint(), amount, l.getMeta());
             }
         }
@@ -1249,7 +1258,7 @@ public class CityAI implements ICityAI {
 
     private void createSettings(Level world) {
         long seed = level.getSeed();
-        Random rnd = new Random(seed + center.x * 567000003533L + center.z * 234516783139L);
+        Random rnd = new Random(seed + center.x() * 567000003533L + center.z() * 234516783139L);
         rnd.nextFloat();
         rnd.nextFloat();
         CityPlan plan = city.getPlan();
@@ -1266,8 +1275,8 @@ public class CityAI implements ICityAI {
         // award the storage card while another core in the same complex is still unexplored.
         Palette palette = AssetRegistries.PALETTES.get(city.getPlan().getPalette());
         for (ChunkPos chunk : getCityChunks()) {
-            int bottom = getLowestHeight(chunk.x, chunk.z);
-            for (BuildingPart part : CityTools.getBuildingParts(level.getSeed(), city, chunk.x, chunk.z)) {
+            int bottom = getLowestHeight(chunk.x(), chunk.z());
+            for (BuildingPart part : CityTools.getBuildingParts(level.getSeed(), city, chunk.x(), chunk.z())) {
                 for (int y = 0; y < part.getSliceCount(); y++) {
                     for (int x = 0; x < part.getXSize(); x++) {
                         for (int z = 0; z < part.getZSize(); z++) {
@@ -1296,7 +1305,7 @@ public class CityAI implements ICityAI {
 
     private void initSentinels(Level world) {
         CityPlan plan = city.getPlan();
-        int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x, center.z);
+        int droneHeight = plan.getDroneHeightOffset() + getLowestHeight(center.x(), center.z());
 
         int numSentinels = settings.getNumSentinels();
         for (int i = 0; i < numSentinels; i++) {
@@ -1306,13 +1315,13 @@ public class CityAI implements ICityAI {
     }
 
     private void createSentinel(Level world, int i, int height) {
-        if (level.getChunkSource().getChunkNow(center.x, center.z) == null) {
+        if (level.getChunkSource().getChunkNow(center.x(), center.z()) == null) {
             return;
         }
         LivingEntity entity = SentinelDroneEntity.create(world, i, center);
-        int cx = center.x * 16 + 8;
+        int cx = center.x() * 16 + 8;
         int cy = isLargeCube() ? CityTools.getCityHeight(level, city) + 36 : height;
-        int cz = center.z * 16 + 8;
+        int cz = center.z() * 16 + 8;
         entity.setPos(cx, cy, cz);
         world.addFreshEntity(entity);
     }
@@ -1330,11 +1339,11 @@ public class CityAI implements ICityAI {
     }
 
     public void readFromNBT(CompoundTag nbt) {
-        guardianId = nbt.hasUUID("guardianId") ? nbt.getUUID("guardianId") : null;
-        guardianDead = nbt.getBoolean("guardianDead");
-        guardianChunk = nbt.contains("guardianChunk") ? new ChunkPos(nbt.getLong("guardianChunk")) : null;
+        guardianId = nbt.read("guardianId", UUIDUtil.CODEC).isPresent() ? nbt.read("guardianId", UUIDUtil.CODEC).orElse(null) : null;
+        guardianDead = nbt.getBooleanOr("guardianDead", false);
+        guardianChunk = nbt.contains("guardianChunk") ? ChunkPos.unpack(nbt.getLongOr("guardianChunk", 0)) : null;
         guardianMissingSince = -1;
-        initialized = nbt.getBoolean("initialized");
+        initialized = nbt.getBooleanOr("initialized", false);
         scannedChunks.clear();
         forceFields.clear();
         alarms.clear();
@@ -1342,56 +1351,56 @@ public class CityAI implements ICityAI {
         posiriteGenerators.clear();
         soldierBoundingbox = null;
         initializedChunks.clear();
-        for (long chunk : nbt.getLongArray("initializedChunks")) {
+        for (long chunk : nbt.getLongArray("initializedChunks").orElseGet(() -> new long[0])) {
             initializedChunks.add(chunk);
         }
-        sentinelsInitialized = nbt.getBoolean("sentinelsInitialized");
+        sentinelsInitialized = nbt.getBooleanOr("sentinelsInitialized", false);
         signalChannels.clear();
-        for (Tag entry : nbt.getList("signalChannels", Tag.TAG_COMPOUND)) {
+        for (Tag entry : nbt.getListOrEmpty("signalChannels")) {
             CompoundTag channel = (CompoundTag) entry;
-            signalChannels.put(channel.getInt("desired"), channel.getInt("actual"));
+            signalChannels.put(channel.getIntOr("desired", 0), channel.getIntOr("actual", 0));
         }
         settings = null;
-        readSetFromNBT(nbt.getList("cores", Tag.TAG_COMPOUND), aiCores);
-        readSetFromNBT(nbt.getList("pendingCores", Tag.TAG_COMPOUND), pendingCores);
+        readSetFromNBT(nbt.getListOrEmpty("cores"), aiCores);
+        readSetFromNBT(nbt.getListOrEmpty("pendingCores"), pendingCores);
         if (initialized) {
             if (nbt.contains("settings")) {
                 settings = new CityAISettings();
-                settings.readFromNBT(nbt.getCompound("settings"));
+                settings.readFromNBT(nbt.getCompoundOrEmpty("settings"));
             }
-            keyId = nbt.getString("keyId");
-            storageKeyId = nbt.getString("storageKeyId");
-            forcefieldId = nbt.getString("forcefieldId");
+            keyId = nbt.getStringOr("keyId", "");
+            storageKeyId = nbt.getStringOr("storageKeyId", "");
+            forcefieldId = nbt.getStringOr("forcefieldId", "");
             watchingPlayers.clear();
             if (nbt.contains("players")) {
-                ListTag list = nbt.getList("players", Tag.TAG_COMPOUND);
+                ListTag list = nbt.getListOrEmpty("players");
                 for (int i = 0; i < list.size(); i++) {
-                    CompoundTag tc = list.getCompound(i);
-                    UUID uuid = tc.getUUID("id");
+                    CompoundTag tc = list.getCompoundOrEmpty(i);
+                    UUID uuid = tc.read("id", UUIDUtil.CODEC).orElse(null);
                     BlockPos pos = readPosition(tc);
                     watchingPlayers.put(uuid, pos);
                 }
 
             }
-            sentinelMovementTicks = nbt.getInt("sentinelMovementTicks");
-            sentinelAngleOffset = nbt.getInt("sentinelAngleOffset");
-            levitatorTicker = nbt.getInt("levitatorTicker");
-            onAlert = nbt.getInt("onAlert");
-            highAlert = nbt.getBoolean("highAlert");
-            droneTicker = nbt.getInt("droneTicker");
-            readMapFromNBT(nbt.getList("guards", Tag.TAG_COMPOUND), guardPositions);
-            readMapFromNBT(nbt.getList("soldierPositions", Tag.TAG_COMPOUND), soldierPositions);
-            readMapFromNBT(nbt.getList("masterSoldierPositions", Tag.TAG_COMPOUND), masterSoldierPositions);
+            sentinelMovementTicks = nbt.getIntOr("sentinelMovementTicks", 0);
+            sentinelAngleOffset = nbt.getIntOr("sentinelAngleOffset", 0);
+            levitatorTicker = nbt.getIntOr("levitatorTicker", 0);
+            onAlert = nbt.getIntOr("onAlert", 0);
+            highAlert = nbt.getBooleanOr("highAlert", false);
+            droneTicker = nbt.getIntOr("droneTicker", 0);
+            readMapFromNBT(nbt.getListOrEmpty("guards"), guardPositions);
+            readMapFromNBT(nbt.getListOrEmpty("soldierPositions"), soldierPositions);
+            readMapFromNBT(nbt.getListOrEmpty("masterSoldierPositions"), masterSoldierPositions);
         }
     }
 
     public void writeToNBT(CompoundTag compound) {
         if (guardianId != null) {
-            compound.putUUID("guardianId", guardianId);
+            compound.store("guardianId", UUIDUtil.CODEC, guardianId);
         }
         compound.putBoolean("guardianDead", guardianDead);
         if (guardianChunk != null) {
-            compound.putLong("guardianChunk", guardianChunk.toLong());
+            compound.putLong("guardianChunk", guardianChunk.pack());
         }
         compound.putBoolean("initialized", initialized);
         compound.putLongArray("initializedChunks", initializedChunks.stream().mapToLong(Long::longValue).toArray());
@@ -1420,7 +1429,7 @@ public class CityAI implements ICityAI {
                 ListTag list = new ListTag();
                 for (Map.Entry<UUID, BlockPos> entry : watchingPlayers.entrySet()) {
                     CompoundTag tc = writePosition(entry.getValue());
-                    tc.putUUID("id", entry.getKey());
+                    tc.store("id", UUIDUtil.CODEC, entry.getKey());
                     list.add(tc);
                 }
                 compound.put("players", list);
@@ -1448,7 +1457,7 @@ public class CityAI implements ICityAI {
     private void readSetFromNBT(ListTag list, Set<BlockPos> set) {
         set.clear();
         for (int i = 0; i < list.size(); i++) {
-            BlockPos pos = readPosition(list.getCompound(i));
+            BlockPos pos = readPosition(list.getCompoundOrEmpty(i));
             set.add(pos);
         }
     }
@@ -1466,15 +1475,15 @@ public class CityAI implements ICityAI {
     private void readMapFromNBT(ListTag list, Map<BlockPos, Direction> map) {
         map.clear();
         for (int i = 0; i < list.size(); i++) {
-            CompoundTag tc = list.getCompound(i);
+            CompoundTag tc = list.getCompoundOrEmpty(i);
             BlockPos pos = readPosition(tc);
-            Direction facing = OrientationTools.DIRECTION_VALUES[tc.getInt("facing")];
+            Direction facing = OrientationTools.DIRECTION_VALUES[tc.getIntOr("facing", 0)];
             map.put(pos, facing);
         }
     }
 
     private static BlockPos readPosition(CompoundTag tag) {
-        return new BlockPos(tag.getInt("X"), tag.getInt("Y"), tag.getInt("Z"));
+        return new BlockPos(tag.getIntOr("X", 0), tag.getIntOr("Y", 0), tag.getIntOr("Z", 0));
     }
 
     private static CompoundTag writePosition(BlockPos pos) {

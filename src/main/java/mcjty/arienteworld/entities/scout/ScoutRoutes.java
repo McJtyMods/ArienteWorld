@@ -24,17 +24,17 @@ public class ScoutRoutes {
     }
 
     public static boolean isOperationalBase(ServerLevel level, ChunkPos center) {
-        return CityTools.isCityCenter(level.getSeed(), center.x, center.z)
+        return CityTools.isCityCenter(level.getSeed(), center.x(), center.z())
                 && CityAISystem.getCityAISystem(level).getCityAI(center).hasOperationalCore();
     }
 
     public static List<City> nearbyBases(ServerLevel level, ChunkPos around, int cells) {
         List<City> result = new ArrayList<>();
-        ChunkPos center = CityTools.getNearestDungeonCenter(around.x, around.z);
+        ChunkPos center = CityTools.getNearestDungeonCenter(around.x(), around.z());
         for (int x = -cells; x <= cells; x++) {
             for (int z = -cells; z <= cells; z++) {
-                ChunkPos pos = new ChunkPos(center.x + x * 16, center.z + z * 16);
-                if (CityTools.isCityCenter(level.getSeed(), pos.x, pos.z)) {
+                ChunkPos pos = new ChunkPos(center.x() + x * 16, center.z() + z * 16);
+                if (CityTools.isCityCenter(level.getSeed(), pos.x(), pos.z())) {
                     City city = CityTools.getCity(level.getSeed(), pos);
                     if (!city.getPlan().isUnderground()) {
                         result.add(city);
@@ -47,10 +47,10 @@ public class ScoutRoutes {
 
     public static Vec3 aboveBase(ServerLevel level, City city) {
         ChunkPos center = city.getCenter();
-        int roof = CityTools.getLowestHeight(level, city, center.x, center.z)
-                + CityTools.getBuildingParts(level.getSeed(), city, center.x, center.z).stream()
+        int roof = CityTools.getLowestHeight(level, city, center.x(), center.z())
+                + CityTools.getBuildingParts(level.getSeed(), city, center.x(), center.z()).stream()
                 .mapToInt(BuildingPart::getSliceCount).sum();
-        return new Vec3(center.getMinBlockX() + 8, Math.min(level.getMaxBuildHeight() - 8, roof + 8), center.getMinBlockZ() + 8);
+        return new Vec3(center.getMinBlockX() + 8, Math.min(level.getMaxY() - 8, roof + 8), center.getMinBlockZ() + 8);
     }
 
     public static FlightPlan create(ServerLevel level, ChunkPos from, Vec3 start, RandomSource random) {

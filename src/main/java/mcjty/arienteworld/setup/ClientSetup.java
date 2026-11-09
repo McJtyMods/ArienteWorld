@@ -6,15 +6,13 @@ import mcjty.arienteworld.entities.darkbat.DarkbatRender;
 import mcjty.arienteworld.entities.drone.DroneRender;
 import mcjty.arienteworld.entities.drone.SentinelDroneRender;
 import mcjty.arienteworld.entities.soldier.SoldierRender;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class ClientSetup {
 
     @SubscribeEvent
@@ -28,14 +26,5 @@ public class ClientSetup {
     }
 
     public static void init(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            ItemBlockRenderTypes.setRenderLayer(Registration.GLOWLEAVES.get(), RenderType.cutoutMipped());
-            ItemBlockRenderTypes.setRenderLayer(Registration.BLUELEAVES.get(), RenderType.cutoutMipped());
-            ItemBlockRenderTypes.setRenderLayer(Registration.DARKLEAVES.get(), RenderType.cutoutMipped());
-            ItemBlockRenderTypes.setRenderLayer(Registration.BLACKBUSH.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(Registration.DARKGRASS.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(Registration.TALLDARKGRASS.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(Registration.SMALLFLOWER.get(), RenderType.cutout());
-        });
     }
 }

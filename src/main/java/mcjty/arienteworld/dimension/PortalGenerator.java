@@ -28,7 +28,7 @@ public class PortalGenerator {
                         Heightmap.Types.WORLD_SURFACE_WG, level, random));
             }
         }
-        return Math.max(level.getMinBuildHeight() + 2, height);
+        return Math.max(level.getMinY() + 2, height);
     }
 
     public static void generate(CityChunk writer, ChunkPos chunk, ChunkGenerator generator) {
@@ -37,9 +37,9 @@ public class PortalGenerator {
         var foundation = LegacyBlockStates.read("ariente:marble_smooth@color=black");
         for (int x = 4; x <= 10; x++) {
             for (int z = 4; z <= 10; z++) {
-                for (int y = height - 1; y > writer.getLevel().getMinBuildHeight(); y--) {
+                for (int y = height - 1; y > writer.getLevel().getMinY(); y--) {
                     BlockPos pos = new BlockPos(x, y, z);
-                    if (writer.getBlockState(pos).isSolidRender(writer.getLevel(), writer.absolute(pos))) {
+                    if (writer.getBlockState(pos).isSolidRender()) {
                         break;
                     }
                     writer.setBlockState(pos, foundation, false);
@@ -50,10 +50,10 @@ public class PortalGenerator {
 
     public static BlockPos getArrival(ServerLevel level, BlockPos source) {
         ChunkPos chunk = new ChunkPos((source.getX() >> 4) & ~15, (source.getZ() >> 4) & ~15);
-        level.getChunk(chunk.x, chunk.z);
+        level.getChunk(chunk.x(), chunk.z());
         int x = chunk.getMinBlockX();
         int z = chunk.getMinBlockZ();
-        for (int y = level.getMaxBuildHeight() - 4; y > level.getMinBuildHeight(); y--) {
+        for (int y = level.getMaxY() - 4; y > level.getMinY(); y--) {
             BlockPos warper = new BlockPos(x + 7, y, z + 7);
             if (level.getBlockState(warper).is(WARPER.get()) && level.getBlockEntity(warper) instanceof IWarper
                     && level.isEmptyBlock(new BlockPos(x + 8, y + 1, z + 8))
@@ -62,14 +62,14 @@ public class PortalGenerator {
             }
         }
         // Older chunks may predate portal generation. Build a clear arrival platform above them.
-        int height = level.getMinBuildHeight();
+        int height = level.getMinY();
         for (int dx = 4; dx <= 10; dx++) {
             for (int dz = 4; dz <= 10; dz++) {
                 height = Math.max(height, level.getHeight(Heightmap.Types.WORLD_SURFACE, x + dx, z + dz));
             }
         }
         height++;
-        if (height + 5 >= level.getMaxBuildHeight()) {
+        if (height + 5 >= level.getMaxY()) {
             throw new IllegalStateException("No vertical room for an Ariente arrival portal");
         }
         CityFeature.placePart(level, new BlockPos(x + 4, height, z + 4), AssetRegistries.PARTS.get("portal"), AssetRegistries.PALETTES.get("portal"));

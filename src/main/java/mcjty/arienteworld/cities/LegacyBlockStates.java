@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -58,11 +58,11 @@ public class LegacyBlockStates {
             case "arienteworld:master_soldier_dummy" -> "arienteworld:master_solider_dummy";
             default -> id;
         };
-        ResourceLocation key = ResourceLocation.parse(id);
+        Identifier key = Identifier.parse(id);
         if (!BuiltInRegistries.BLOCK.containsKey(key)) {
             throw new IllegalArgumentException("Unknown city block: " + description + " (" + key + ")");
         }
-        Block block = BuiltInRegistries.BLOCK.get(key);
+        Block block = BuiltInRegistries.BLOCK.getValue(key);
         BlockState state = block.defaultBlockState();
         if (block instanceof LeavesBlock) {
             // Leaves in authored city parts must survive independently of generated tree logs.
@@ -85,11 +85,11 @@ public class LegacyBlockStates {
 
     public static String write(BlockState state) {
         String id = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
-        if (state.getValues().isEmpty()) {
+        if (state.getValues().findAny().isEmpty()) {
             return id;
         }
-        return id + "@" + state.getValues().entrySet().stream()
-                .map(entry -> writeProperty(entry.getKey(), entry.getValue()))
+        return id + "@" + state.getValues()
+                .map(Object::toString)
                 .collect(Collectors.joining(","));
     }
 
