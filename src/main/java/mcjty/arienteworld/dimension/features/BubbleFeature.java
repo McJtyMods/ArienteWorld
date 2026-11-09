@@ -1,5 +1,6 @@
 package mcjty.arienteworld.dimension.features;
 
+import net.minecraft.world.item.DyeColor;
 import java.util.Random;
 import mcjty.arienteworld.dimension.terrain.NoiseGeneratorPerlin;
 import mcjty.arienteworld.dimension.terrain.TerrainBuffer;
@@ -36,7 +37,7 @@ public class BubbleFeature implements IFeature {
         int radius = random.nextInt(6) + 6;
         int centery = random.nextInt(7) + 60;
 
-        BlockState block = Blocks.BLUE_STAINED_GLASS.defaultBlockState();
+        BlockState block = Blocks.STAINED_GLASS.pick(DyeColor.BLUE).defaultBlockState();
         BlockState water = Blocks.WATER.defaultBlockState();
         int centerx = 8 + (dx) * 16;
         int centerz = 8 + (dz) * 16;

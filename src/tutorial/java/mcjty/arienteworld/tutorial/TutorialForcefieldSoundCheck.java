@@ -53,20 +53,20 @@ public class TutorialForcefieldSoundCheck {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null && mc.screen != null) {
-            for (var child : mc.screen.children()) {
-                if (child instanceof Button button && (button.getMessage().getString().equals("Proceed")
+        if (mc.player == null && mc.gui.screen() != null) {
+            for (var child : mc.gui.screen().children()) {
+                if (child instanceof Button button && (button.getMessage().getString().startsWith("Proceed")
                         || button.getMessage().getString().equals("Continue")
-                        || button.getMessage().getString().equals("I know what I'm doing!"))) {
+                        || button.getMessage().getString().equalsIgnoreCase("I know what I'm doing!"))) {
                     button.onPress(new KeyEvent(257, 0, 0));
                     break;
                 }
             }
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null || started && !ready) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null || started && !ready) {
             if (++waiting > 2400) {
                 throw new IllegalStateException("Forcefield sound check did not enter Tutorial");
             }

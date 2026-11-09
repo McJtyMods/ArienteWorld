@@ -63,20 +63,20 @@ public class TutorialDisplayPositionCheck {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null && mc.screen != null) {
-            for (var child : mc.screen.children()) {
-                if (child instanceof Button button && (button.getMessage().getString().equals("Proceed")
+        if (mc.player == null && mc.gui.screen() != null) {
+            for (var child : mc.gui.screen().children()) {
+                if (child instanceof Button button && (button.getMessage().getString().startsWith("Proceed")
                         || button.getMessage().getString().equals("Continue")
-                        || button.getMessage().getString().equals("I know what I'm doing!"))) {
+                        || button.getMessage().getString().equalsIgnoreCase("I know what I'm doing!"))) {
                     button.onPress(new KeyEvent(257, 0, 0));
                     break;
                 }
             }
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             if (++ticks > 2400) {
                 throw new IllegalStateException("Display position check did not enter Tutorial");
             }
@@ -85,9 +85,11 @@ public class TutorialDisplayPositionCheck {
         if (!started) {
             started = true;
             ticks = 0;
-            mc.options.hideGui = true;
+            if (!mc.gui.hud.isHidden()) {
+                mc.gui.hud.toggle();
+            }
             mc.options.graphicsPreset().set(Boolean.getBoolean("ariente.tutorial.fabulous") ? GraphicsPreset.FABULOUS : GraphicsPreset.FANCY);
-            mc.levelRenderer.allChanged();
+            mc.levelExtractor.allChanged();
             prepare(mc);
         }
         if (!ready || ++ticks < 80) {
@@ -96,7 +98,7 @@ public class TutorialDisplayPositionCheck {
         if (frames < 10 || DisplayBaseTile.LOADED.stream().noneMatch(tile -> tile.getLevel() == mc.level && !tile.isRemoved())) {
             throw new IllegalStateException("Display position check did not render the tutorial's displays");
         }
-        Screenshot.grab(mc.gameDirectory, "display-position-" + VIEWS[view].name() + ".png", mc.getMainRenderTarget(), 1, message -> {});
+        Screenshot.grab(mc.gameDirectory, "display-position-" + VIEWS[view].name() + ".png", mc.gameRenderer.mainRenderTarget(), 1, message -> {});
         ArienteWorld.setup.getLogger().info("DISPLAY POSITION CHECK: {} passed over {} frames", VIEWS[view].name(), frames);
         ready = false;
         if (++view == VIEWS.length) {
@@ -130,7 +132,7 @@ public class TutorialDisplayPositionCheck {
         drawn = false;
         var batch = new HoloRenderBatch();
         batch.command(new PoseStack(), (poses, collector) -> {
-            if (!expectedView.equals(RenderSystem.getModelViewMatrix(), .00001f)) {
+            if (!expectedView.equals(RenderSystem.getModelViewMatrixCopy(), .00001f)) {
                 throw new IllegalStateException("Deferred displays lost the world camera transform at view " + VIEWS[view].name());
             }
             drawn = true;
@@ -141,13 +143,13 @@ public class TutorialDisplayPositionCheck {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void beforeRender(RenderLevelStageEvent.AfterLevel event) {
-        if (active()) previousModelView = new Matrix4f(RenderSystem.getModelViewMatrix());
+        if (active()) previousModelView = new Matrix4f(RenderSystem.getModelViewMatrixCopy());
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void afterRender(RenderLevelStageEvent.AfterLevel event) {
         if (active() && queued) {
-            if (!drawn || !previousModelView.equals(RenderSystem.getModelViewMatrix(), .00001f)) {
+            if (!drawn || !previousModelView.equals(RenderSystem.getModelViewMatrixCopy(), .00001f)) {
                 throw new IllegalStateException("Deferred display pass failed to draw or restore the camera transform");
             }
             queued = false;

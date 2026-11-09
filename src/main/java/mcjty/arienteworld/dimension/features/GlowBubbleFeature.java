@@ -1,5 +1,6 @@
 package mcjty.arienteworld.dimension.features;
 
+import net.minecraft.world.item.DyeColor;
 import java.util.Random;
 import mcjty.arienteworld.cities.LegacyBlockStates;
 import mcjty.arienteworld.dimension.terrain.NoiseGeneratorPerlin;
@@ -37,7 +38,7 @@ public class GlowBubbleFeature implements IFeature {
         int radius = random.nextInt(6) + 6;
         int centery = random.nextInt(7) + 40;
 
-        BlockState block = Blocks.BLUE_STAINED_GLASS.defaultBlockState();
+        BlockState block = Blocks.STAINED_GLASS.pick(DyeColor.BLUE).defaultBlockState();
         BlockState inner = LegacyBlockStates.read("ariente:fluxglow");
         BlockState air = Blocks.AIR.defaultBlockState();
         int centerx = 8 + (dx) * 16;

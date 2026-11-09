@@ -32,10 +32,10 @@ public class SkyRenderingChecks {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             return;
         }
         if (!started) {
@@ -47,7 +47,7 @@ public class SkyRenderingChecks {
         if (!ready || ++ticks < 100 || !mc.level.dimension().equals(DimensionRegister.DIMENSION)) {
             return;
         }
-        try (var shot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+        try (var shot = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
             int black = 0;
             int light = 0;
             for (int y = 0; y < shot.getHeight(); y++) {

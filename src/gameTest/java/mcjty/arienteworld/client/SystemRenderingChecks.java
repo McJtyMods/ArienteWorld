@@ -40,7 +40,7 @@ import org.lwjgl.glfw.GLFW;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -225,7 +225,7 @@ public class SystemRenderingChecks {
             save(image, "transfer-" + runs);
         }
         HoloGuiModConfigGui screen = new HoloGuiModConfigGui(null);
-        mc.setScreen(screen);
+        mc.gui.setScreen(screen);
         require(screen.children().size() == 3, "The native config screen must expose both style selectors and Done");
         screen.onClose();
         runs++;
@@ -372,7 +372,7 @@ public class SystemRenderingChecks {
                 LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, pose, buffers, mc.level, 0));
     }
 
-    private static NativeImage picture(float radius, BiConsumer<PoseStack, MultiBufferSource> render) {
+    private static NativeImage picture(float radius, BiConsumer<PoseStack, RenderBufferSource> render) {
         Minecraft mc = Minecraft.getInstance();
         TextureTarget target = new TextureTarget(512, 512, true, Minecraft.ON_OSX);
         Matrix4f projection = new Matrix4f(RenderSystem.getProjectionMatrix());
@@ -389,7 +389,7 @@ public class SystemRenderingChecks {
             target.bindWrite(true);
             PoseStack pose = new PoseStack();
             pose.translate(0, 0, -10);
-            var buffers = MultiBufferSource.immediate(new BufferBuilder(4096));
+            var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));
             render.accept(pose, buffers);
             buffers.endBatch();
             return Screenshot.takeScreenshot(target);
@@ -398,7 +398,7 @@ public class SystemRenderingChecks {
             view.popPose();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setProjectionMatrix(projection, sorting);
-            mc.getMainRenderTarget().bindWrite(true);
+            mc.gameRenderer.mainRenderTarget().bindWrite(true);
         }
     }
 

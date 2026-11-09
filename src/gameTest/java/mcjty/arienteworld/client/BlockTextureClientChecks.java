@@ -33,8 +33,8 @@ public class BlockTextureClientChecks {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getOverlay() != null
-                || !(mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen)) {
+        if (mc.gui.overlay() != null
+                || !(mc.gui.screen() instanceof TitleScreen || mc.gui.screen() instanceof AccessibilityOnboardingScreen)) {
             return;
         }
         var atlas = mc.getTextureAtlas(InventoryMenu.BLOCK_ATLAS);

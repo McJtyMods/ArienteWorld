@@ -98,19 +98,19 @@ public class TutorialPreview {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null && mc.screen != null) {
-            for (var child : mc.screen.children()) {
-                if (child instanceof Button button && (button.getMessage().getString().equals("Proceed")
-                        || button.getMessage().getString().equals("Continue") || button.getMessage().getString().equals("I know what I'm doing!"))) {
+        if (mc.player == null && mc.gui.screen() != null) {
+            for (var child : mc.gui.screen().children()) {
+                if (child instanceof Button button && (button.getMessage().getString().startsWith("Proceed")
+                        || button.getMessage().getString().equals("Continue") || button.getMessage().getString().equalsIgnoreCase("I know what I'm doing!"))) {
                     button.onPress(new KeyEvent(257, 0, 0));
                     break;
                 }
             }
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             if (++waitingTicks > 2400) {
                 throw new IllegalStateException("Tutorial preview did not enter the world");
             }
@@ -119,10 +119,12 @@ public class TutorialPreview {
         if (!started) {
             started = true;
             verifySurfaceUvs(mc);
-            mc.options.hideGui = true;
+            if (!mc.gui.hud.isHidden()) {
+                mc.gui.hud.toggle();
+            }
             if (Boolean.getBoolean("ariente.tutorial.fabulous")) {
                 mc.options.graphicsPreset().set(GraphicsPreset.FABULOUS);
-                mc.levelRenderer.allChanged();
+                mc.levelExtractor.allChanged();
             }
             mc.options.renderDistance().set(12);
             mc.options.simulationDistance().set(5);
@@ -190,7 +192,7 @@ public class TutorialPreview {
         Path directory = Path.of("..", Boolean.getBoolean("ariente.tutorial.fabulous") ? "screenshots-fabulous" : "screenshots");
         Files.createDirectories(directory);
         Path destination = directory.resolve(SCENES[scene] + ".png");
-        Screenshot.takeScreenshot(mc.getMainRenderTarget(), screenshot -> {
+        Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget(), screenshot -> {
             try (screenshot) {
                 screenshot.writeToFile(destination);
             } catch (IOException exception) {

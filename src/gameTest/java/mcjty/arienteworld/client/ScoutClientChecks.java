@@ -1,5 +1,6 @@
 package mcjty.arienteworld.client;
 
+import net.minecraft.world.item.DyeColor;
 import com.mojang.blaze3d.vertex.PoseStack;
 import mcjty.ariente.entities.LaserEntity;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
@@ -13,7 +14,7 @@ import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -151,11 +152,11 @@ public class ScoutClientChecks {
             return;
         }
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null && mc.screen != null) {
-            for (var child : mc.screen.children()) {
+        if (mc.player == null && mc.gui.screen() != null) {
+            for (var child : mc.gui.screen().children()) {
                 if (child instanceof Button button && (button.getMessage().getString().equals("Proceed")
                         || button.getMessage().getString().equals("Continue"))) {
                     button.onPress();
@@ -163,7 +164,7 @@ public class ScoutClientChecks {
                 }
             }
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             return;
         }
         require(failure == null, "Scout server fixture failed: " + failure);
@@ -172,7 +173,7 @@ public class ScoutClientChecks {
             mc.options.pauseOnLostFocus = false;
             mc.options.fov().set(70);
             mc.options.hideGui = true;
-            mc.setScreen(null);
+            mc.gui.setScreen(null);
             mc.mouseHandler.releaseMouse();
             UUID playerId = mc.player.getUUID();
             mc.getSingleplayerServer().execute(() -> {
@@ -183,7 +184,7 @@ public class ScoutClientChecks {
                     level.setDayTime(6000);
                     level.setWeatherParameters(6000, 0, false, false);
                     for (BlockPos pos : BlockPos.betweenClosed(-24, 199, -24, 24, 199, 24)) {
-                        level.setBlock(pos, Blocks.WHITE_CONCRETE.defaultBlockState(), 2);
+                        level.setBlock(pos, Blocks.CONCRETE.pick(DyeColor.WHITE).defaultBlockState(), 2);
                     }
                     for (BlockPos pos : BlockPos.betweenClosed(-16, 204, -16, 16, 204, 16)) {
                         level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
@@ -265,7 +266,7 @@ public class ScoutClientChecks {
     }
 
     private static void screenshot(Minecraft mc, String name) {
-        try (var image = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+        try (var image = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
             image.writeToFile(mc.gameDirectory.toPath().resolve(name + ".png"));
         } catch (Exception error) {
             throw new IllegalStateException(error);
@@ -290,7 +291,7 @@ public class ScoutClientChecks {
             renderer.addLayer(new RenderLayer<SoldierEntity, HumanoidModel<SoldierEntity>>(renderer) {
 
                 @Override
-                public void render(PoseStack pose, MultiBufferSource buffers, int light, SoldierEntity soldier, float swing,
+                public void render(PoseStack pose, RenderBufferSource buffers, int light, SoldierEntity soldier, float swing,
                                    float amount, float partialTick, float age, float yaw, float pitch) {
                     if (soldier.getUUID().equals(pilotId) && soldier.getVehicle() instanceof FluxShipEntity ship) {
                         // Inspect inside the renderer, after all Pre listeners and before Post restores the pose.

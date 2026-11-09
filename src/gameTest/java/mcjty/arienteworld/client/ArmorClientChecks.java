@@ -35,7 +35,7 @@ public class ArmorClientChecks {
         Minecraft mc = Minecraft.getInstance();
         if (!Boolean.getBoolean("ariente.armorGuiCheck") || event.phase != TickEvent.Phase.END
                 || mc.level == null || mc.player == null || mc.getSingleplayerServer() == null
-                || mc.isPaused() || mc.getOverlay() != null
+                || mc.isPaused() || mc.gui.overlay() != null
                 || !mc.level.dimension().equals(DimensionRegister.DIMENSION)
                 || !mc.level.hasChunkAt(new BlockPos(90020, 241, 90023))) {
             return;

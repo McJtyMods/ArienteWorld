@@ -14,6 +14,9 @@ import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.dimension.features.CrystalFormationFeature;
 import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.data.loot.LootTableProvider;
@@ -77,13 +80,20 @@ public class DataGenerators {
             super(output, lookup, ArienteWorld.MODID);
         }
 
+        private void addTag(TagKey<Block> key, Block... blocks) {
+            var builder = tag(key);
+            for (Block block : blocks) {
+                builder.add(BuiltInRegistries.BLOCK.getResourceKey(block).orElseThrow());
+            }
+        }
+
         @Override
         protected void addTags(HolderLookup.Provider lookup) {
-            tag(net.minecraft.tags.BlockTags.LOGS).add(Registration.GLOWLOG.get(), Registration.BLUELOG.get());
-            tag(net.minecraft.tags.BlockTags.LEAVES).add(Registration.GLOWLEAVES.get(), Registration.BLUELEAVES.get(), Registration.DARKLEAVES.get());
-            tag(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE).add(Registration.NEGARITE_CRYSTAL.get(), Registration.POSIRITE_CRYSTAL.get());
-            tag(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL).add(Registration.NEGARITE_CRYSTAL.get(), Registration.POSIRITE_CRYSTAL.get());
-            tag(CrystalFormationFeature.SUBSTRATE).add(DecorativeBlockModule.MARBLE.get(MarbleColor.GRAY).get(),
+            addTag(net.minecraft.tags.BlockTags.LOGS, Registration.GLOWLOG.get(), Registration.BLUELOG.get());
+            addTag(net.minecraft.tags.BlockTags.LEAVES, Registration.GLOWLEAVES.get(), Registration.BLUELEAVES.get(), Registration.DARKLEAVES.get());
+            addTag(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE, Registration.NEGARITE_CRYSTAL.get(), Registration.POSIRITE_CRYSTAL.get());
+            addTag(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL, Registration.NEGARITE_CRYSTAL.get(), Registration.POSIRITE_CRYSTAL.get());
+            addTag(CrystalFormationFeature.SUBSTRATE, DecorativeBlockModule.MARBLE.get(MarbleColor.GRAY).get(),
                     DecorativeBlockModule.MARBLE.get(MarbleColor.WHITE).get(), DecorativeBlockModule.MARBLE.get(MarbleColor.BLUE).get(),
                     DecorativeBlockModule.MARBLE.get(MarbleColor.BLACK).get());
         }

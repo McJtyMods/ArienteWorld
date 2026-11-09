@@ -70,7 +70,7 @@ public class ProgressionClientChecks implements IModPlugin {
     public static void tick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (!Boolean.getBoolean("ariente.progressionClientCheck") || event.phase != TickEvent.Phase.END
-                || mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || runtime == null || mc.getOverlay() != null) {
+                || mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || runtime == null || mc.gui.overlay() != null) {
             return;
         }
         if (!started) {
@@ -143,8 +143,8 @@ public class ProgressionClientChecks implements IModPlugin {
             });
         }
         if (serverChecked && ++ticks == 40) {
-            require(mc.screen != null, "JEI's actual recipe screen must open");
-            try (var screenshot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+            require(mc.gui.screen() != null, "JEI's actual recipe screen must open");
+            try (var screenshot = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
                 Path directory = Path.of("..", "verification");
                 Files.createDirectories(directory);
                 screenshot.writeToFile(directory.resolve("constructor-jei-" + Boolean.getBoolean("ariente.expectCompanion") + ".png"));

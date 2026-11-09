@@ -15,7 +15,7 @@ import mcjty.hologui.gui.HoloGuiEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
@@ -114,7 +114,7 @@ public class HologramRenderingChecks {
                 poses.mulPose(Axis.XP.rotationDegrees(angle[1]));
                 Matrix4f centered = new Matrix4f(poses.last().pose());
                 poses.translate(0, -.5, 0);
-                var buffers = MultiBufferSource.immediate(new BufferBuilder(4096));
+                var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));
                 mc.getEntityRenderDispatcher().getRenderer(holo).render(holo, 0, 0, poses, buffers, LightTexture.FULL_BRIGHT);
                 buffers.endBatch();
                 try (NativeImage before = Screenshot.takeScreenshot(target)) {
@@ -172,7 +172,7 @@ public class HologramRenderingChecks {
             RenderSystem.setProjectionMatrix(oldProjection, oldSorting);
             modelView.popPose();
             RenderSystem.applyModelViewMatrix();
-            mc.getMainRenderTarget().bindWrite(true);
+            mc.gameRenderer.mainRenderTarget().bindWrite(true);
         }
     }
 
@@ -204,7 +204,7 @@ public class HologramRenderingChecks {
                 poses.mulPose(Axis.XP.rotationDegrees(angle[1]));
                 Matrix4f centered = new Matrix4f(poses.last().pose());
                 poses.translate(0, -.5, 0);
-                var buffers = MultiBufferSource.immediate(new BufferBuilder(4096));
+                var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));
                 mc.getEntityRenderDispatcher().getRenderer(holo).render(holo, 0, 0, poses, buffers, LightTexture.FULL_BRIGHT);
                 buffers.endBatch();
                 try (NativeImage image = Screenshot.takeScreenshot(target)) {
@@ -224,7 +224,7 @@ public class HologramRenderingChecks {
             RenderSystem.setProjectionMatrix(oldProjection, oldSorting);
             modelView.popPose();
             RenderSystem.applyModelViewMatrix();
-            mc.getMainRenderTarget().bindWrite(true);
+            mc.gameRenderer.mainRenderTarget().bindWrite(true);
         }
         return brightness;
     }
@@ -253,7 +253,7 @@ public class HologramRenderingChecks {
     }
 
     private static void drawBehind(Matrix4f view, ResourceLocation texture) {
-        var buffers = MultiBufferSource.immediate(new BufferBuilder(1024));
+        var buffers = RenderBufferSource.immediate(new BufferBuilder(1024));
         var vertices = buffers.getBuffer(RenderType.entityTranslucent(texture));
         for (float[] corner : new float[][]{{-1, -1}, {1, -1}, {1, 1}, {-1, 1}}) {
             vertices.vertex(view, corner[0], corner[1], -.2f).color(255, 255, 255, 200)

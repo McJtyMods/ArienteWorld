@@ -40,7 +40,7 @@ public class LaserClientChecks {
     public static void tick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (!Boolean.getBoolean("ariente.laserCheck") || checked || event.phase != TickEvent.Phase.END
-                || mc.level == null || mc.player == null || mc.getSingleplayerServer() == null || mc.screen != null || mc.isPaused()) {
+                || mc.level == null || mc.player == null || mc.getSingleplayerServer() == null || mc.gui.screen() != null || mc.isPaused()) {
             return;
         }
         require(++ticks < 200, "Timed out waiting for tracked lance and drone lasers");

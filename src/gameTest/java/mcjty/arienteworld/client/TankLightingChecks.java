@@ -11,7 +11,7 @@ import mcjty.ariente.blocks.generators.TankRendererTools;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
@@ -74,7 +74,7 @@ public class TankLightingChecks {
             poses.mulPose(Axis.XP.rotationDegrees(15));
             poses.mulPose(Axis.YP.rotationDegrees(angle));
             poses.translate(-1, -1, -.5);
-            var buffers = MultiBufferSource.immediate(new BufferBuilder(4096));
+            var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));
             double yaw = Math.toRadians(-angle);
             Vec3 camera = new Vec3(Math.sin(yaw) * 5 + 1, 2.5, Math.cos(yaw) * 5 + .5);
             for (int column = 0; column < 2; column++) {
@@ -103,7 +103,7 @@ public class TankLightingChecks {
             view.popPose();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setProjectionMatrix(projection, sorting);
-            mc.getMainRenderTarget().bindWrite(true);
+            mc.gameRenderer.mainRenderTarget().bindWrite(true);
         }
     }
 

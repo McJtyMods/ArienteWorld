@@ -96,13 +96,13 @@ public class ExplorationClientChecks {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
         if (failure != null) {
             throw new IllegalStateException("Phase 2 exploration client check failed", failure);
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             return;
         }
         if (!started) {

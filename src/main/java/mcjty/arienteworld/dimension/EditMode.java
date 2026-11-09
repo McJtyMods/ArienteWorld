@@ -1,5 +1,8 @@
 package mcjty.arienteworld.dimension;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
+import java.util.Optional;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -34,7 +37,6 @@ import mcjty.arienteworld.cities.PartPalette;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -377,7 +379,7 @@ public class EditMode {
                         equipment.load(data);
                         tile.setChanged();
                     } else if (data != null && tile instanceof SpawnerBlockEntity spawner && data.get("mob") instanceof String mob) {
-                        EntityType.byString(mob).ifPresent(type -> spawner.setEntityId(type, level.getRandom()));
+                        Optional.ofNullable(Identifier.tryParse(mob)).flatMap(BuiltInRegistries.ENTITY_TYPE::getOptional).ifPresent(type -> spawner.setEntityId(type, level.getRandom()));
                         spawner.setChanged();
                     }
                 }

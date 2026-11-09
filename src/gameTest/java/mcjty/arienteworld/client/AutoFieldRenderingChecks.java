@@ -1,5 +1,6 @@
 package mcjty.arienteworld.client;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -53,11 +54,11 @@ public class AutoFieldRenderingChecks {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null && mc.screen != null) {
-            for (var child : mc.screen.children()) {
+        if (mc.player == null && mc.gui.screen() != null) {
+            for (var child : mc.gui.screen().children()) {
                 if (child instanceof Button button && (button.getMessage().getString().equals("Proceed")
                         || button.getMessage().getString().equals("Continue"))) {
                     button.onPress();
@@ -65,7 +66,7 @@ public class AutoFieldRenderingChecks {
                 }
             }
         }
-        if (mc.level == null || mc.player == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.level == null || mc.player == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             return;
         }
         if (!started) {
@@ -110,12 +111,12 @@ public class AutoFieldRenderingChecks {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getOverlay() != null) {
+        if (mc.gui.overlay() != null) {
             return;
         }
-        try (NativeImage before = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+        try (NativeImage before = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
             WorldHolograms.renderWorld();
-            try (NativeImage after = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+            try (NativeImage after = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
                 int changed = 0;
                 for (int y = 0; y < after.getHeight(); y += 2) {
                     for (int x = 0; x < after.getWidth(); x += 2) {
@@ -139,7 +140,7 @@ public class AutoFieldRenderingChecks {
         require(outline.getFieldBox() != null, "Field markers must be loaded before auditing its outline");
         RenderType type = ArienteRenderType.FIELD_OUTLINE;
         BufferBuilder vertices = new BufferBuilder(4096);
-        vertices.begin(VertexFormat.Mode.QUADS, type.format());
+        vertices.begin(PrimitiveTopology.QUADS, type.format());
         var renderer = mc.getBlockEntityRenderDispatcher().getRenderer(field);
         require(renderer != null, "The registered field renderer is missing");
         AutoFieldRenderer.renderOutline(outline, new PoseStack(), requested -> {
@@ -184,7 +185,7 @@ public class AutoFieldRenderingChecks {
         TankLightingChecks.check(mc);
         Path output = Path.of("screenshots");
         Files.createDirectories(output);
-        try (NativeImage screenshot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+        try (NativeImage screenshot = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
             screenshot.writeToFile(output.resolve("autofield-" + checks + ".png"));
         }
         checks++;

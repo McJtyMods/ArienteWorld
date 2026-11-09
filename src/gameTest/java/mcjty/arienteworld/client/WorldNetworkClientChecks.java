@@ -53,7 +53,7 @@ public class WorldNetworkClientChecks {
         mc.options.pauseOnLostFocus = false;
         mc.options.renderDistance().set(3);
         require(++total < 6000, "Network fixture timed out at stage " + stage);
-        if (mc.getOverlay() != null) {
+        if (mc.gui.overlay() != null) {
             return;
         }
         if (mc.level == null || mc.player == null) {
@@ -62,7 +62,7 @@ public class WorldNetworkClientChecks {
                 mc.stop();
                 return;
             }
-            require(!(mc.screen instanceof DisconnectedScreen) || stage == 0 || stage == 3,
+            require(!(mc.gui.screen() instanceof DisconnectedScreen) || stage == 0 || stage == 3,
                     "Server disconnected during world verification at stage " + stage);
             if (!connecting && ++idle >= 60) {
                 connecting = true;
@@ -109,7 +109,7 @@ public class WorldNetworkClientChecks {
                 checkInventory(mc);
                 mc.level.disconnect();
                 mc.clearLevel();
-                mc.setScreen(new TitleScreen());
+                mc.gui.setScreen(new TitleScreen());
                 connecting = false;
                 idle = ticks = 0;
                 stage = 3;
@@ -121,7 +121,7 @@ public class WorldNetworkClientChecks {
             stage = 4;
         } else if (stage == 4 && mc.player.isDeadOrDying()) {
             mc.player.respawn();
-            mc.setScreen(null);
+            mc.gui.setScreen(null);
             ticks = 0;
             stage = 5;
         } else if (stage == 5 && ticks >= 80 && mc.player.isAlive()) {

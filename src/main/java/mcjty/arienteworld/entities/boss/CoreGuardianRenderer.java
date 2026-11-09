@@ -6,7 +6,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.Random;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.Identifier;
@@ -29,7 +29,7 @@ public class CoreGuardianRenderer extends ExtractedEntityRenderer<CoreGuardianEn
 
     @Override
     public void render(CoreGuardianEntity guardian, float yaw, float partialTick, PoseStack poses,
-                       MultiBufferSource buffers, int light) {
+                       RenderBufferSource buffers, int light) {
         poses.pushPose();
         poses.translate(0, guardian.getBbHeight() / 2, 0);
         Matrix4f matrix = poses.last().pose();

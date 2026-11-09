@@ -40,10 +40,10 @@ public class WorldGenerationClientChecks {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             return;
         }
         if (!started) {
@@ -55,7 +55,7 @@ public class WorldGenerationClientChecks {
         if (!ready || ++ticks < 120 || !mc.level.dimension().equals(DimensionRegister.DIMENSION)) {
             return;
         }
-        try (var screenshot = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+        try (var screenshot = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
             Path directory = Path.of("..", "verification");
             Files.createDirectories(directory);
             screenshot.writeToFile(directory.resolve("world-phase1-" + SCENES[scene] + ".png"));

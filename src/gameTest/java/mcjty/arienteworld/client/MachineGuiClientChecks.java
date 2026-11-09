@@ -31,7 +31,7 @@ public class MachineGuiClientChecks {
         Minecraft mc = Minecraft.getInstance();
         if (!Boolean.getBoolean("ariente.machineGuiCheck") || phase == 5 || event.phase != TickEvent.Phase.END
                 || mc.level == null || mc.player == null || mc.getSingleplayerServer() == null
-                || mc.isPaused() || mc.getOverlay() != null) {
+                || mc.isPaused() || mc.gui.overlay() != null) {
             return;
         }
         var server = mc.getSingleplayerServer();

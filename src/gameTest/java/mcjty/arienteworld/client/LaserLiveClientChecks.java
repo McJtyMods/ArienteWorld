@@ -1,5 +1,6 @@
 package mcjty.arienteworld.client;
 
+import net.minecraft.world.item.DyeColor;
 import mcjty.ariente.entities.LaserEntity;
 import mcjty.arienteworld.entities.drone.DroneEntity;
 import mcjty.ariente.setup.Registration;
@@ -47,8 +48,8 @@ public class LaserLiveClientChecks {
         Minecraft mc = Minecraft.getInstance();
         if (!Boolean.getBoolean("ariente.laserLiveCheck") || event.phase != TickEvent.Phase.END
                 || Boolean.getBoolean("ariente.laserCheck") && !LaserClientChecks.checked
-                || mc.level == null || mc.player == null || mc.getSingleplayerServer() == null || mc.screen != null
-                || mc.getOverlay() != null || mc.isPaused()) {
+                || mc.level == null || mc.player == null || mc.getSingleplayerServer() == null || mc.gui.screen() != null
+                || mc.gui.overlay() != null || mc.isPaused()) {
             return;
         }
         if (!started) {
@@ -74,7 +75,7 @@ public class LaserLiveClientChecks {
                 for (BlockPos pos : BlockPos.betweenClosed(-20, 179, -20, 20, 195, 20)) {
                     boolean wall = pos.getX() == -20 || pos.getX() == 20 || pos.getZ() == -20 || pos.getZ() == 20;
                     level.setBlock(pos, pos.getY() == 179 || wall
-                            ? Blocks.WHITE_CONCRETE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 2);
+                            ? Blocks.CONCRETE.pick(DyeColor.WHITE).defaultBlockState() : Blocks.AIR.defaultBlockState(), 2);
                 }
                 player.teleportTo(.5, 180, .5);
                 player.connection.teleport(.5, 180, .5, -45, 0);
@@ -172,14 +173,14 @@ public class LaserLiveClientChecks {
             return;
         }
         lastCaptureTick = ticks;
-        try (var picture = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+        try (var picture = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
             var directory = mc.gameDirectory.toPath().resolve("screenshots/laser-live-" + System.getProperty("ariente.laserLiveLabel", "capture"));
             Files.createDirectories(directory);
             picture.writeToFile(directory.resolve(scenario / 3 + "-" + CameraType.values()[scenario % 3].name().toLowerCase() + "-" + ticks + ".png"));
             for (LaserEntity shot : mc.level.getEntitiesOfClass(LaserEntity.class, mc.player.getBoundingBox().inflate(50))) {
                 shotFrames++;
                 ArienteWorld.setup.getLogger().info("LASER LIVE FRAME {} {}: projectile={}, direction={}, camera={}",
-                        scenario, ticks, shot.position(), shot.getBeamDirection(), mc.gameRenderer.getMainCamera().getPosition());
+                        scenario, ticks, shot.position(), shot.getBeamDirection(), mc.gameRenderer.mainCamera().getPosition());
             }
         } catch (IOException e) {
             throw new IllegalStateException(e);

@@ -24,7 +24,7 @@ gradle.afterProject { p ->
         }
         def positionCheck = p.hasProperty('tutorial_position_check')
         def soundCheck = p.hasProperty('tutorial_forcefield_sound_check')
-        def renderCheck = p.hasProperty('tutorial_render_regression')
+        def renderCheck = p.hasProperty('tutorial_render_regression') || p.hasProperty('tutorial_camera_boundary_check')
         if (p.hasProperty('tutorial_preview') || positionCheck || soundCheck || renderCheck) {
             p.runs {
                 client {
@@ -33,6 +33,7 @@ gradle.afterProject { p ->
                     systemProperty 'ariente.tutorial.fabulous', p.hasProperty('tutorial_fabulous').toString()
                     systemProperty 'ariente.tutorial.preview', (!positionCheck && !soundCheck && !renderCheck).toString()
                     systemProperty 'ariente.tutorial.renderRegression', renderCheck.toString()
+                    systemProperty 'ariente.tutorial.cameraBoundaryOnly', p.hasProperty('tutorial_camera_boundary_check').toString()
                     systemProperty 'ariente.tutorial.positionCheck', positionCheck.toString()
                     systemProperty 'ariente.tutorial.forcefieldSoundCheck', soundCheck.toString()
                     systemProperty 'ariente.tutorial.soundBaseline', p.hasProperty('tutorial_sound_baseline').toString()

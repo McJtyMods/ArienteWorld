@@ -65,11 +65,11 @@ public class CoreGuardianClientChecks {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null && mc.screen != null) {
-            for (var child : mc.screen.children()) {
+        if (mc.player == null && mc.gui.screen() != null) {
+            for (var child : mc.gui.screen().children()) {
                 if (child instanceof Button button && (button.getMessage().getString().equals("Proceed")
                         || button.getMessage().getString().equals("Continue"))) {
                     button.onPress();
@@ -77,7 +77,7 @@ public class CoreGuardianClientChecks {
                 }
             }
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             return;
         }
         if (failure != null) {
@@ -88,7 +88,7 @@ public class CoreGuardianClientChecks {
             mc.options.hideGui = false;
             mc.options.fov().set(70);
             mc.options.renderDistance().set(6);
-            mc.setScreen(null);
+            mc.gui.setScreen(null);
             mc.mouseHandler.releaseMouse();
             playerId = mc.player.getUUID();
             mc.getSingleplayerServer().execute(() -> prepare(mc));
@@ -183,7 +183,7 @@ public class CoreGuardianClientChecks {
     }
 
     private static void screenshot(Minecraft mc, String name) {
-        try (var image = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+        try (var image = Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget())) {
             image.writeToFile(mc.gameDirectory.toPath().resolve(name + ".png"));
         } catch (Exception error) {
             throw new IllegalStateException(error);

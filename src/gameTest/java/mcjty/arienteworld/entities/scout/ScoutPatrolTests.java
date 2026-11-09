@@ -489,7 +489,7 @@ public class ScoutPatrolTests {
             throw new AssertionError("No large surface base in fixture seed");
         }
         City base = source;
-        ChunkPos chunk = source.getCenter();
+        ChunkPos chunk = Vec3.atCenterOf(source);
         ScoutNavigation.prepareLaunch(level, chunk);
         helper.runAfterDelay(40, () -> {
             Vec3 center = ScoutRoutes.aboveBase(level, base);

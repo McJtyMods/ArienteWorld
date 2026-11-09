@@ -41,7 +41,7 @@ public class EquipmentMovementClientChecks {
         Minecraft mc = Minecraft.getInstance();
         if (!Boolean.getBoolean("ariente.equipmentMovementCheck") || event.phase != TickEvent.Phase.END
                 || mc.player == null || mc.level == null || mc.getSingleplayerServer() == null
-                || !mc.level.dimension().equals(DimensionRegister.DIMENSION) || mc.isPaused() || mc.getOverlay() != null) {
+                || !mc.level.dimension().equals(DimensionRegister.DIMENSION) || mc.isPaused() || mc.gui.overlay() != null) {
             return;
         }
         var server = mc.getSingleplayerServer();

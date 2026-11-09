@@ -1,6 +1,6 @@
 # ArienteWorld
 
-Minecraft **26.1.2 / NeoForge** companion to Ariente, adding an alien dimension,
+Minecraft **26.2 / NeoForge** companion to Ariente, adding an alien dimension,
 cities and progression to obtain its technology. Requires matching Ariente,
 HoloGui and McJtyLib; The One Probe is optional.
 
@@ -175,7 +175,7 @@ Use `/summon arienteworld:darkbat` to inspect one in a development world.
 
 ## Tutorial save
 
-`tools/create_tutorial.py` authors a fresh NeoForge 26.1.2 world named **Tutorial**.
+`tools/create_tutorial.py` authors a fresh NeoForge 26.2 world named **Tutorial**.
 It uses a void Overworld, a 144×144 city platform aligned around city-center
 chunk (8, 8), and a flat 48×48 teaching plaza in chunks (7–9, 7–9). The outer 72 chunks
 use ArienteWorld's city generator, with parks, buildings and levitator corridors. Numbered Ariente text
@@ -345,7 +345,10 @@ yaw changes, and samples both beams at three heights per section from three
 angles. It also checks that inactive tanks have no beam, that the live feed
 renders daytime and nighttime skies, and that the local player appears in the
 feed in both first-person and third-person mode when inside the mounted camera's
-view and disappears when outside it. Add
+view and disappears when outside it. Six dock-camera cases cover radii of 8, 16,
+32 and 64 blocks, distant terrain fading into fog, and stable chunk storage and
+images while the player turns or moves. These cases alter the plaza inside the
+disposable world; `-Ptutorial_camera_boundary_check` runs only those six cases. Add
 `-Ptutorial_fabulous` with another fresh profile for Fabulous graphics. Results
 and screenshots are written to `render-regression/` inside the profile; successful
 runs log `RENDER REGRESSION: all camera and tank checks passed` and exit. These
@@ -355,9 +358,69 @@ The older `tools/autofield_rendering.gradle` and broader Forge client/GameTest
 fixtures are historical 1.20.1 checks; they are not part of the NeoForge suite.
 Use the tutorial preview above for current client validation.
 
-Development target: Minecraft 26.1.2, NeoForge 26.1.2.99, Java 25, branch `26.1.2_neo`.
+Development target: Minecraft 26.2, NeoForge 26.2.0.75, Java 25, branch `26.2_neo`.
 Build with `./gradlew build` standalone, or `./gradlew :ArienteWorld:build` from MultiWorkspace.
-The workspace uses the included McJtyLib and The One Probe sources. These ports require McJtyLib **26.1.2-10.0.2** or newer. Ariente and ArienteWorld also use included HoloGui/Ariente sources. Published Maven artifacts are standalone fallbacks.
+The workspace uses the included McJtyLib and The One Probe sources. These ports require McJtyLib **26.2-10.0.3** or newer. Ariente and ArienteWorld also use included HoloGui/Ariente sources. Published Maven artifacts are standalone fallbacks.
 Unpublished port dependencies can be provided with `-Pariente_dependency_repository=<repository URL>`; `-Pgradletools_path=<file>` selects an explicit shared Gradle script.
 
-The [26.1.2 port report](PORT_26_1_2.md) documents current commands and validation. Earlier Forge fixture commands in this file are historical.
+The [earlier 26.1.2 port report](PORT_26_1_2.md) records the previous port’s migration and validation history. Earlier Forge fixture commands in this file are historical.
+
+### Minecraft 26.2 port
+
+This branch carries the latest committed 26.1.2 NeoForge implementation forward.
+Holograms and procedural geometry use extracted batches and native 26.2 staged
+vertex buffers; render submissions, screen access, camera extraction, colored
+vanilla content and tag generators use the 26.2 APIs. World effects follow the
+reversed depth buffer. The snapshot camera retains its own forward-depth projection.
+
+Patchouli has no listed Minecraft 26.2 release. The tablet/manual remains optional
+and reports its unavailability; this branch does not load an older Patchouli jar.
+McJtyLib 26.2-10.0.3 supplies the model helpers required by these ports. Publish
+McJtyLib, HoloGui and Ariente in that order before distributing the standalone
+companion. Maven fallbacks use the matching 26.2 versions.
+
+From `../Multi_neo`, with Java 25 selected:
+
+```sh
+./gradlew :McJtyLib:build :ModHoloGui:build :Ariente:build :ArienteWorld:build :workspace:build
+./gradlew :Ariente:runClientData :ArienteWorld:runClientData
+./gradlew :ArienteWorld:runGameTestServer
+```
+
+The existing `PORT_26_1_2.md` report and its recorded results apply to the previous
+Minecraft branch. Minecraft 26.2 validation is recorded below.
+
+Publication checks on 2026-11-09 found no 26.2 NeoForge releases of these three
+mods on Modrinth. CurseForge file listings returned HTTP 403, so their publication
+status there could not be verified. McJtyLib 26.2-10.0.2 is published on Modrinth;
+this port advances the library to 26.2-10.0.3. Unpublished dependencies were staged
+in a temporary local Maven repository for standalone verification. Update the
+shared Maven pin to the actual Jenkins artifact revision when releasing it.
+
+The integrated client also reports an existing InControl global-loot-modifier
+resource error. InControl is outside this port; the three mod checks and tutorial
+checks use the matching local dependencies. Patchouli remains unavailable.
+
+Validated on 2026-11-09:
+
+- Workspace and standalone builds; McJtyLib's 11 JUnit tests; ten required native
+  storage, integration, world-generation and saved-data GameTests.
+- Both native client data generators and resource audits.
+- Full-workspace client smoke: storage hologram, ship model and Ariente dimension.
+- Fresh Tutorial creation and server restart, each running 2,000 real ticks.
+- All 19 camera/tank pixel checks with both Fancy and Fabulous graphics: fixed
+  camera views while moving the player, full-height beams in three directions,
+  disabled tanks, day/night skies and local-player visibility. Representative
+  screenshots were visually inspected. The sky renderer's retained render target
+  is redirected and restored for offscreen cameras on 26.2. The six new distance
+  cases also pass in the full workspace: radii of 8, 16, 32 and 64 blocks, opaque
+  fog at distant surfaces, and no player terrain-storage repositions. Offscreen
+  rendering preserves the player's visibility lists and uses the mounted lens
+  to select terrain without moving the shared chunk meshes.
+
+The verified stopped Tutorial is installed at
+`../Multi_neo/workspace/run/saves/Tutorial`. Launch `:workspace:runClient` and select
+**Tutorial**. The authoring save remains at `build/tutorial/server/Tutorial`;
+visual tests use disposable copies under `build/verification/`. Logs and images
+are build outputs and are excluded from Git. Full survival, multiplayer and
+manual GUI interaction still need human playtesting.

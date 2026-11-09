@@ -1,14 +1,14 @@
 package mcjty.arienteworld.client;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexSorting;
 import mcjty.ariente.blocks.generators.TankRendererTools;
 import mcjty.ariente.client.ArienteRenderType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.phys.Vec3;
@@ -42,7 +42,7 @@ public class TankRenderingChecks {
                 Vec3 camera = new Vec3(Math.cos(radians) * 4, 12, Math.sin(radians) * 4);
                 for (long time : new long[]{0, 2, 18}) {
                     BufferBuilder builder = new BufferBuilder(2048);
-                    builder.begin(VertexFormat.Mode.QUADS, ArienteRenderType.TANK_CONTENTS.format());
+                    builder.begin(PrimitiveTopology.QUADS, ArienteRenderType.TANK_CONTENTS.format());
                     TankRendererTools.renderTank(new PoseStack(), observe(builder), beam, window, true, time, camera, 0);
                     var rendered = builder.end();
                     try {
@@ -76,7 +76,7 @@ public class TankRenderingChecks {
         checkSortingAndSeams();
     }
 
-    private static MultiBufferSource observe(BufferBuilder builder) {
+    private static RenderBufferSource observe(BufferBuilder builder) {
         return type -> {
             require(type == ArienteRenderType.TANK_CONTENTS, "glass and beam must use the same shared translucent buffer");
             return builder;
@@ -91,7 +91,7 @@ public class TankRenderingChecks {
     private static void checkSortingAndSeams() {
         for (Vec3 camera : new Vec3[]{new Vec3(4, 2, 4), new Vec3(-4, 3, -4), new Vec3(4, -2, -4)}) {
             BufferBuilder builder = new BufferBuilder(4096);
-            builder.begin(VertexFormat.Mode.QUADS, ArienteRenderType.TANK_CONTENTS.format());
+            builder.begin(PrimitiveTopology.QUADS, ArienteRenderType.TANK_CONTENTS.format());
             var buffer = observe(builder);
             PoseStack poses = new PoseStack();
             TankRendererTools.renderTank(poses, buffer, NEGARITE_BEAM, NEGARITE_WINDOW, true, 6, camera.subtract(.5, .5, .5), 0);
@@ -122,7 +122,7 @@ public class TankRenderingChecks {
             }
         }
         BufferBuilder builder = new BufferBuilder(2048);
-        builder.begin(VertexFormat.Mode.QUADS, ArienteRenderType.TANK_CONTENTS.format());
+        builder.begin(PrimitiveTopology.QUADS, ArienteRenderType.TANK_CONTENTS.format());
         TankRendererTools.renderTank(new PoseStack(), observe(builder), NEGARITE_BEAM, NEGARITE_WINDOW, false, 0, new Vec3(0, 8, 0), 0);
         var rendered = builder.end();
         require(rendered.drawState().vertexCount() == 16, "inactive tanks must retain glass without a beam");

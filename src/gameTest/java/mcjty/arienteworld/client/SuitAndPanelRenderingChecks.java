@@ -1,9 +1,9 @@
 package mcjty.arienteworld.client;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import mcjty.ariente.client.ArienteRenderType;
 import mcjty.ariente.entities.LaserEntity;
 import mcjty.ariente.items.armor.PowerSuitModel;
@@ -113,7 +113,7 @@ public class SuitAndPanelRenderingChecks {
             require(model instanceof PowerSuitModel suit && Math.abs(suit.head.xRot - .3f) < .0001
                     && Math.abs(suit.leftArm.xRot - .7f) < .0001, "Custom armor must inherit the animated humanoid pose");
             BufferBuilder builder = new BufferBuilder(8192);
-            builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
+            builder.begin(PrimitiveTopology.QUADS, DefaultVertexFormat.NEW_ENTITY);
             model.renderToBuffer(new PoseStack(), builder, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
             var rendered = builder.end();
             try {
@@ -134,7 +134,7 @@ public class SuitAndPanelRenderingChecks {
         LaserEntity laser = LaserEntity.create(mc.level, mc.player.getX() + 2, mc.player.getY() + 1, mc.player.getZ() + 2, 1, 0, 0);
         laser.setDeltaMovement(1, 0, 0);
         BufferBuilder builder = new BufferBuilder(1024);
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
+        builder.begin(PrimitiveTopology.QUADS, DefaultVertexFormat.NEW_ENTITY);
         PoseStack poses = new PoseStack();
         poses.translate(0, 0, -10);
         mc.getEntityRenderDispatcher().getRenderer(laser).render(laser, 0, 0, poses, type -> {

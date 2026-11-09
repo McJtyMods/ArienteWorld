@@ -73,8 +73,8 @@ public class ScoutCoreTests {
     public static void routePlanningExcludesDestroyedAndUnconfirmedBases(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         City source = findLargeBase(level, 28008);
-        List<City> candidates = ScoutRoutes.nearbyBases(level, source.getCenter(), 2).stream()
-                .filter(city -> !city.getCenter().equals(source.getCenter())).toList();
+        List<City> candidates = ScoutRoutes.nearbyBases(level, Vec3.atCenterOf(source), 2).stream()
+                .filter(city -> !city.getCenter().equals(Vec3.atCenterOf(source))).toList();
         helper.assertTrue(candidates.size() >= 2, "Route fixture needs two neighboring bases");
         City active = candidates.get(0);
         City captured = candidates.get(1);
@@ -88,8 +88,8 @@ public class ScoutCoreTests {
         boolean travel = false;
         try {
             for (int seed = 0; seed < 32; seed++) {
-                ScoutRoutes.FlightPlan plan = ScoutRoutes.create(level, source.getCenter(), start, RandomSource.create(seed * 198491317L));
-                helper.assertTrue(plan.destination().equals(source.getCenter()) || plan.destination().equals(active.getCenter()),
+                ScoutRoutes.FlightPlan plan = ScoutRoutes.create(level, Vec3.atCenterOf(source), start, RandomSource.create(seed * 198491317L));
+                helper.assertTrue(plan.destination().equals(Vec3.atCenterOf(source)) || plan.destination().equals(active.getCenter()),
                         "New flights may use the active neighbor or survey home, never a destroyed or unconfirmed base");
                 travel |= plan.destination().equals(active.getCenter());
             }
@@ -97,8 +97,8 @@ public class ScoutCoreTests {
             CityAI activeAI = CityAISystem.getCityAISystem(level).getCityAI(active.getCenter());
             destroyCore(level, activeAI, activeCore);
             for (int seed = 0; seed < 16; seed++) {
-                ScoutRoutes.FlightPlan plan = ScoutRoutes.create(level, source.getCenter(), start, RandomSource.create(seed));
-                helper.assertTrue(plan.destination().equals(source.getCenter()) && plan.waypoints().size() == 9,
+                ScoutRoutes.FlightPlan plan = ScoutRoutes.create(level, Vec3.atCenterOf(source), start, RandomSource.create(seed));
+                helper.assertTrue(plan.destination().equals(Vec3.atCenterOf(source)) && plan.waypoints().size() == 9,
                         "Without an operational neighbor, scouts must keep making local loops from their live base");
             }
         } finally {
@@ -113,15 +113,15 @@ public class ScoutCoreTests {
     public static void flightsToDestroyedCoresFinishTheirSavedRouteThenRetireWithoutNewDepartures(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         City source = findLargeBase(level, 34008);
-        City destination = ScoutRoutes.nearbyBases(level, source.getCenter(), 2).stream()
-                .filter(city -> !city.getCenter().equals(source.getCenter())).findFirst().orElseThrow();
+        City destination = ScoutRoutes.nearbyBases(level, Vec3.atCenterOf(source), 2).stream()
+                .filter(city -> !city.getCenter().equals(Vec3.atCenterOf(source))).findFirst().orElseThrow();
         BlockPos sourceCore = installCore(level, source);
         BlockPos destinationCore = installCore(level, destination);
         Vec3 start = ScoutRoutes.aboveBase(level, source);
         Vec3 finish = ScoutRoutes.aboveBase(level, destination);
         FluxShipEntity ship = FluxShipEntity.create(level, start.x, start.y, start.z);
-        SoldierEntity soldier = SoldierEntity.create(level, source.getCenter(), SoldierBehaviourType.SOLDIER_FIGHTER);
-        soldier.startScout(new ScoutPilot(source.getCenter(), new ScoutRoutes.FlightPlan(destination.getCenter(), List.of(start.lerp(finish, .5), finish))));
+        SoldierEntity soldier = SoldierEntity.create(level, Vec3.atCenterOf(source), SoldierBehaviourType.SOLDIER_FIGHTER);
+        soldier.startScout(new ScoutPilot(Vec3.atCenterOf(source), new ScoutRoutes.FlightPlan(destination.getCenter(), List.of(start.lerp(finish, .5), finish))));
         ship.getPersistentData().putBoolean(ScoutPatrols.SCOUT_SHIP, true);
         level.addFreshEntity(ship);
         level.addFreshEntity(soldier);
@@ -132,7 +132,7 @@ public class ScoutCoreTests {
         observer.setPos(start.add(20, 0, 0));
         level.players().add(observer);
         ScoutPatrols scheduler = ScoutPatrols.get(level);
-        scheduler.heartbeat(source.getCenter(), ship.getUUID(), level.getGameTime());
+        scheduler.heartbeat(Vec3.atCenterOf(source), ship.getUUID(), level.getGameTime());
         try {
             CityAI destinationAI = CityAISystem.getCityAISystem(level).getCityAI(destination.getCenter());
             destinationAI.hasOperationalCore();
@@ -164,11 +164,11 @@ public class ScoutCoreTests {
             observer.setPos(finish.add(1000, 0, 0));
             soldier.controlShip(ship);
             helper.assertTrue(ship.isRemoved() && soldier.isRemoved()
-                            && scheduler.heartbeat(source.getCenter(), UUID.randomUUID(), level.getGameTime()),
+                            && scheduler.heartbeat(Vec3.atCenterOf(source), UUID.randomUUID(), level.getGameTime()),
                     "A finished patrol must leave service and release its original base lease once out of view");
         } finally {
             level.players().remove(observer);
-            scheduler.release(source.getCenter(), ship.getUUID());
+            scheduler.release(Vec3.atCenterOf(source), ship.getUUID());
             ScoutNavigation.releaseFlight(level, ship.getUUID(), ship.chunkPosition());
             soldier.discard();
             ship.discard();

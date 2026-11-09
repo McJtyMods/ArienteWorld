@@ -107,7 +107,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
-import vazkii.patchouli.api.PatchouliAPI;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -868,9 +867,8 @@ public class TutorialWorld {
         ItemStack card = new ItemStack(Registration.KEY_CARD.get());
         KeyCardItem.addSecurityTag(card, "Tutorial");
         card.set(DataComponents.CUSTOM_NAME, Component.literal("Tutorial door key"));
-        ItemStack manual = PatchouliAPI.get().getBookStack(Identifier.fromNamespaceAndPath("ariente", "manual"));
         stock(level, WELCOME_STORAGE, guide(), card, new ItemStack(Registration.TABLET.get()),
-                new ItemStack(Registration.FLUX_LEVITATOR.get()), new ItemStack(Registration.FLUX_SHIP.get()), manual);
+                new ItemStack(Registration.FLUX_LEVITATOR.get()), new ItemStack(Registration.FLUX_SHIP.get()));
         for (Item item : new Item[]{Registration.POWERSUIT_HEAD.get(), Registration.POWERSUIT_CHEST.get(), Registration.POWERSUIT_LEGS.get(),
                 Registration.POWERSUIT_FEET.get(), Registration.ENERGY_HOLDER.get(), Registration.ENERGY_LANCE.get(), Registration.ENERGY_SABRE.get()}) {
             stock(level, WELCOME_STORAGE, new ItemStack(item));

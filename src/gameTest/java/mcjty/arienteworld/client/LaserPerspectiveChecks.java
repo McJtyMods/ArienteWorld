@@ -1,12 +1,12 @@
 package mcjty.arienteworld.client;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import mcjty.ariente.client.ArienteRenderType;
 import mcjty.ariente.client.ArienteSpriteUploader;
 import mcjty.ariente.entities.LaserEntity;
@@ -15,7 +15,7 @@ import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -36,7 +36,7 @@ public class LaserPerspectiveChecks {
     public static void check(Minecraft mc, PoseStack cameraPose, CameraType cameraType) {
         PoseStack framePose = viewPose(cameraPose);
         checkBlendState();
-        var camera = mc.gameRenderer.getMainCamera();
+        var camera = mc.gameRenderer.mainCamera();
         Vec3 forward = new Vec3(camera.getLookVector());
         Vec3 left = new Vec3(camera.getLeftVector());
         Vec3 up = new Vec3(camera.getUpVector());
@@ -98,7 +98,7 @@ public class LaserPerspectiveChecks {
 
     private static void checkVertices(Minecraft mc, PoseStack cameraPose, LaserEntity laser) {
         BufferBuilder vertices = new BufferBuilder(256);
-        vertices.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
+        vertices.begin(PrimitiveTopology.QUADS, DefaultVertexFormat.NEW_ENTITY);
         PoseStack poses = viewPose(cameraPose);
         render(mc, poses, laser, type -> {
             require(type == ArienteRenderType.ARIENTE_ADDITIVE, "Laser vertices must use the additive atlas material");
@@ -115,7 +115,7 @@ public class LaserPerspectiveChecks {
                 corners[i] = new Vector3f(data.getFloat(offset), data.getFloat(offset + 4), data.getFloat(offset + 8));
                 require(corners[i].isFinite(), "The quad must not collapse to invalid coordinates");
             }
-            Vec3 camera = mc.gameRenderer.getMainCamera().getPosition();
+            Vec3 camera = mc.gameRenderer.mainCamera().getPosition();
             poses.translate(Mth.lerp(.5D, laser.xOld, laser.getX()) - camera.x,
                     Mth.lerp(.5D, laser.yOld, laser.getY()) - camera.y,
                     Mth.lerp(.5D, laser.zOld, laser.getZ()) - camera.z);
@@ -150,7 +150,7 @@ public class LaserPerspectiveChecks {
             RenderSystem.depthMask(true);
             target.clear(Minecraft.ON_OSX);
             target.bindWrite(true);
-            var buffers = MultiBufferSource.immediate(new BufferBuilder(4096));
+            var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));
             for (int i = 0; i < copies; i++) {
                 render(mc, viewPose(cameraPose), laser, buffers);
             }
@@ -159,7 +159,7 @@ public class LaserPerspectiveChecks {
         } finally {
             target.destroyBuffers();
             RenderSystem.setProjectionMatrix(projection, sorting);
-            mc.getMainRenderTarget().bindWrite(true);
+            mc.gameRenderer.mainRenderTarget().bindWrite(true);
         }
     }
 
@@ -169,8 +169,8 @@ public class LaserPerspectiveChecks {
         return poses;
     }
 
-    private static void render(Minecraft mc, PoseStack poses, LaserEntity laser, MultiBufferSource buffers) {
-        Vec3 camera = mc.gameRenderer.getMainCamera().getPosition();
+    private static void render(Minecraft mc, PoseStack poses, LaserEntity laser, RenderBufferSource buffers) {
+        Vec3 camera = mc.gameRenderer.mainCamera().getPosition();
         mc.getEntityRenderDispatcher().render(laser,
                 Mth.lerp(.5D, laser.xOld, laser.getX()) - camera.x,
                 Mth.lerp(.5D, laser.yOld, laser.getY()) - camera.y,

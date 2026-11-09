@@ -54,7 +54,7 @@ public class LanceModuleClientChecks implements IModPlugin {
     public static void tick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (!Boolean.getBoolean("ariente.lanceModuleCheck") || event.phase != TickEvent.Phase.END
-                || mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.isPaused() || mc.getOverlay() != null) {
+                || mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.isPaused() || mc.gui.overlay() != null) {
             return;
         }
         require(++ticks < 600, "The lance configuration check timed out at stage " + stage);
@@ -101,8 +101,8 @@ public class LanceModuleClientChecks implements IModPlugin {
             if (!mc.player.isAlive() || !mc.level.hasChunkAt(mc.player.blockPosition())) {
                 return;
             }
-            if (mc.screen != null) {
-                mc.setScreen(null);
+            if (mc.gui.screen() != null) {
+                mc.gui.setScreen(null);
                 return;
             }
             press(KeyBindings.configureArmor);

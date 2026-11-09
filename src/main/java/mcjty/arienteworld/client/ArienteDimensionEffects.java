@@ -1,20 +1,19 @@
 package mcjty.arienteworld.client;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import java.util.Optional;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Axis;
 import java.util.ArrayList;
 import java.util.List;
 import mcjty.arienteworld.ArienteWorld;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -36,8 +35,8 @@ import org.joml.Matrix4fc;
 public class ArienteDimensionEffects implements CustomSkyboxRenderer {
 
     private static final List<RenderPipeline> PIPELINES = new ArrayList<>();
-    private static final RenderType GRADIENT = color("sky_gradient", VertexFormat.Mode.QUADS);
-    private static final RenderType TRIANGLES = color("sky_caps", VertexFormat.Mode.TRIANGLES);
+    private static final RenderType GRADIENT = color("sky_gradient", PrimitiveTopology.QUADS);
+    private static final RenderType TRIANGLES = color("sky_caps", PrimitiveTopology.TRIANGLES);
     private static final RenderType STARS_TYPE = textureType("stars", false);
     private static final RenderType STAR_CAPS_TYPE = textureType("starsa", false);
     private static final RenderType SUN_TYPE = textureType("ariente_sun", true);
@@ -62,19 +61,19 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
         PIPELINES.forEach(event::registerPipeline);
     }
 
-    private static RenderType color(String name, VertexFormat.Mode mode) {
+    private static RenderType color(String name, PrimitiveTopology mode) {
         var pipeline = RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
                 .withLocation(Identifier.parse("arienteworld:pipeline/" + name))
-                .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, mode).withCull(false).withDepthStencilState(Optional.empty()).build();
+                .withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR).withPrimitiveTopology(mode).withCull(false).withDepthStencilState(Optional.empty()).build();
         PIPELINES.add(pipeline);
         return RenderType.create(name, RenderSetup.builder(pipeline).createRenderSetup());
     }
 
     private static RenderType textureType(String name, boolean additive) {
-        var pipeline = RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+        var pipeline = RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
                 .withLocation(Identifier.parse("arienteworld:pipeline/" + name))
                 .withVertexShader("core/position_tex_color").withFragmentShader("core/position_tex_color")
-                .withSampler("Sampler0").withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
+                .withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR).withPrimitiveTopology(PrimitiveTopology.QUADS)
                 .withColorTargetState(new ColorTargetState(additive ? BlendFunction.ADDITIVE : BlendFunction.TRANSLUCENT))
                 .withCull(false).withDepthStencilState(Optional.empty()).build();
         PIPELINES.add(pipeline);
@@ -92,8 +91,7 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
         float red = 1;
         float green = ARGB.green(sky.skyColor) / 255f;
         float blue = 1;
-        try (var memory = new ByteBufferBuilder(16384)) {
-            var buffers = MultiBufferSource.immediate(memory);
+        try (var buffers = RenderBufferSource.immediate()) {
             Matrix4f matrix = poses.last().pose();
             VertexConsumer buffer = buffers.getBuffer(GRADIENT);
             // A horizon gradient keeps the original vivid upper sky without a blue horizon.
@@ -143,7 +141,7 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
         return true;
     }
 
-    private static void renderStars(PoseStack poses, MultiBufferSource.BufferSource buffers, float alpha) {
+    private static void renderStars(PoseStack poses, RenderBufferSource.Immediate buffers, float alpha) {
         if (alpha <= 0) {
             return;
         }
@@ -161,7 +159,7 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
         }
     }
 
-    private static void quad(MultiBufferSource.BufferSource buffers, RenderType type, Matrix4f matrix, float size, float y, float[] uv, float alpha) {
+    private static void quad(RenderBufferSource.Immediate buffers, RenderType type, Matrix4f matrix, float size, float y, float[] uv, float alpha) {
         VertexConsumer vertices = buffers.getBuffer(type);
         vertices.addVertex(matrix, -size, y, -size).setUv(uv[0], uv[1]).setColor(1, 1, 1, alpha);
         vertices.addVertex(matrix, -size, y, size).setUv(uv[2], uv[3]).setColor(1, 1, 1, alpha);

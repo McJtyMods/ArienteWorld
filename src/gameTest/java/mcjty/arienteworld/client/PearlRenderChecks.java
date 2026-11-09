@@ -5,7 +5,7 @@ import mcjty.ariente.entities.EntityArientePearl;
 import mcjty.arienteworld.ArienteWorld;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -29,7 +29,7 @@ public class PearlRenderChecks {
         poses.pushPose();
         try {
             poses.translate(0, 2, 0);
-            var buffers = MultiBufferSource.immediate(new BufferBuilder(256));
+            var buffers = RenderBufferSource.immediate(new BufferBuilder(256));
             mc.getEntityRenderDispatcher().getRenderer(pearl).render(pearl, 0, event.getPartialTick(), poses, buffers, LightTexture.FULL_BRIGHT);
             buffers.endBatch();
         } finally {

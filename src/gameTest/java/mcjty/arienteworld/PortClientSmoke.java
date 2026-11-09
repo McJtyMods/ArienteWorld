@@ -44,13 +44,13 @@ public final class PortClientSmoke {
         }
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null || mc.getSingleplayerServer() == null) {
-            if (++waitingTicks % 60 == 0 && mc.screen != null) {
-                System.out.println("Port client screen: " + mc.screen.getClass().getSimpleName());
-                for (var listener : mc.screen.children()) {
+            if (++waitingTicks % 60 == 0 && mc.gui.screen() != null) {
+                System.out.println("Port client screen: " + mc.gui.screen().getClass().getSimpleName());
+                for (var listener : mc.gui.screen().children()) {
                     if (listener instanceof AbstractButton button) {
                         String text = button.getMessage().getString();
                         System.out.println("Port client button: " + text);
-                        if (text.equals("Proceed") || text.equals("I know what I'm doing!") || text.equals("Yes")) {
+                        if (text.startsWith("Proceed") || text.equalsIgnoreCase("I know what I'm doing!") || text.equals("Yes")) {
                             button.onPress(new KeyEvent(257, 0, 0));
                             break;
                         }
@@ -91,7 +91,7 @@ public final class PortClientSmoke {
             });
         }
         if (++ticks == 160) {
-            Screenshot.grab(mc.gameDirectory, "port-overworld.png", mc.getMainRenderTarget(), 1, message -> {});
+            Screenshot.grab(mc.gameDirectory, "port-overworld.png", mc.gameRenderer.mainRenderTarget(), 1, message -> {});
             mc.getSingleplayerServer().execute(() -> {
                 ServerPlayer player = mc.getSingleplayerServer().getPlayerList().getPlayers().getFirst();
                 var dimension = player.level().getServer().getLevel(DimensionRegister.DIMENSION);
@@ -104,7 +104,7 @@ public final class PortClientSmoke {
             if (!mc.level.dimension().equals(DimensionRegister.DIMENSION)) {
                 throw new AssertionError("Client did not enter the Ariente dimension");
             }
-            Screenshot.grab(mc.gameDirectory, "port-ariente.png", mc.getMainRenderTarget(), 1, message -> {});
+            Screenshot.grab(mc.gameDirectory, "port-ariente.png", mc.gameRenderer.mainRenderTarget(), 1, message -> {});
             mc.stop();
         }
     }

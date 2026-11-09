@@ -1,5 +1,6 @@
 package mcjty.arienteworld.tutorial;
 
+import net.minecraft.world.item.DyeColor;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import mcjty.ariente.blocks.ArienteBlockEntity;
@@ -21,11 +22,16 @@ import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ProblemReporter;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -53,7 +59,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-/** Pixel checks for live-camera transforms, skies, player visibility and full-height tank beams. */
+/** Pixel checks for live-camera transforms, skies, chunk boundaries, player visibility and tank beams. */
 @EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public final class TutorialRenderRegression {
 
@@ -63,7 +69,8 @@ public final class TutorialRenderRegression {
     private static final BlockPos POSITIVE = new BlockPos(155, 65, 140);
     private static final String[] NAMES = {"live-baseline", "live-strafe", "live-distance", "live-height-yaw",
             "tanks-front", "tanks-left", "tanks-right", "tanks-inactive", "sky-day", "sky-night",
-            "player-first-person", "player-third-person", "player-out-of-view"};
+            "player-first-person", "player-third-person", "player-out-of-view",
+            "boundary-16-baseline", "boundary-16-turn", "boundary-16-shift", "boundary-32", "boundary-64", "boundary-8"};
     private static int stage;
     private static int ticks;
     private static int waiting;
@@ -77,6 +84,11 @@ public final class TutorialRenderRegression {
     private static Vec3 eye;
     private static double dayBrightness;
     private static boolean playerExtracted;
+    private static int terrainRepositions;
+    private static Matrix4f boundaryInverse;
+    private static Vec3 boundaryEye;
+    private static Vector4f boundaryFog;
+    private static int[] boundaryReference;
 
     private TutorialRenderRegression() {
     }
@@ -91,33 +103,38 @@ public final class TutorialRenderRegression {
         }
         Minecraft mc = Minecraft.getInstance();
         mc.options.pauseOnLostFocus = false;
-        if (mc.screen instanceof PauseScreen) {
-            mc.setScreen(null);
+        if (mc.gui.screen() instanceof PauseScreen) {
+            mc.gui.setScreen(null);
         }
-        if (mc.player == null && mc.screen != null) {
-            for (var child : mc.screen.children()) {
-                if (child instanceof Button button && button != acceptedButton && (button.getMessage().getString().equals("Proceed")
+        if (mc.player == null && mc.gui.screen() != null) {
+            for (var child : mc.gui.screen().children()) {
+                if (child instanceof Button button && button != acceptedButton && (button.getMessage().getString().startsWith("Proceed")
                         || button.getMessage().getString().equals("Continue")
-                        || button.getMessage().getString().equals("I know what I'm doing!"))) {
+                        || button.getMessage().getString().equalsIgnoreCase("I know what I'm doing!"))) {
                     acceptedButton = button;
                     button.onPress(new KeyEvent(257, 0, 0));
                     break;
                 }
             }
         }
-        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.getOverlay() != null) {
+        if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null || mc.gui.overlay() != null) {
             require(++waiting < 2400, "Render regression did not enter Tutorial");
             return;
         }
         if (!started) {
             started = true;
-            mc.options.hideGui = true;
+            if (!mc.gui.hud.isHidden()) {
+                mc.gui.hud.toggle();
+            }
             mc.options.bobView().set(false);
             mc.options.setCameraType(CameraType.FIRST_PERSON);
             mc.options.renderDistance().set(12);
             mc.options.simulationDistance().set(5);
             mc.options.graphicsPreset().set(Boolean.getBoolean("ariente.tutorial.fabulous") ? GraphicsPreset.FABULOUS : GraphicsPreset.FANCY);
-            mc.levelRenderer.allChanged();
+            mc.levelExtractor.allChanged();
+            if (Boolean.getBoolean("ariente.tutorial.cameraBoundaryOnly")) {
+                stage = 13;
+            }
             prepare(mc);
             return;
         }
@@ -129,9 +146,9 @@ public final class TutorialRenderRegression {
             return;
         }
         if (capture == null) {
-            RenderTarget target = stage < 4 || stage >= 8 ? liveTarget() : mc.getMainRenderTarget();
-            transform = mc.gameRenderer.getMainCamera().getViewRotationProjectionMatrix(new Matrix4f());
-            eye = mc.gameRenderer.getMainCamera().position();
+            RenderTarget target = stage < 4 || stage >= 8 ? liveTarget() : mc.gameRenderer.mainRenderTarget();
+            transform = mc.gameRenderer.mainCamera().getViewRotationProjectionMatrix(new Matrix4f());
+            eye = mc.gameRenderer.mainCamera().position();
             capture = new CompletableFuture<>();
             Screenshot.takeScreenshot(target, capture::complete);
             return;
@@ -147,8 +164,10 @@ public final class TutorialRenderRegression {
                 checkLive(image);
             } else if (stage < 8) {
                 checkTanks(mc, image);
-            } else {
+            } else if (stage < 13) {
                 checkScene(image);
+            } else {
+                checkBoundary(image);
             }
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
@@ -167,9 +186,112 @@ public final class TutorialRenderRegression {
 
     @SubscribeEvent
     public static void extract(ExtractLevelRenderStateEvent event) {
-        if (Boolean.getBoolean("ariente.tutorial.renderRegression") && ready && stage >= 10 && LiveCameraRenderer.isRendering()) {
-            playerExtracted = event.getRenderState().entityRenderStates.stream().anyMatch(state -> state.entityType == EntityType.PLAYER);
+        if (Boolean.getBoolean("ariente.tutorial.renderRegression") && ready && stage >= 13 && LiveCameraRenderer.isRendering()) {
+            var state = event.getRenderState().cameraRenderState;
+            boundaryInverse = new Matrix4f(state.projectionMatrix).mul(state.viewRotationMatrix).invert();
+            boundaryEye = state.pos;
+            boundaryFog = new Vector4f(state.fogData.color);
         }
+        if (Boolean.getBoolean("ariente.tutorial.renderRegression") && ready && stage >= 10 && stage <= 12 && LiveCameraRenderer.isRendering()) {
+            playerExtracted = event.getRenderState().entityRenderStates.stream().anyMatch(state -> state.entityType == EntityTypes.PLAYER);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void afterLevel(RenderLevelStageEvent.AfterLevel event) {
+        if (Boolean.getBoolean("ariente.tutorial.renderRegression") && ready && stage >= 13 && !LiveCameraRenderer.isRendering()) {
+            var mc = Minecraft.getInstance();
+            if (!mc.levelRenderer.viewArea().getCameraSectionPos().equals(SectionPos.of(mc.gameRenderer.mainCamera().position()))) {
+                terrainRepositions++;
+            }
+        }
+    }
+
+    private static void checkBoundary(NativeImage image) {
+        int transparent = 0;
+        int minimumAlpha = 255;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int alpha = image.getPixel(x, y) >>> 24;
+                minimumAlpha = Math.min(minimumAlpha, alpha);
+                if (alpha < 255) {
+                    transparent++;
+                }
+            }
+        }
+        ArienteWorld.setup.getLogger().info("CAMERA BOUNDARY: {} transparent pixels {}, minimum alpha {}",
+                NAMES[stage], transparent, minimumAlpha);
+        require(transparent == 0, "Distant camera terrain must fade into an opaque sky/fog background");
+        var mc = Minecraft.getInstance();
+        int radius = stage < 16 ? 16 : stage == 16 ? 32 : stage == 17 ? 64 : 8;
+        int distant = 0;
+        int incorrect = 0;
+        int[] pixels = new int[image.getWidth() * image.getHeight()];
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                pixels[y * image.getWidth() + x] = image.getPixel(x, y);
+                if (x < 8 || y < image.getHeight() / 2 || x % 8 != 0 || y % 8 != 0) {
+                    continue;
+                }
+                // Pixel coverage and CPU clipping can disagree at silhouettes.
+                // Probe only surface interiors, with a two-pixel margin.
+                if (!isDistantSurface(mc, x, y, image, radius)
+                        || !isDistantSurface(mc, x - 2, y, image, radius)
+                        || !isDistantSurface(mc, x + 2, y, image, radius)
+                        || !isDistantSurface(mc, x, y - 2, image, radius)
+                        || !isDistantSurface(mc, x, y + 2, image, radius)) {
+                    continue;
+                }
+                distant++;
+                int color = pixels[y * image.getWidth() + x];
+                int error = Math.abs((color >> 16 & 255) - Math.round(boundaryFog.x * 255))
+                        + Math.abs((color >> 8 & 255) - Math.round(boundaryFog.y * 255))
+                        + Math.abs((color & 255) - Math.round(boundaryFog.z * 255));
+                // Allow small differences at geometry edges while rejecting
+                // dark, unfogged chunk silhouettes against the daytime fog.
+                if (error > 90) {
+                    incorrect++;
+                }
+            }
+        }
+        ArienteWorld.setup.getLogger().info("CAMERA BOUNDARY: {} distant fog probes {}, incorrect {}, player terrain repositions {}",
+                NAMES[stage], distant, incorrect, terrainRepositions);
+        require(distant > 20, "The boundary fixture must cover geometry beyond its camera radius");
+        require(incorrect == 0, "Distant camera chunks must disappear into fog instead of leaving dark silhouettes");
+        require(terrainRepositions == 0, "An offscreen camera must not reposition the player's shared terrain storage");
+        if (stage == 13) {
+            boundaryReference = pixels;
+        } else if (stage == 14 || stage == 15) {
+            long difference = 0;
+            for (int i = 0; i < pixels.length; i++) {
+                for (int shift : new int[]{0, 8, 16}) {
+                    difference += Math.abs((pixels[i] >> shift & 255) - (boundaryReference[i] >> shift & 255));
+                }
+            }
+            double error = (double) difference / (pixels.length * 3);
+            ArienteWorld.setup.getLogger().info("CAMERA BOUNDARY: fixed dock view mean pixel difference {}", error);
+            require(error < 2, "Moving the player must not change distant geometry in a fixed camera view");
+        }
+    }
+
+    private static boolean isDistantSurface(Minecraft mc, int x, int y, NativeImage image, int radius) {
+        Vector4f ray = boundaryInverse.transform(new Vector4f(2f * (x + .5f) / image.getWidth() - 1,
+                1 - 2f * (y + .5f) / image.getHeight(), .5f, 1));
+        Vec3 direction = new Vec3(ray.x / ray.w, ray.y / ray.w, ray.z / ray.w).normalize();
+        var hit = mc.level.clip(new ClipContext(boundaryEye, boundaryEye.add(direction.scale(radius + 48)),
+                ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, mc.player));
+        Vec3 offset = hit.getLocation().subtract(boundaryEye);
+        double distance = Math.max(Math.sqrt(offset.x * offset.x + offset.z * offset.z), Math.abs(offset.y));
+        if (hit.getType() != HitResult.Type.BLOCK || distance < radius + 2
+                || !mc.level.getBlockState(hit.getBlockPos()).isSolidRender()) {
+            return false;
+        }
+        for (var entity : mc.level.entitiesForRendering()) {
+            if (entity.getBoundingBox().inflate(.3).clip(boundaryEye, hit.getLocation()).isPresent()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static void checkScene(NativeImage image) {
@@ -303,7 +425,7 @@ public final class TutorialRenderRegression {
                     }
                     for (int y = 64; y <= 79; y++) {
                         for (int z = 108; z <= 129; z++) {
-                            Block block = (y / 2 + z / 2) % 2 == 0 ? Blocks.MAGENTA_CONCRETE : Blocks.LIME_CONCRETE;
+                            Block block = (y / 2 + z / 2) % 2 == 0 ? Blocks.CONCRETE.pick(DyeColor.MAGENTA) : Blocks.CONCRETE.pick(DyeColor.LIME);
                             level.setBlockAndUpdate(new BlockPos(121, y, z), block.defaultBlockState());
                         }
                     }
@@ -322,7 +444,7 @@ public final class TutorialRenderRegression {
                     }
                     for (int y = 65; y <= 76; y++) {
                         for (int x = 148; x <= 158; x++) {
-                            level.setBlockAndUpdate(new BlockPos(x, y, 142), Blocks.BLACK_CONCRETE.defaultBlockState());
+                            level.setBlockAndUpdate(new BlockPos(x, y, 142), Blocks.CONCRETE.pick(DyeColor.BLACK).defaultBlockState());
                         }
                     }
                     for (BlockPos generator : new BlockPos[]{NEGATIVE, POSITIVE}) {
@@ -351,7 +473,7 @@ public final class TutorialRenderRegression {
                     ((CameraTile) level.getBlockEntity(CAMERA)).setLive(true);
                     for (int x = 124; x <= 148; x++) {
                         for (int y = 64; y <= 79; y++) {
-                            level.setBlockAndUpdate(new BlockPos(x, y, 274 - x), Blocks.WHITE_CONCRETE.defaultBlockState());
+                            level.setBlockAndUpdate(new BlockPos(x, y, 274 - x), Blocks.CONCRETE.pick(DyeColor.WHITE).defaultBlockState());
                         }
                     }
                     DisplayBaseTile display = (DisplayBaseTile) level.getBlockEntity(DISPLAY);
@@ -363,6 +485,47 @@ public final class TutorialRenderRegression {
                     ItemStack chest = new ItemStack(Items.LEATHER_CHESTPLATE);
                     chest.set(DataComponents.DYED_COLOR, new DyedItemColor(0xff00ff));
                     player.setItemSlot(EquipmentSlot.CHEST, chest);
+                }
+                if (stage == 13) {
+                    // Remove the earlier player-visibility backdrop from this
+                    // camera's sightline before probing distant geometry.
+                    for (int x = 124; x <= 148; x++) {
+                        for (int y = 65; y <= 79; y++) {
+                            level.setBlockAndUpdate(new BlockPos(x, y, 274 - x), Blocks.AIR.defaultBlockState());
+                        }
+                    }
+                    // Extend the plaza below the dock view so all tested radii
+                    // have real opaque surfaces beyond their fog boundary.
+                    for (int x = 32; x <= 136; x++) {
+                        for (int z = 32; z <= 260; z++) {
+                            level.setBlockAndUpdate(new BlockPos(x, 64, z), Blocks.STONE.defaultBlockState());
+                        }
+                    }
+                }
+                if (stage >= 13) {
+                    if (stage == 17) {
+                        // Open the south sightline for the longest range. The
+                        // shorter-range cases above retain the tutorial builds.
+                        for (BlockPos pos : BlockPos.betweenClosed(32, 65, 149, 136, 115, 260)) {
+                            if (!level.getBlockState(pos).isAir()) {
+                                level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+                            }
+                        }
+                    }
+                    level.getServer().getCommands().performPrefixedCommand(level.getServer().createCommandSourceStack(), "time set 6000");
+                    DisplayBaseTile display = (DisplayBaseTile) level.getBlockEntity(DISPLAY);
+                    var module = display.modules().stream().filter(m -> m.stack().is(Registration.DISPLAY_CAMERA.get())).findFirst().orElseThrow();
+                    require(display.configureModule(player, module.id(), data -> {
+                        data.putInt("CameraIndex", 1);
+                        data.putInt("Radius", stage < 16 ? 16 : stage == 16 ? 32 : stage == 17 ? 64 : 8);
+                        data.putInt("RotationSpeed", 0);
+                        // The longer range faces the open south plaza so nearby
+                        // tutorial walls cannot hide every distant surface.
+                        data.putInt("LivePan", stage == 17 ? -45 : 45);
+                        data.putInt("LiveTilt", 0);
+                        data.putInt("ViewZoom", 100);
+                    }), "Cannot configure the dock camera boundary fixture");
+                    ((CameraTile) level.getBlockEntity(new BlockPos(137, 70, 148))).setLive(true);
                 }
                 player.setGameMode(stage < 4 || stage >= 8 ? GameType.CREATIVE : GameType.SPECTATOR);
                 player.getAbilities().flying = true;
@@ -378,6 +541,9 @@ public final class TutorialRenderRegression {
                     case 8, 9 -> TutorialSupport.teleport(player, level, 141, 66, 130, 180, 0);
                     case 10, 11 -> TutorialSupport.teleport(player, level, 133, 69.2, 124, -97, 22);
                     case 12 -> TutorialSupport.teleport(player, level, 125.5, 69.2, 124.5, -95, 15);
+                    case 13, 16, 17, 18 -> TutorialSupport.teleport(player, level, 141, 66, 130, 180, 0);
+                    case 14 -> TutorialSupport.teleport(player, level, 141, 66, 130, 160, 0);
+                    case 15 -> TutorialSupport.teleport(player, level, 142.5, 66, 130, 180, 0);
                     default -> throw new IllegalStateException();
                 }
                 ready = true;

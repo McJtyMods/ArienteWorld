@@ -13,12 +13,6 @@
         "Name": "arienteworld:blueleaves"
       }
     },
-    "dirt_provider": {
-      "type": "minecraft:simple_state_provider",
-      "state": {
-        "Name": "minecraft:dirt"
-      }
-    },
     "trunk_placer": {
       "type": "minecraft:dark_oak_trunk_placer",
       "base_height": 6,
@@ -38,6 +32,25 @@
     },
     "decorators": [],
     "ignore_vines": true,
-    "force_dirt": false
+    "below_trunk_provider": {
+      "type": "minecraft:rule_based_state_provider",
+      "rules": [
+        {
+          "if_true": {
+            "type": "minecraft:not",
+            "predicate": {
+              "type": "minecraft:matching_block_tag",
+              "tag": "minecraft:cannot_replace_below_tree_trunk"
+            }
+          },
+          "then": {
+            "type": "minecraft:simple_state_provider",
+            "state": {
+              "Name": "minecraft:dirt"
+            }
+          }
+        }
+      ]
+    }
   }
 }

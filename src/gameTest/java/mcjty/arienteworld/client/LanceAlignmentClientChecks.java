@@ -39,7 +39,7 @@ public class LanceAlignmentClientChecks {
     @SubscribeEvent
     public static void frame(RenderLevelStageEvent event) {
         if (Boolean.getBoolean("ariente.lanceAlignmentCheck") && event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY) {
-            worldToClip = new Matrix4f(event.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix())
+            worldToClip = new Matrix4f(event.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrixCopy())
                     .mul(event.getPoseStack().last().pose());
             if (!worldToClip.isFinite()) {
                 worldToClip = null;
@@ -100,13 +100,13 @@ public class LanceAlignmentClientChecks {
         }
         float scale = firstPerson ? .75F : 1;
         Matrix4f toWorld = new Matrix4f(worldToClip).invert()
-                .mul(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix());
+                .mul(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrixCopy());
         Vec3 tip = worldPoint(toWorld, poses, maxY);
         Vec3 butt = worldPoint(toWorld, poses, minY);
         require(tip.distanceTo(shot.muzzle()) < .001, "The rendered tip must coincide with the projectile muzzle: " + context
                 + ", tip=" + tip + ", muzzle=" + shot.muzzle() + ", bounds=" + minY + "/" + maxY
                 + ", direction=" + shot.direction() + ", world=" + worldToClip + ", projection=" + RenderSystem.getProjectionMatrix()
-                + ", view=" + RenderSystem.getModelViewMatrix() + ", model=" + poses.last().pose());
+                + ", view=" + RenderSystem.getModelViewMatrixCopy() + ", model=" + poses.last().pose());
         require(tip.subtract(butt).normalize().dot(shot.direction()) > .999999,
                 "The actual shaft must aim along the fired laser: " + context);
         require(Math.abs(tip.distanceTo(butt) - (maxY - minY) * scale) < .001,

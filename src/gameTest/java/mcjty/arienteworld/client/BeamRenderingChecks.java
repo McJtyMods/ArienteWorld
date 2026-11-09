@@ -1,5 +1,6 @@
 package mcjty.arienteworld.client;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -7,13 +8,12 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import mcjty.ariente.client.ArienteRenderType;
 import mcjty.ariente.client.BeamRenderTools;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -77,7 +77,7 @@ public class BeamRenderingChecks {
             target.bindWrite(true);
             PoseStack pose = new PoseStack();
             pose.translate(0, 0, -3);
-            var buffers = MultiBufferSource.immediate(new BufferBuilder(4096));
+            var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));
             var sprite = mc.getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(HALO);
             var vertices = buffers.getBuffer(ArienteRenderType.BEAM);
             for (int strand = 0; strand < strands; strand++) {
@@ -94,7 +94,7 @@ public class BeamRenderingChecks {
                 RenderSystem.setShader(GameRenderer::getPositionColorShader);
                 var tesselator = Tesselator.getInstance();
                 var plane = tesselator.getBuilder();
-                plane.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+                plane.begin(PrimitiveTopology.QUADS, DefaultVertexFormat.POSITION_COLOR);
                 plane.vertex(-1, -1, planeZ).color(0f, 1f, 0f, .5f).endVertex();
                 plane.vertex(1, -1, planeZ).color(0f, 1f, 0f, .5f).endVertex();
                 plane.vertex(1, 1, planeZ).color(0f, 1f, 0f, .5f).endVertex();
@@ -110,7 +110,7 @@ public class BeamRenderingChecks {
             view.popPose();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setProjectionMatrix(projection, sorting);
-            mc.getMainRenderTarget().bindWrite(true);
+            mc.gameRenderer.mainRenderTarget().bindWrite(true);
         }
     }
 

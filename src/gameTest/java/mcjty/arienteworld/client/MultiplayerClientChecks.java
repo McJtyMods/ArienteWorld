@@ -37,7 +37,7 @@ public class MultiplayerClientChecks {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getOverlay() != null) {
+        if (mc.gui.overlay() != null) {
             return;
         }
         if (mc.level == null || mc.player == null) {
@@ -90,7 +90,7 @@ public class MultiplayerClientChecks {
             check(mc.player.hasEffect(MobEffects.NIGHT_VISION), "A real hotkey packet must resume equipment");
             mc.level.disconnect();
             mc.clearLevel();
-            mc.setScreen(new TitleScreen());
+            mc.gui.setScreen(new TitleScreen());
             connecting = false;
             idle = ticks = 0;
             stage = 1;
@@ -103,7 +103,7 @@ public class MultiplayerClientChecks {
             ticks = 0;
         } else if (stage == 2 && mc.player.isDeadOrDying()) {
             mc.player.respawn();
-            mc.setScreen(null);
+            mc.gui.setScreen(null);
             stage = 3;
             ticks = 0;
         } else if (stage == 3 && ticks == 100) {

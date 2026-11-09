@@ -19,7 +19,7 @@ import mcjty.ariente.setup.Registration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
+import mcjty.lib.client.RenderBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.Tag;
@@ -129,7 +129,7 @@ public class DisplayTransparencyChecks {
         return true;
     }
 
-    private static NativeImage picture(Minecraft mc, BiConsumer<PoseStack, MultiBufferSource.BufferSource> draw) {
+    private static NativeImage picture(Minecraft mc, BiConsumer<PoseStack, RenderBufferSource.Immediate> draw) {
         TextureTarget target = new TextureTarget(WIDTH, HEIGHT, true, Minecraft.ON_OSX);
         Matrix4f projection = new Matrix4f(RenderSystem.getProjectionMatrix());
         var sorting = RenderSystem.getVertexSorting();
@@ -143,14 +143,14 @@ public class DisplayTransparencyChecks {
             RenderSystem.depthMask(true);
             target.clear(Minecraft.ON_OSX);
             target.bindWrite(true);
-            draw.accept(new PoseStack(), MultiBufferSource.immediate(new BufferBuilder(4096)));
+            draw.accept(new PoseStack(), RenderBufferSource.immediate(new BufferBuilder(4096)));
             return Screenshot.takeScreenshot(target);
         } finally {
             target.destroyBuffers();
             view.popPose();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setProjectionMatrix(projection, sorting);
-            mc.getMainRenderTarget().bindWrite(true);
+            mc.gameRenderer.mainRenderTarget().bindWrite(true);
         }
     }
 

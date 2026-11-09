@@ -91,8 +91,8 @@ def main():
             feature = doc['feature']
             if feature.startswith(NAMESPACE + ':') and f'data/{NAMESPACE}/worldgen/configured_feature/{feature.split(":", 1)[1]}.json' not in docs:
                 errors.append(f'Missing configured feature: {feature}')
-    if docs.get('pack.mcmeta', {}).get('pack', {}).get('min_format') != 84:
-        errors.append('Expected Minecraft 26.1.2 resource pack format 84')
+    if docs.get('pack.mcmeta', {}).get('pack', {}).get('min_format') != 88:
+        errors.append('Expected Minecraft 26.2 resource pack format 88')
     registration = (ROOT / 'src/main/java/mcjty/arienteworld/setup/Registration.java').read_text()
     entities = re.findall(r'ENTITIES.register\("([^"]+)"', registration)
     for entity in entities:
