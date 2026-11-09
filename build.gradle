@@ -53,11 +53,7 @@ dependencies {
     top()
     mcjtylib()
     hologui()
-    if (findProject(':Ariente') != null) {
-        implementation project(':Ariente')
-    } else {
-        implementation("com.github.mcjty:ariente-fabric:${ariente_version}") { transitive = false }
-    }
+    ariente()
 }
 
 modpublisher(['the-one-probe'], ['mcjtylib', 'hologui', 'ariente'], ['the-one-probe'], ['mcjtylib', 'hologui', 'ariente'], [])
