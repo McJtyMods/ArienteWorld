@@ -167,6 +167,14 @@ public final class CubeDetails {
     }
 
     private static void crossEnd(BuildingPart part, Transform transform, boolean upper, Random random) {
+        if (!upper) {
+            // Open the bottom of each cross end into the surrounding ring corridor.
+            for (int x = 6; x <= 8; x++) {
+                for (int y = 1; y <= 2; y++) {
+                    local(part, transform, x, y, 0, material(0));
+                }
+            }
+        }
         // A continuous central walk joins the outer door and the existing cross.
         // Upper ends also get perimeter balconies over the open volume below.
         for (int x = 1; x < 15; x++) {
