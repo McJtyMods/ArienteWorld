@@ -10,7 +10,8 @@
     ],
     "client": [
       "mcjty.arienteworld.PortClientSmoke",
-      "mcjty.arienteworld.PortRenderChecks"
+      "mcjty.arienteworld.PortRenderChecks",
+      "mcjty.arienteworld.PortLiveCameraChecks"
     ]
   },
   "depends": {

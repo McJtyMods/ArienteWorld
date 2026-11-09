@@ -213,7 +213,20 @@ A focused rendering regression uses the same disposable `PortSmoke` copy:
 
 It checks synchronized multipart input, output, sensor and round-robin devices
 and their rendered pixels, then compares an opaque display with clouds off and
-on. Screenshots are saved under `build/tutorial/client/screenshots/render-checks`.
+on. It also renders every power armor slot, the complete suit and the unequipped
+player, rejecting missing-texture pixels. Screenshots are saved under
+`build/tutorial/client/screenshots/render-checks`.
+
+Live-camera checks exercise repeated native world renders, player movement,
+holographic/live switching, texture resizing and camera pan:
+
+```sh
+./gradlew -I ../ArienteWorld_fabric/tools/tutorial.gradle -Ptutorial_live_camera_checks :ArienteWorld:runClient
+```
+
+Add `-Ptutorial_live_camera_fabulous` to cover the Fabulous graphics preset.
+The check uses the same disposable `PortSmoke` save. Captures are saved under
+`build/tutorial/client/screenshots/live-camera-checks`.
 
 The authoring fixtures are excluded from release jars. Datagen uses `:ArienteWorld:runDatagen`.
 

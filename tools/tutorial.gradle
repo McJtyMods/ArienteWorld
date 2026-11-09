@@ -11,6 +11,7 @@ gradle.afterProject { p ->
                 java.srcDir 'src/gameTest/java'
                 java.include 'mcjty/arienteworld/PortClientSmoke.java'
                 java.include 'mcjty/arienteworld/PortRenderChecks.java'
+                java.include 'mcjty/arienteworld/PortLiveCameraChecks.java'
             }
         }
         p.configurations {
@@ -32,12 +33,14 @@ gradle.afterProject { p ->
                 }
             }
         }
-        if (p.hasProperty('tutorial_client_smoke') || p.hasProperty('tutorial_render_checks')) {
+        if (p.hasProperty('tutorial_client_smoke') || p.hasProperty('tutorial_render_checks') || p.hasProperty('tutorial_live_camera_checks')) {
             p.loom.runs.client {
                 client()
                 runDir(p.findProperty('tutorial_client_directory') ?: 'build/tutorial/client')
-                vmArg '-Dariente.portClientSmoke=' + !p.hasProperty('tutorial_render_checks')
+                vmArg '-Dariente.portClientSmoke=' + p.hasProperty('tutorial_client_smoke')
                 vmArg '-Dariente.portRenderChecks=' + p.hasProperty('tutorial_render_checks')
+                vmArg '-Dariente.portLiveCameraChecks=' + p.hasProperty('tutorial_live_camera_checks')
+                vmArg '-Dariente.liveCameraFabulous=' + p.hasProperty('tutorial_live_camera_fabulous')
                 programArgs '--quickPlaySingleplayer', 'PortSmoke', '--width', '1280', '--height', '800'
             }
             p.tasks.named('runClient') {
