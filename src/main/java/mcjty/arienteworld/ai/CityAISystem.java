@@ -31,7 +31,7 @@ public class CityAISystem extends AbstractWorldData<CityAISystem> implements ICi
 
     public static CityAISystem getCityAISystem(ServerLevel level) {
         SavedDataMigration.migrate(level, NAME, "ArienteCityAI");
-        return level.getDataStorage().computeIfAbsent(new SavedDataType<CityAISystem>(NAME, () -> new CityAISystem(level), CompoundTag.CODEC.xmap(tag -> load(level, tag), system -> system.save(new CompoundTag(), level.registryAccess()))));
+        return level.getDataStorage().computeIfAbsent(new SavedDataType<CityAISystem>(NAME, () -> new CityAISystem(level), CompoundTag.CODEC.xmap(tag -> load(level, tag), system -> system.save(new CompoundTag(), level.registryAccess())), null));
     }
 
     private static CityAISystem load(ServerLevel level, CompoundTag tag) {

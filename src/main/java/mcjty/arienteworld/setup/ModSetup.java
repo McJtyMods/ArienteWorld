@@ -1,16 +1,17 @@
 package mcjty.arienteworld.setup;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+
 import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.lib.compat.MainCompatHandler;
 import mcjty.lib.setup.DefaultModSetup;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 public class ModSetup extends DefaultModSetup {
 
     @Override
-    public void init(FMLCommonSetupEvent event) {
-        super.init(event);
-        event.enqueueWork(AssetRegistries::initialize);
+    public void init() {
+        super.init();
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> AssetRegistries.initialize());
     }
 
     @Override

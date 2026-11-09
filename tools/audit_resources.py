@@ -13,8 +13,8 @@ NAMESPACE = 'arienteworld'
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--generated', type=Path, help='isolated runClientData output')
-    parser.add_argument('--jar', type=Path, help='NeoForge companion jar')
+    parser.add_argument('--generated', type=Path, help='isolated runDatagen output')
+    parser.add_argument('--jar', type=Path, help='Fabric companion jar')
     args = parser.parse_args()
     files = {}
     errors = []
@@ -36,7 +36,7 @@ def main():
     def reference(identifier, kind, suffix):
         namespace, separator, path = identifier.partition(':')
         if separator and namespace in ('arienteworld', 'ariente', 'hologui'):
-            roots = [ROOT] if namespace == NAMESPACE else [ROOT.parent / ('Ariente_neo' if namespace == 'ariente' else 'ModHoloGui_neo')]
+            roots = [ROOT] if namespace == NAMESPACE else [ROOT.parent / ('Ariente_fabric' if namespace == 'ariente' else 'ModHoloGui_fabric')]
             name = f'assets/{namespace}/{kind}/{path}{suffix}'
             if not any((root / source / name).is_file() for root in roots
                        for source in ('src/main/resources', 'src/generated/resources')):
@@ -65,6 +65,8 @@ def main():
             if 'parent' in doc:
                 reference(doc['parent'], 'models', '.json')
             for texture in doc.get('textures', {}).values():
+                if isinstance(texture, dict):
+                    texture = texture['sprite']
                 if not texture.startswith('#'):
                     model_texture(texture)
         if '/blockstates/' in name:
@@ -142,7 +144,17 @@ def main():
                         name == 'assets/minecraft/atlases/blocks.json' and name not in files):
                     errors.append(f'Obsolete resource in jar: {name}')
             for name, path in files.items():
-                if name not in names or jar.read(name) != path.read_bytes():
+                expected = path.read_bytes()
+                if name == 'fabric.mod.json':
+                    version = next(line.split('=', 1)[1] for line in (ROOT / 'gradle.properties').read_text().splitlines() if line.startswith('version='))
+                    expected = expected.replace(b'${version}', version.encode())
+                actual = jar.read(name) if name in names else None
+                if name == 'fabric.mod.json' and actual is not None:
+                    metadata = json.loads(actual)
+                    metadata.pop('jars', None)
+                    actual = json.dumps(metadata, sort_keys=True).encode()
+                    expected = json.dumps(json.loads(expected), sort_keys=True).encode()
+                if actual != expected:
                     errors.append(f'Jar resource missing or stale: {name}')
             for source_set in ('gameTest', 'tutorial'):
                 source_root = ROOT / f'src/{source_set}/java'
@@ -150,7 +162,7 @@ def main():
                     prefix = source.relative_to(source_root).with_suffix('').as_posix()
                     if any(name == prefix + '.class' or name.startswith(prefix + '$') for name in names):
                         errors.append(f'Fixture/test in release jar: {prefix}')
-            for name in ('mcjty/arienteworld/ArienteWorld.class', 'META-INF/neoforge.mods.toml'):
+            for name in ('mcjty/arienteworld/ArienteWorld.class', 'fabric.mod.json'):
                 if name not in names:
                     errors.append(f'Missing jar entry: {name}')
             city_code = jar.read('mcjty/arienteworld/dimension/CityFeature.class')

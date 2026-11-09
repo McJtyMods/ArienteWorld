@@ -1,5 +1,6 @@
 package mcjty.arienteworld.dimension;
 
+import net.minecraft.core.registries.Registries;
 import mcjty.arienteworld.cities.*;
 import mcjty.ariente.api.EnumFacingUpDown;
 import mcjty.ariente.blocks.utility.ElevatorTile;

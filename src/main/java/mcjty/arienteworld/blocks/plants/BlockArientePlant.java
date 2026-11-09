@@ -13,9 +13,8 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.common.IShearable;
 
-public class BlockArientePlant extends BushBlock implements IShearable {
+public class BlockArientePlant extends BushBlock {
 
     private static final VoxelShape SHAPE = Shapes.box(0.1, 0.0, 0.1, 0.9, 0.8, 0.9);
 
@@ -28,12 +27,10 @@ public class BlockArientePlant extends BushBlock implements IShearable {
         return SHAPE;
     }
 
-    @Override
     public boolean isShearable(Player player, ItemStack item, Level world, BlockPos pos) {
         return true;
     }
 
-    @Override
     public List<ItemStack> onSheared(Player player, ItemStack item, Level world, BlockPos pos) {
         return List.of(new ItemStack(this));
     }

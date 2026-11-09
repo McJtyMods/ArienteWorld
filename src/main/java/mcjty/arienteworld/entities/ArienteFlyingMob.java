@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 public abstract class ArienteFlyingMob extends Mob {
+
     protected ArienteFlyingMob(EntityType<? extends ArienteFlyingMob> type, Level level) {
         super(type, level);
     }
@@ -33,13 +34,13 @@ public abstract class ArienteFlyingMob extends Mob {
                 BlockPos ground = getBlockPosBelowThatAffectsMyMovement();
                 float friction = 0.91F;
                 if (this.onGround()) {
-                    friction = this.level().getBlockState(ground).getFriction(this.level(), ground, this) * 0.91F;
+                    friction = this.level().getBlockState(ground).getBlock().getFriction() * 0.91F;
                 }
 
                 float groundAcceleration = 0.16277137F / (friction * friction * friction);
                 friction = 0.91F;
                 if (this.onGround()) {
-                    friction = this.level().getBlockState(ground).getFriction(this.level(), ground, this) * 0.91F;
+                    friction = this.level().getBlockState(ground).getBlock().getFriction() * 0.91F;
                 }
 
                 this.moveRelative(this.onGround() ? 0.1F * groundAcceleration : 0.02F, input);

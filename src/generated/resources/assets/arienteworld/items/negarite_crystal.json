@@ -1,6 +1,12 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "arienteworld:item/negarite_crystal"
+    "model": "arienteworld:item/negarite_crystal",
+    "tints": [
+      {
+        "type": "minecraft:constant",
+        "value": -637534209
+      }
+    ]
   }
 }

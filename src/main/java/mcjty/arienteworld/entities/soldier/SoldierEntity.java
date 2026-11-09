@@ -11,7 +11,6 @@ import mcjty.ariente.items.EnergyLanceItem;
 import mcjty.ariente.items.ItemData;
 import mcjty.ariente.items.KeyCardItem;
 import mcjty.ariente.items.armor.PowerSuit;
-import mcjty.ariente.setup.Registration;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ModSounds;
 import mcjty.arienteworld.config.LootConfiguration;
@@ -362,7 +361,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
-        SoundType soundtype = state.getBlock().getSoundType(state, level(), pos, this);
+        SoundType soundtype = state.getSoundType();
 
         if (this.level().getBlockState(pos.above()).getBlock() == Blocks.SNOW) {
             soundtype = Blocks.SNOW.defaultBlockState().getSoundType();
@@ -401,7 +400,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
         super.addAdditionalSaveData(output);
         CompoundTag tag = new CompoundTag();
         writeEntityData(tag);
-        output.store(tag);
+        output.store(MapCodec.assumeMapUnsafe(CompoundTag.CODEC), tag);
     }
 
 }

@@ -23,17 +23,10 @@ import net.minecraft.client.renderer.state.level.LevelRenderState;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.material.FogType;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.CustomSkyboxRenderer;
-import net.neoforged.neoforge.client.event.RegisterCustomEnvironmentEffectRendererEvent;
-import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
-public class ArienteDimensionEffects implements CustomSkyboxRenderer {
+public class ArienteDimensionEffects {
 
     private static final List<RenderPipeline> PIPELINES = new ArrayList<>();
     private static final RenderType GRADIENT = color("sky_gradient", PrimitiveTopology.QUADS);
@@ -52,14 +45,8 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
             {1, 0, 0, 0, 0, 1, 1, 1}
     };
 
-    @SubscribeEvent
-    public static void register(RegisterCustomEnvironmentEffectRendererEvent event) {
-        event.registerSkyboxRenderer(Identifier.parse("arienteworld:ariente"), new ArienteDimensionEffects());
-    }
-
-    @SubscribeEvent
-    public static void pipelines(RegisterRenderPipelinesEvent event) {
-        PIPELINES.forEach(event::registerPipeline);
+    public static void pipelines() {
+        PIPELINES.forEach(RenderPipelines::register);
     }
 
     private static RenderType color(String name, PrimitiveTopology mode) {
@@ -82,7 +69,6 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
                 .withTexture("Sampler0", Identifier.parse("arienteworld:textures/sky/" + name + ".png")).createRenderSetup());
     }
 
-    @Override
     public boolean renderSky(LevelRenderState level, SkyRenderState sky, Matrix4fc modelView, GpuBufferSlice skyFog) {
         if (level.cameraRenderState.fogType != FogType.NONE) {
             return true;

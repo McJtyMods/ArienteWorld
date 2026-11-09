@@ -1,5 +1,8 @@
 package mcjty.arienteworld;
 
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+
 import mcjty.lib.varia.InventoryTools;
 import java.util.Set;
 import mcjty.ariente.client.StandaloneModels;
@@ -22,25 +25,24 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.minecraft.client.gui.screens.PauseScreen;
 
 /** Opt-in visual smoke check. Only run in a disposable copy of a save. */
-@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
-public final class PortClientSmoke {
+public final class PortClientSmoke implements ClientModInitializer {
 
     private static int ticks;
     private static int stage;
     private static int waitingTicks;
 
-    private PortClientSmoke() {
+    public PortClientSmoke() {
     }
 
-    @SubscribeEvent
-    public static void tick(ClientTickEvent.Post event) {
+    @Override
+    public void onInitializeClient() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> tick());
+    }
+
+    public static void tick() {
         if (!Boolean.getBoolean("ariente.portClientSmoke")) {
             return;
         }
@@ -85,7 +87,7 @@ public final class PortClientSmoke {
                 BlockPos pos = new BlockPos(0, 70, 0);
                 level.setBlockAndUpdate(pos, Registration.HOLO_STORAGE_1.get().defaultBlockState());
                 StorageCubeTile storage = (StorageCubeTile) level.getBlockEntity(pos);
-                InventoryTools.insertItem(storage.getAutomationHandler(null), 0, new ItemStack(Items.DIAMOND, 23), false);
+                storage.getAutomationHandler(null).insertItem(0, new ItemStack(Items.DIAMOND, 23), false);
                 player.teleportTo(level, 2.5, 71, -4.5, Set.of(), 25, 15, true);
                 player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Registration.POWERSUIT_HEAD.get()));
                 Ariente.guiHandler.openHoloGui(level, pos, player);
@@ -110,6 +112,7 @@ public final class PortClientSmoke {
             }
             Screenshot.grab(mc.gameDirectory, "port-ariente.png", mc.gameRenderer.mainRenderTarget(), 1, message -> {});
             ArienteWorld.setup.getLogger().info("PORT CLIENT SMOKE: storage hologram, ship model and Ariente dimension passed");
+            System.out.println("FABRIC CLIENT SMOKE VERIFIED: holograms, ship model, armor, dimension and sky");
             mc.stop();
         }
     }

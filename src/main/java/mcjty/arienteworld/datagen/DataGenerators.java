@@ -1,5 +1,17 @@
 package mcjty.arienteworld.datagen;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import mcjty.lib.datagen.ReloadableDataProvider;
+import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
+import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
+import net.fabricmc.fabric.api.datagen.v1.FabricPackOutput;
+import net.minecraft.data.tags.TagsProvider;
+
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.registries.Registries;
 import mcjty.lib.datagen.model.ModelProvider;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.CachedOutput;
@@ -21,44 +33,51 @@ import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.data.loot.LootTableProvider;
 import net.minecraft.data.loot.LootTableSubProvider;
 import net.minecraft.core.RegistrySetBuilder;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.data.BlockTagsProvider;
-import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 import static mcjty.ariente.setup.Registration.DUST_NEGARITE;
 import static mcjty.ariente.setup.Registration.DUST_POSIRITE;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID)
-public class DataGenerators {
+public class DataGenerators implements DataGeneratorEntrypoint {
 
-    @SubscribeEvent
-    public static void gatherData(GatherDataEvent.Client event) {
-        PackOutput output = event.getGenerator().getPackOutput();
-        event.getGenerator().addProvider(true, new ItemDefinitions(output));
-        var reloadable = new RegistrySetBuilder();
-        reloadable.add(Registries.LOOT_TABLE, new LootTableProvider(Set.of(),
+    @Override
+    public void onInitializeDataGenerator(FabricDataGenerator generator) {
+        var pack = generator.createPack();
+        pack.addProvider((FabricDataGenerator.Pack.Factory<ItemDefinitions>) ItemDefinitions::new);
+        var entries = new RegistrySetBuilder();
+        entries.add(Registries.LOOT_TABLE, new LootTableProvider(Set.of(),
                 List.of(new LootTableProvider.SubProviderEntry(BlockLoot::new, LootContextParamSets.BLOCK))));
-        event.getDefaultPackGenerator().createReloadableRegistryObjects(reloadable);
-        event.getGenerator().addProvider(true,
-                new BlockTags(output, event.getWorldLookupProvider()));
+        pack.addProvider((output, lookup) -> new ReloadableDataProvider(output, lookup, entries));
+        pack.addProvider(BlockTags::new);
     }
 
     private static class BlockLoot extends BlockLootSubProvider {
 
-        private BlockLoot(LootTableSubProvider.Context provider) {
-            super(Set.of(), FeatureFlags.REGISTRY.allFlags(), provider);
+        private final LootTableSubProvider.Context context;
+
+        @Override
+        public void run() {
+            generate();
         }
 
         @Override
-        protected void generate() {
+        public void add(Block block, LootTable.Builder table) {
+            block.getLootTable().ifPresent(key -> context.accept(key, table));
+        }
+
+
+        private BlockLoot(LootTableSubProvider.Context provider) {
+            super(Set.of(), FeatureFlags.REGISTRY.allFlags(), provider);
+            context = provider;
+        }
+
+        @Override
+        public void generate() {
             // Keep the existing authored drops, including leaves and editor markers.
             getKnownBlocks().forEach(block -> {
                 if (block == Registration.NEGARITE_CRYSTAL.get() || block == Registration.POSIRITE_CRYSTAL.get()) {
@@ -72,16 +91,15 @@ public class DataGenerators {
             });
         }
 
-        @Override
         protected Iterable<Block> getKnownBlocks() {
             return Registration.BLOCKS.getEntries().stream().map(entry -> (Block) entry.get()).toList();
         }
     }
 
-    private static class BlockTags extends BlockTagsProvider {
+    private static class BlockTags extends TagsProvider<Block> {
 
-        private BlockTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookup) {
-            super(output, lookup, ArienteWorld.MODID);
+        private BlockTags(FabricPackOutput output, CompletableFuture<HolderLookup.Provider> lookup) {
+            super(output, Registries.BLOCK, lookup);
         }
 
         private void addTag(TagKey<Block> key, Block... blocks) {
@@ -115,7 +133,17 @@ public class DataGenerators {
             var paths = output.createPathProvider(PackOutput.Target.RESOURCE_PACK, "items");
             var tasks = Registration.ITEMS.getEntries().stream().map(entry -> {
                 var id = BuiltInRegistries.ITEM.getKey(entry.get());
-                return DataProvider.saveStable(cache, ModelProvider.itemDefinition(id.withPrefix("item/")), paths.json(id));
+                var definition = ModelProvider.itemDefinition(id.withPrefix("item/"));
+                if (entry.get() == Registration.NEGARITE_CRYSTAL.get().asItem()
+                        || entry.get() == Registration.POSIRITE_CRYSTAL.get().asItem()) {
+                    var tint = new JsonObject();
+                    tint.addProperty("type", "minecraft:constant");
+                    tint.addProperty("value", 0xd9ffffff);
+                    var tints = new JsonArray();
+                    tints.add(tint);
+                    definition.getAsJsonObject("model").add("tints", tints);
+                }
+                return DataProvider.saveStable(cache, definition, paths.json(id));
             }).toArray(CompletableFuture[]::new);
             return CompletableFuture.allOf(tasks);
         }

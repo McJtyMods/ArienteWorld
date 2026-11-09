@@ -1,5 +1,9 @@
 package mcjty.arienteworld.tutorial;
 
+import mcjty.lib.container.IndexedStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+
 import net.minecraft.world.InteractionHand;
 
 import java.util.ArrayList;
@@ -12,8 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.transfer.transaction.Transaction;
+import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 
 /** Checks the native tool and transfer APIs against the tutorial's real blocks and inventories. */
 public final class TutorialPortChecks {
@@ -32,7 +35,7 @@ public final class TutorialPortChecks {
     }
 
     public static void inventoryTransactions(ServerLevel level, BlockPos pos) {
-        var inventory = level.getCapability(Capabilities.Item.BLOCK, pos, null);
+        var inventory = (IndexedStorage<ItemVariant>) ItemStorage.SIDED.find(level, pos, null);
         require(inventory != null, "Missing native item capability at " + pos);
         var before = new ArrayList<ItemStack>();
         int occupied = -1;
@@ -43,14 +46,14 @@ public final class TutorialPortChecks {
         require(occupied >= 0, "Inventory transaction fixture is empty at " + pos);
         var resource = inventory.getResource(occupied);
         long amount = inventory.getAmountAsLong(occupied);
-        try (var outer = Transaction.openRoot()) {
+        try (var outer = Transaction.openOuter()) {
             require(inventory.extract(occupied, resource, 1, outer) == 1, "Native extraction failed");
-            try (var nested = Transaction.open(outer)) {
+            try (var nested = outer.openNested()) {
                 require(inventory.insert(occupied, resource, 1, nested) == 1, "Native insertion failed");
                 nested.commit();
             }
             require(inventory.getAmountAsLong(occupied) == amount, "Nested commit lost an item");
-            try (var nested = Transaction.open(outer)) {
+            try (var nested = outer.openNested()) {
                 require(inventory.extract(occupied, resource, 1, nested) == 1, "Nested extraction failed");
             }
             require(inventory.getAmountAsLong(occupied) == amount, "Nested rollback lost an item");

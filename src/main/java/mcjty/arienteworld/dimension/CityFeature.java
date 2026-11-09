@@ -1,5 +1,6 @@
 package mcjty.arienteworld.dimension;
 
+import net.minecraft.core.registries.Registries;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

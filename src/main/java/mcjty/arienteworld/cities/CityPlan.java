@@ -1,5 +1,6 @@
 package mcjty.arienteworld.cities;
 
+import net.minecraft.core.registries.Registries;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

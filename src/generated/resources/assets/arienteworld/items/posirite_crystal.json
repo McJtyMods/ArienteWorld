@@ -1,6 +1,12 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "arienteworld:item/posirite_crystal"
+    "model": "arienteworld:item/posirite_crystal",
+    "tints": [
+      {
+        "type": "minecraft:constant",
+        "value": -637534209
+      }
+    ]
   }
 }

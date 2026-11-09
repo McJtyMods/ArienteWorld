@@ -1,6 +1,7 @@
 package mcjty.arienteworld.tutorial;
 
-import net.neoforged.neoforge.transfer.item.ItemUtil;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+
 import mcjty.lib.varia.CapabilityTools;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.clock.WorldClocks;
@@ -100,15 +101,9 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.event.server.ServerStartedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.transfer.ResourceHandler;
-import net.neoforged.neoforge.transfer.item.ItemResource;
 import mcjty.lib.varia.InventoryTools;
+import mcjty.lib.container.IItemHandler;
+import mcjty.lib.container.ItemHandlerHelper;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -122,7 +117,6 @@ import java.util.Set;
 import java.util.UUID;
 
 /** An explicitly enabled authoring tool, never loaded by an ordinary game. */
-@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class TutorialWorld {
 
     private static final int FLOOR = 64;
@@ -162,20 +156,18 @@ public class TutorialWorld {
     private static int circuitsBeforeRecycling;
     private static int silverBeforeRecycling;
 
-    @SubscribeEvent
-    public static void start(ServerStartedEvent event) throws IOException {
+    public static void start(MinecraftServer server) throws IOException {
         if (!Boolean.getBoolean("ariente.tutorial")) {
             return;
         }
-        MinecraftServer server = event.getServer();
         ServerLevel level = server.overworld();
         var marker = server.getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete");
         if (Boolean.getBoolean("ariente.tutorial.verify")) {
             require(Files.exists(marker), "Verification requires a completed Tutorial map");
             // The saved introduction batch is for players; restart the deterministic verification batch.
-            ResourceHandler<ItemResource> source = inventory(level, INPUT);
-            for (int slot = 0; slot < source.size(); slot++) {
-                InventoryTools.extractItem(source, slot, 64, false);
+            IItemHandler source = inventory(level, INPUT);
+            for (int slot = 0; slot < source.getSlots(); slot++) {
+                source.extractItem(slot, 64, false);
             }
         } else {
             require(!Files.exists(marker), "Refusing to overwrite a completed Tutorial map");
@@ -191,12 +183,11 @@ public class TutorialWorld {
         ArienteWorld.setup.getLogger().info("TUTORIAL: platform ready; observing real machine ticks");
     }
 
-    @SubscribeEvent
-    public static void stopped(ServerStoppedEvent event) throws IOException {
+    public static void stopped(MinecraftServer server) throws IOException {
         if (!Boolean.getBoolean("ariente.tutorial")) {
             return;
         }
-        var root = event.getServer().getWorldPath(LevelResource.ROOT);
+        var root = server.getWorldPath(LevelResource.ROOT);
         if (Files.exists(root.resolve("Tutorial.complete"))) {
             // Dedicated servers create saves with cheats disabled. Enable them for the singleplayer tutorial.
             var levelFile = root.resolve("level.dat");
@@ -869,6 +860,7 @@ public class TutorialWorld {
         ItemStack card = new ItemStack(Registration.KEY_CARD.get());
         KeyCardItem.addSecurityTag(card, "Tutorial");
         card.set(DataComponents.CUSTOM_NAME, Component.literal("Tutorial door key"));
+        ItemStack manual = guide();
         stock(level, WELCOME_STORAGE, guide(), card, new ItemStack(Registration.TABLET.get()),
                 new ItemStack(Registration.FLUX_LEVITATOR.get()), new ItemStack(Registration.FLUX_SHIP.get()));
         for (Item item : new Item[]{Registration.POWERSUIT_HEAD.get(), Registration.POWERSUIT_CHEST.get(), Registration.POWERSUIT_LEGS.get(),
@@ -913,15 +905,15 @@ public class TutorialWorld {
     }
 
     private static void stock(ServerLevel level, BlockPos pos, ItemStack... stacks) {
-        ResourceHandler<ItemResource> handler = inventory(level, pos);
+        IItemHandler handler = inventory(level, pos);
         for (ItemStack stack : stacks) {
-            require(InventoryTools.insertItem(handler, stack.copy(), false).isEmpty(), "Cannot stock " + stack + " at " + pos);
+            require(ItemHandlerHelper.insertItemStacked(handler, stack.copy(), false).isEmpty(), "Cannot stock " + stack + " at " + pos);
         }
         level.getBlockEntity(pos).setChanged();
     }
 
-    private static ResourceHandler<ItemResource> inventory(ServerLevel level, BlockPos pos) {
-        return Objects.requireNonNull(CapabilityTools.itemHandler(level.getCapability(Capabilities.Item.BLOCK, pos, null)), "Missing inventory at " + pos);
+    private static IItemHandler inventory(ServerLevel level, BlockPos pos) {
+        return Objects.requireNonNull(CapabilityTools.itemHandler(ItemStorage.SIDED.find(level, pos, null)), "Missing inventory at " + pos);
     }
 
     private static void put(ServerLevel level, BlockPos pos, Block block) {
@@ -948,12 +940,11 @@ public class TutorialWorld {
         install(bases[0], module, 4, 4);
     }
 
-    @SubscribeEvent
-    public static void tick(ServerTickEvent.Post event) throws IOException {
+    public static void tick(MinecraftServer server) throws IOException {
         if (!running) {
             return;
         }
-        ServerLevel level = event.getServer().overworld();
+        ServerLevel level = server.overworld();
         ticks++;
         automationChecks(level);
         // Rebuilding the shield consumes the shared supply. Finish processing checks first,
@@ -984,20 +975,20 @@ public class TutorialWorld {
             stock(level, INPUT, new ItemStack(Items.IRON_ORE, 8), new ItemStack(Registration.DUST_NEGARITE.get(), 32),
                     new ItemStack(Registration.DUST_POSIRITE.get(), 32), new ItemStack(Items.OAK_PLANKS, 64));
             stock(level, LOOT, new ItemStack(Registration.ENERGY_SABRE.get()), new ItemStack(Registration.MODULE_HOVER.get()));
-            Files.writeString(event.getServer().getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete"),
+            Files.writeString(server.getWorldPath(LevelResource.ROOT).resolve("Tutorial.complete"),
                     "Tutorial: 9x9 city platform; 3x3 teaching plaza. Verified camera views, ship charging, ore purification followed by smelting, loot recycling, displays, sorting, refueling, power, crafting, shield, 424-block sloped city circuit with rider in both directions, two cart end panels and machine coverage.\n");
             running = false;
             ArienteWorld.setup.getLogger().info("TUTORIAL VERIFIED: cameras, charged ship, purification, smelting, recycling, refueling, sorted storage, circuits, shield, wireless and two cart end panels; saving map");
-            event.getServer().halt(false);
+            server.halt(false);
         }
     }
 
     private static int count(ServerLevel level, BlockPos pos, Item item) {
-        ResourceHandler<ItemResource> inventory = inventory(level, pos);
+        IItemHandler inventory = inventory(level, pos);
         int count = 0;
-        for (int slot = 0; slot < inventory.size(); slot++) {
-            if (ItemUtil.getStack(inventory, slot).is(item)) {
-                count += ItemUtil.getStack(inventory, slot).getCount();
+        for (int slot = 0; slot < inventory.getSlots(); slot++) {
+            if (inventory.getStackInSlot(slot).is(item)) {
+                count += inventory.getStackInSlot(slot).getCount();
             }
         }
         return count;
@@ -1008,9 +999,9 @@ public class TutorialWorld {
             // Saved entities load asynchronously after ServerStartedEvent.
             ship(level).setCharge(FluxShipEnergy.CAPACITY / 10);
             // Restart verification begins with a stocked input. Clear it using normal extraction.
-            ResourceHandler<ItemResource> source = inventory(level, INPUT);
-            for (int slot = 0; slot < source.size(); slot++) {
-                InventoryTools.extractItem(source, slot, 64, false);
+            IItemHandler source = inventory(level, INPUT);
+            for (int slot = 0; slot < source.getSlots(); slot++) {
+                source.extractItem(slot, 64, false);
             }
             stock(level, INPUT, new ItemStack(Items.RAW_IRON, 2), new ItemStack(Items.SAND, 2),
                     new ItemStack(Registration.DUST_NEGARITE.get(), 4), new ItemStack(Registration.DUST_POSIRITE.get(), 4));
@@ -1038,9 +1029,9 @@ public class TutorialWorld {
             for (BlockPos pos : new BlockPos[]{WOOD, INGOTS, OTHER}) {
                 require(count(level, pos, Registration.DUST_NEGARITE.get()) == 0 && count(level, pos, Registration.DUST_POSIRITE.get()) == 0,
                         "Fuel leaked into storage");
-                ResourceHandler<ItemResource> handler = inventory(level, pos);
-                for (int slot = 0; slot < handler.size(); slot++) {
-                    ItemStack stack = ItemUtil.getStack(handler, slot);
+                IItemHandler handler = inventory(level, pos);
+                for (int slot = 0; slot < handler.getSlots(); slot++) {
+                    ItemStack stack = handler.getStackInSlot(slot);
                     require(stack.isEmpty() || !ItemFilterCategory.SMELTABLE.matches(level, stack), "Unprocessed item leaked into storage: " + stack);
                 }
             }
@@ -1059,15 +1050,15 @@ public class TutorialWorld {
                     && count(level, INGOTS, Items.GOLD_INGOT) >= goldBeforePurifying + yield,
                     "Purified ores did not yield amplified, automatically smelted ingots");
             require(count(level, INPUT, Items.IRON_ORE) == 0 && count(level, INPUT, Items.GOLD_ORE) == 0
-                    && ItemUtil.getStack(inventory(level, PURIFIER), 0).isEmpty()
-                    && ItemUtil.getStack(inventory(level, PURIFIER_FINISH), 0).isEmpty(), "Purifier route did not drain");
+                    && inventory(level, PURIFIER).getStackInSlot(0).isEmpty()
+                    && inventory(level, PURIFIER_FINISH).getStackInSlot(0).isEmpty(), "Purifier route did not drain");
             require(count(level, OTHER, Registration.CIRCUIT.get()) > circuitsBeforeRecycling
                     && count(level, INGOTS, Registration.INGOT_SILVER.get()) > silverBeforeRecycling,
                     "Recycled loot components did not reach sorted storage");
             for (BlockPos pos : new BlockPos[]{LOOT, LOOT.below(), RECYCLER}) {
-                ResourceHandler<ItemResource> items = inventory(level, pos);
-                for (int slot = 0; slot < items.size(); slot++) {
-                    require(ItemUtil.getStack(items, slot).isEmpty(), "Recycling route did not drain at " + pos);
+                IItemHandler items = inventory(level, pos);
+                for (int slot = 0; slot < items.getSlots(); slot++) {
+                    require(items.getStackInSlot(slot).isEmpty(), "Recycling route did not drain at " + pos);
                 }
             }
             ArienteWorld.setup.getLogger().info("TUTORIAL PROCESSING CHECK: iron/gold ores -> {} raw each -> ingots; sabre/module -> sorted components", yield);
@@ -1165,11 +1156,11 @@ public class TutorialWorld {
         require(count(level, OTHER, Items.GLASS) >= 2 && count(level, OTHER, Items.COOKED_CHICKEN) >= 2
                 && count(level, OTHER, Items.CHARCOAL) >= 2 && count(level, OTHER, Items.DIAMOND) >= 2,
                 "Finished products did not reach various storage");
-        ResourceHandler<ItemResource> crafter = inventory(level, CRAFTER);
+        IItemHandler crafter = inventory(level, CRAFTER);
         int circuits = 0;
-        for (int slot = AutoConstructorTile.SLOT_OUTPUT; slot < crafter.size(); slot++) {
-            if (ItemUtil.getStack(crafter, slot).is(Registration.CIRCUIT.get())) {
-                circuits += ItemUtil.getStack(crafter, slot).getCount();
+        for (int slot = AutoConstructorTile.SLOT_OUTPUT; slot < crafter.getSlots(); slot++) {
+            if (crafter.getStackInSlot(slot).is(Registration.CIRCUIT.get())) {
+                circuits += crafter.getStackInSlot(slot).getCount();
             }
         }
         require(circuits > 0, "Auto Constructor has not produced circuits");

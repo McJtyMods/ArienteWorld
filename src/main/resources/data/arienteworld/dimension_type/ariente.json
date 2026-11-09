@@ -18,7 +18,6 @@
   "timelines": "#minecraft:in_overworld",
   "skybox": "overworld",
   "attributes": {
-    "neoforge:custom_skybox": "arienteworld:ariente",
     "minecraft:visual/cloud_color": "#00000000",
     "minecraft:gameplay/can_start_raid": false,
     "minecraft:gameplay/respawn_anchor_works": false,

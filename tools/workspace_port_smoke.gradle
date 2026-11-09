@@ -1,18 +1,20 @@
-// Run from Multi_neo: ./gradlew -I ../ArienteWorld_neo/tools/workspace_port_smoke.gradle :workspace:runClient
-// Uses a disposable copy of Tutorial under workspace/build/verification/port-smoke.
-gradle.projectsEvaluated {
-    def workspace = gradle.rootProject.findProject(':workspace')
-    def companion = gradle.rootProject.findProject(':ArienteWorld')
-    if (workspace == null || companion == null) {
-        throw new GradleException('The workspace smoke requires MultiWorkspace with ArienteWorld included')
-    }
-    workspace.extensions.getByName('runs').named('client') {
-        modSource companion.sourceSets.gameTest
-        workingDirectory workspace.file('build/verification/port-smoke')
-        systemProperty 'ariente.portClientSmoke', 'true'
-        arguments.addAll '--quickPlaySingleplayer', 'Tutorial', '--width', '1280', '--height', '800'
-    }
-    workspace.tasks.named('runClient') {
-        dependsOn companion.tasks.named('gameTestClasses')
+// Run from Multi_fabric with both tutorial.gradle and this init script.
+// Uses a disposable Tutorial copy under workspace/build/verification/port-smoke.
+gradle.afterProject { workspace ->
+    if (workspace.name == 'workspace') {
+        def companion = workspace.rootProject.findProject(':ArienteWorld')
+        if (companion == null || companion.sourceSets.findByName('tutorial') == null) {
+            throw new GradleException('The workspace smoke requires ArienteWorld and tools/tutorial.gradle')
+        }
+        workspace.loom.mods.register('ariente_tutorial') { sourceSet companion.sourceSets.tutorial }
+        workspace.loom.runs.client {
+            runDir 'build/verification/port-smoke'
+            vmArg '-Dariente.portClientSmoke=true'
+            programArgs '--quickPlaySingleplayer', 'PortSmoke', '--width', '1280', '--height', '800'
+        }
+        workspace.tasks.named('runClient') {
+            dependsOn companion.tasks.named('tutorialClasses')
+            classpath += companion.sourceSets.tutorial.output
+        }
     }
 }
