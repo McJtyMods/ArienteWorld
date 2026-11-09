@@ -1,5 +1,6 @@
 package mcjty.arienteworld;
 
+import mcjty.lib.varia.InventoryTools;
 import java.util.Set;
 import mcjty.ariente.client.StandaloneModels;
 import net.minecraft.client.gui.components.AbstractButton;
@@ -25,8 +26,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.minecraft.client.gui.screens.PauseScreen;
 
-/** Opt-in visual smoke check. Only run in a disposable PortSmoke save. */
+/** Opt-in visual smoke check. Only run in a disposable copy of a save. */
 @EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public final class PortClientSmoke {
 
@@ -43,6 +45,8 @@ public final class PortClientSmoke {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
+        mc.options.pauseOnLostFocus = false;
+        if (mc.gui.screen() instanceof PauseScreen) mc.gui.setScreen(null);
         if (mc.level == null || mc.player == null || mc.getSingleplayerServer() == null) {
             if (++waitingTicks % 60 == 0 && mc.gui.screen() != null) {
                 System.out.println("Port client screen: " + mc.gui.screen().getClass().getSimpleName());
@@ -50,7 +54,7 @@ public final class PortClientSmoke {
                     if (listener instanceof AbstractButton button) {
                         String text = button.getMessage().getString();
                         System.out.println("Port client button: " + text);
-                        if (text.startsWith("Proceed") || text.equalsIgnoreCase("I know what I'm doing!") || text.equals("Yes")) {
+                        if (text.startsWith("Proceed") || text.equals("Continue") || text.equalsIgnoreCase("I know what I'm doing!") || text.equals("Yes")) {
                             button.onPress(new KeyEvent(257, 0, 0));
                             break;
                         }
@@ -81,7 +85,7 @@ public final class PortClientSmoke {
                 BlockPos pos = new BlockPos(0, 70, 0);
                 level.setBlockAndUpdate(pos, Registration.HOLO_STORAGE_1.get().defaultBlockState());
                 StorageCubeTile storage = (StorageCubeTile) level.getBlockEntity(pos);
-                storage.getAutomationHandler(null).insertItem(0, new ItemStack(Items.DIAMOND, 23), false);
+                InventoryTools.insertItem(storage.getAutomationHandler(null), 0, new ItemStack(Items.DIAMOND, 23), false);
                 player.teleportTo(level, 2.5, 71, -4.5, Set.of(), 25, 15, true);
                 player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Registration.POWERSUIT_HEAD.get()));
                 Ariente.guiHandler.openHoloGui(level, pos, player);
@@ -105,6 +109,7 @@ public final class PortClientSmoke {
                 throw new AssertionError("Client did not enter the Ariente dimension");
             }
             Screenshot.grab(mc.gameDirectory, "port-ariente.png", mc.gameRenderer.mainRenderTarget(), 1, message -> {});
+            ArienteWorld.setup.getLogger().info("PORT CLIENT SMOKE: storage hologram, ship model and Ariente dimension passed");
             mc.stop();
         }
     }

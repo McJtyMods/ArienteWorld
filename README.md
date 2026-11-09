@@ -1,6 +1,6 @@
 # ArienteWorld
 
-Minecraft **26.2 / NeoForge** companion to Ariente, adding an alien dimension,
+Minecraft **26.3 / NeoForge** companion to Ariente, adding an alien dimension,
 cities and progression to obtain its technology. Requires matching Ariente,
 HoloGui and McJtyLib; The One Probe is optional.
 
@@ -175,7 +175,7 @@ Use `/summon arienteworld:darkbat` to inspect one in a development world.
 
 ## Tutorial save
 
-`tools/create_tutorial.py` authors a fresh NeoForge 26.2 world named **Tutorial**.
+`tools/create_tutorial.py` authors a fresh NeoForge 26.3 world named **Tutorial**.
 It uses a void Overworld, a 144×144 city platform aligned around city-center
 chunk (8, 8), and a flat 48×48 teaching plaza in chunks (7–9, 7–9). The outer 72 chunks
 use ArienteWorld's city generator, with parks, buildings and levitator corridors. Numbered Ariente text
@@ -358,14 +358,14 @@ The older `tools/autofield_rendering.gradle` and broader Forge client/GameTest
 fixtures are historical 1.20.1 checks; they are not part of the NeoForge suite.
 Use the tutorial preview above for current client validation.
 
-Development target: Minecraft 26.2, NeoForge 26.2.0.75, Java 25, branch `26.2_neo`.
+Development target: Minecraft 26.3, NeoForge 26.3.0.83, Java 25, branch `26.3_neo`.
 Build with `./gradlew build` standalone, or `./gradlew :ArienteWorld:build` from MultiWorkspace.
-The workspace uses the included McJtyLib and The One Probe sources. These ports require McJtyLib **26.2-10.0.3** or newer. Ariente and ArienteWorld also use included HoloGui/Ariente sources. Published Maven artifacts are standalone fallbacks.
+The workspace uses the included McJtyLib and The One Probe sources. These ports require McJtyLib **26.3-11.0.4** or newer. Ariente and ArienteWorld also use included HoloGui/Ariente sources. Published Maven artifacts are standalone fallbacks.
 Unpublished port dependencies can be provided with `-Pariente_dependency_repository=<repository URL>`; `-Pgradletools_path=<file>` selects an explicit shared Gradle script.
 
 The [earlier 26.1.2 port report](PORT_26_1_2.md) records the previous port’s migration and validation history. Earlier Forge fixture commands in this file are historical.
 
-### Minecraft 26.2 port
+### Minecraft 26.2 port (previous branch)
 
 This branch carries the latest committed 26.1.2 NeoForge implementation forward.
 Holograms and procedural geometry use extracted batches and native 26.2 staged
@@ -424,3 +424,9 @@ The verified stopped Tutorial is installed at
 visual tests use disposable copies under `build/verification/`. Logs and images
 are build outputs and are excluded from Git. Full survival, multiplayer and
 manual GUI interaction still need human playtesting.
+
+### Minecraft 26.3 port
+
+This branch ports the committed 26.2 NeoForge sources and tutorial tooling to
+26.3. See the [26.3 port and verification report](PORT_26_3.md) for the
+current build commands, tutorial save, test results and remaining manual checks.

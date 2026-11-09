@@ -29,7 +29,7 @@ public class ArienteWorld {
 
     public ArienteWorld(ModContainer mod, IEventBus bus, Dist dist) {
         mod.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_CONFIG);
-        mod.registerConfig(ModConfig.Type.SERVER, Config.SERVER_CONFIG);
+        mod.registerConfig(ModConfig.Type.SYNCED, Config.SERVER_CONFIG, "arienteworld-server.toml");
         Registration.register(bus);
 
         bus.addListener(setup::init);

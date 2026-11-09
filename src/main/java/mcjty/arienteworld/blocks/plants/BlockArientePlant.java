@@ -1,6 +1,5 @@
 package mcjty.arienteworld.blocks.plants;
 
-import com.mojang.serialization.MapCodec;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
@@ -22,11 +21,6 @@ public class BlockArientePlant extends BushBlock implements IShearable {
 
     public BlockArientePlant(Properties properties) {
         super(properties.mapColor(MapColor.PLANT).noCollision().instabreak().replaceable().sound(SoundType.GRASS));
-    }
-
-    @Override
-    public MapCodec<BushBlock> codec() {
-        return simpleCodec(BlockArientePlant::new);
     }
 
     @Override

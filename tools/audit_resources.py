@@ -89,10 +89,10 @@ def main():
                             errors.append(f'Missing biome feature: {feature}')
         if '/worldgen/placed_feature/' in name and isinstance(doc['feature'], str):
             feature = doc['feature']
-            if feature.startswith(NAMESPACE + ':') and f'data/{NAMESPACE}/worldgen/configured_feature/{feature.split(":", 1)[1]}.json' not in docs:
+            if feature.startswith(NAMESPACE + ':') and f'data/{NAMESPACE}/worldgen/feature/{feature.split(":", 1)[1]}.json' not in docs:
                 errors.append(f'Missing configured feature: {feature}')
-    if docs.get('pack.mcmeta', {}).get('pack', {}).get('min_format') != 88:
-        errors.append('Expected Minecraft 26.2 resource pack format 88')
+    if docs.get('pack.mcmeta', {}).get('pack', {}).get('min_format') != [97, 1]:
+        errors.append('Expected Minecraft 26.3 resource pack format 97.1')
     registration = (ROOT / 'src/main/java/mcjty/arienteworld/setup/Registration.java').read_text()
     entities = re.findall(r'ENTITIES.register\("([^"]+)"', registration)
     for entity in entities:
@@ -100,7 +100,9 @@ def main():
             errors.append(f'Missing entity translation: {entity}')
     for name, doc in docs.items():
         if name.startswith(f'data/{NAMESPACE}/worldgen/biome/'):
-            for spawners in doc.get('spawners', {}).values():
+            spawn_settings = doc.get('attributes', {}).get('minecraft:gameplay/natural_mob_spawns', {})
+            spawn_settings = spawn_settings.get('argument', spawn_settings)
+            for spawners in spawn_settings.get('spawns_by_category', {}).values():
                 for spawner in spawners:
                     mob = spawner['type']
                     if mob.startswith(NAMESPACE + ':') and mob.split(':', 1)[1] not in entities:

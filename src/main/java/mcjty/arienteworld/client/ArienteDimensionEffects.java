@@ -1,11 +1,13 @@
 package mcjty.arienteworld.client;
 
-import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import java.util.Optional;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -20,7 +22,6 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.state.level.LevelRenderState;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.ARGB;
 import net.minecraft.world.level.material.FogType;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -82,14 +83,15 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
     }
 
     @Override
-    public boolean renderSky(LevelRenderState level, SkyRenderState sky, Matrix4fc modelView, Runnable setupFog) {
+    public boolean renderSky(LevelRenderState level, SkyRenderState sky, Matrix4fc modelView, GpuBufferSlice skyFog) {
         if (level.cameraRenderState.fogType != FogType.NONE) {
             return true;
         }
+        RenderSystem.setShaderFog(skyFog);
         PoseStack poses = new PoseStack();
         poses.mulPose(modelView);
         float red = 1;
-        float green = ARGB.green(sky.skyColor) / 255f;
+        float green = sky.skyColor.y();
         float blue = 1;
         try (var buffers = RenderBufferSource.immediate()) {
             Matrix4f matrix = poses.last().pose();
@@ -126,8 +128,8 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
             buffers.endBatch();
 
             poses.pushPose();
-            poses.mulPose(Axis.YP.rotationDegrees(-90));
-            poses.mulPose(Axis.XP.rotationDegrees(sky.sunAngle));
+            poses.rotate(Axis.YP.rotationDegrees(-90));
+            poses.rotate(Axis.XP.rotationDegrees(sky.sunAngle));
             renderStars(poses, buffers, sky.starBrightness);
             // The original RGB celestial textures use black for empty space.
             quad(buffers, SUN_TYPE, poses.last().pose(), 30, 100, new float[]{0, 0, 1, 0, 1, 1, 0, 1}, 1);
@@ -148,11 +150,11 @@ public class ArienteDimensionEffects implements CustomSkyboxRenderer {
         for (int face = 0; face < 6; face++) {
             poses.pushPose();
             switch (face) {
-                case 1 -> poses.mulPose(Axis.XP.rotationDegrees(90));
-                case 2 -> poses.mulPose(Axis.XP.rotationDegrees(-90));
-                case 3 -> poses.mulPose(Axis.XP.rotationDegrees(180));
-                case 4 -> poses.mulPose(Axis.ZP.rotationDegrees(90));
-                case 5 -> poses.mulPose(Axis.ZP.rotationDegrees(-90));
+                case 1 -> poses.rotate(Axis.XP.rotationDegrees(90));
+                case 2 -> poses.rotate(Axis.XP.rotationDegrees(-90));
+                case 3 -> poses.rotate(Axis.XP.rotationDegrees(180));
+                case 4 -> poses.rotate(Axis.ZP.rotationDegrees(90));
+                case 5 -> poses.rotate(Axis.ZP.rotationDegrees(-90));
             }
             quad(buffers, face == 0 || face == 3 ? STAR_CAPS_TYPE : STARS_TYPE, poses.last().pose(), 100, -100, STAR_UVS[face], alpha);
             poses.popPose();

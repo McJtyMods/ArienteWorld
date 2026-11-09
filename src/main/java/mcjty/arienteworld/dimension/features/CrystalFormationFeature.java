@@ -13,29 +13,34 @@ import net.minecraft.world.level.LevelSimulatedReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+
 
 /** A rooted cluster of uneven, tapering spires that lean away from one another. */
-public class CrystalFormationFeature extends Feature<NoneFeatureConfiguration> {
+public class CrystalFormationFeature implements Feature {
 
     private static final double FORMATION_SCALE = .4;
 
     public static final TagKey<Block> SUBSTRATE = TagKey.create(Registries.BLOCK,
             Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "crystal_substrate"));
 
-    public CrystalFormationFeature() {
-        super(NoneFeatureConfiguration.CODEC);
+    public static final MapCodec<CrystalFormationFeature> CODEC = MapCodec.unit(CrystalFormationFeature::new);
+
+    @Override
+    public MapCodec<CrystalFormationFeature> codec() {
+        return CODEC;
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        var level = context.level();
-        BlockPos origin = context.origin();
+    public boolean place(WorldGenLevel world, ChunkGenerator chunkGenerator, RandomSource randomSource, BlockPos originPos) {
+        var level = world;
+        BlockPos origin = originPos;
         if (!level.getBlockState(origin.below()).is(SUBSTRATE)) {
             return false;
         }
-        RandomSource random = context.random();
+        RandomSource random = randomSource;
         BlockState crystal = (random.nextBoolean() ? Registration.NEGARITE_CRYSTAL : Registration.POSIRITE_CRYSTAL)
                 .get().defaultBlockState();
         Set<BlockPos> blocks = new LinkedHashSet<>();

@@ -1,6 +1,7 @@
 package mcjty.arienteworld.dimension;
 
 import java.util.List;
+import net.minecraft.util.valueproviders.ConstantInt;
 import java.util.Map;
 import java.util.WeakHashMap;
 import javax.annotation.Nullable;
@@ -16,6 +17,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.random.Weighted;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -42,15 +44,15 @@ public class SoldierSpawning {
             return;
         }
         var settings = level.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(CITY_BIOME)
-                .value().getMobSettings();
-        var entries = settings.getMobs(MobCategory.MONSTER).unwrap();
+                .value().getAttributes().applyModifier(EnvironmentAttributes.NATURAL_MOB_SPAWNS, EnvironmentAttributes.NATURAL_MOB_SPAWNS.defaultValue());
+        var entries = settings.getMobsToSpawn(MobCategory.MONSTER).unwrap();
         if (city.getPlan().isSmallDungeon()) {
             // Single-soldier patrols keep small rooms and islands from filling with packs.
             // Cache the entries: pack-position validation must see the same selected spawn data.
-            entries = SMALL_DUNGEON_SPAWNS.computeIfAbsent(settings, source -> source.getMobs(MobCategory.MONSTER).unwrap().stream().map(entry -> {
+            entries = SMALL_DUNGEON_SPAWNS.computeIfAbsent(settings, source -> source.getMobsToSpawn(MobCategory.MONSTER).unwrap().stream().map(entry -> {
                 var spawn = entry.value();
                 if (spawn.type() == Registration.ENTITY_SOLDIER.get() || spawn.type() == Registration.ENTITY_MASTER_SOLDIER.get()) {
-                    return new Weighted<>(new MobSpawnSettings.SpawnerData(spawn.type(), 1, 1), entry.weight());
+                    return new Weighted<>(new MobSpawnSettings.SpawnerData(spawn.type(), ConstantInt.of(1)), entry.weight());
                 }
                 return entry;
             }).toList());

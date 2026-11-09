@@ -1,5 +1,6 @@
 package mcjty.arienteworld.commands;
 
+import net.minecraft.util.Prediction;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -93,7 +94,7 @@ public class EditorCommands {
             Ariente.arienteSystem.addSecurity(card, key);
             Ariente.arienteSystem.setDescription(card, "City: " + city.getName());
             if (!player.getInventory().add(card)) {
-                player.drop(card, false);
+                player.drop(card, false, Prediction.SERVER_ONLY);
             }
             return "Created storage access card for " + city.getName();
         })).build());

@@ -1,11 +1,11 @@
 package mcjty.arienteworld.client;
 
-import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
+import com.mojang.renderpearl.api.vertex.VertexFormatElement;
 import mcjty.ariente.blocks.utility.autofield.AutoFieldTile;
 import mcjty.ariente.blocks.utility.autofield.AutoFieldRenderer;
 import mcjty.ariente.client.ArienteRenderType;

@@ -38,18 +38,22 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.util.RandomSource;
+
 
 import static mcjty.ariente.setup.Registration.DOOR_MARKER;
 
 /** Places only the current chunk, so adjacent city sections never depend on decoration order. */
-public class CityFeature extends Feature<NoneFeatureConfiguration> {
+public class CityFeature implements Feature {
 
     private static final Map<Block, Boolean> BLOCK_ENTITIES = new ConcurrentHashMap<>();
 
-    public CityFeature() {
-        super(NoneFeatureConfiguration.CODEC);
+    public static final MapCodec<CityFeature> CODEC = MapCodec.unit(CityFeature::new);
+
+    @Override
+    public MapCodec<CityFeature> codec() {
+        return CODEC;
     }
 
     public static boolean hasBlockEntity(BlockState state) {
@@ -58,12 +62,12 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        WorldGenLevel level = context.level();
+    public boolean place(WorldGenLevel world, ChunkGenerator chunkGenerator, RandomSource randomSource, BlockPos originPos) {
+        WorldGenLevel level = world;
         if (!level.getLevel().dimension().equals(DimensionRegister.DIMENSION)) {
             return false;
         }
-        ChunkPos chunk = ChunkPos.containing(context.origin());
+        ChunkPos chunk = ChunkPos.containing(originPos);
         // Native tree features also place decorative BaseBlocks without tile suppliers.
         var generated = level.getChunk(chunk.x(), chunk.z());
         for (BlockPos pos : List.copyOf(generated.getBlockEntitiesPos())) {
@@ -73,7 +77,7 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
         }
         CityChunk writer = new CityChunk(level, chunk);
         if (PortalGenerator.isPortalChunk(chunk.x(), chunk.z())) {
-            PortalGenerator.generate(writer, chunk, context.chunkGenerator());
+            PortalGenerator.generate(writer, chunk, chunkGenerator);
             return true;
         }
         if (ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x(), chunk.z())) {
@@ -85,12 +89,12 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
         List<BuildingPart> parts = CityTools.getBuildingParts(level.getSeed(), city, chunk.x(), chunk.z());
         if (parts.isEmpty()) {
             if (!ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x(), chunk.z())) {
-                blendNearbyCity(level, chunk, context.chunkGenerator());
+                blendNearbyCity(level, chunk, chunkGenerator);
             }
-            LevitatorNetworkGenerator.generate(chunk.x(), chunk.z(), writer, context.chunkGenerator());
+            LevitatorNetworkGenerator.generate(chunk.x(), chunk.z(), writer, chunkGenerator);
             return true;
         }
-        int floor = CityTools.getCityHeight(city, context.chunkGenerator(), level, level.getLevel().getChunkSource().randomState());
+        int floor = CityTools.getCityHeight(city, chunkGenerator, level, level.getLevel().getChunkSource().randomState());
         int bottom = floor - CityTools.getCellarHeight(level.getSeed(), city, chunk.x(), chunk.z());
         int y = bottom;
         if (!city.getPlan().isFloating() && !city.getPlan().isUnderground()) {
@@ -101,7 +105,7 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
             placePart(level, new BlockPos(chunk.getMinBlockX(), y, chunk.getMinBlockZ()), DungeonInteriors.vary(part, palette, level.getSeed(), chunk.x(), chunk.z()), palette);
             y += part.getSliceCount();
         }
-        LevitatorNetworkGenerator.generate(chunk.x(), chunk.z(), writer, context.chunkGenerator());
+        LevitatorNetworkGenerator.generate(chunk.x(), chunk.z(), writer, chunkGenerator);
         return true;
     }
 

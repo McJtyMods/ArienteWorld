@@ -48,7 +48,7 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
+import net.minecraft.world.level.levelgen.placement.PlacementModifier;
 import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
@@ -93,16 +93,16 @@ public class Registration {
             () -> EntityType.Builder.of(CoreGuardianEntity::new, MobCategory.MISC).sized(4, 4)
                     .fireImmune().clientTrackingRange(8).updateInterval(1).build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "core_guardian"))));
 
-    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(BuiltInRegistries.FEATURE, MODID);
-    public static final Supplier<OverworldDungeonFeature> ENTRANCE = FEATURES.register("overworld_dungeon", OverworldDungeonFeature::new);
-    public static final Supplier<PlantPatchFeature> PLANT_PATCH = FEATURES.register("plant_patch", PlantPatchFeature::new);
-    public static final Supplier<CityFeature> CITY = FEATURES.register("city", CityFeature::new);
-    public static final Supplier<SpiralTreeFeature> SPIRAL_TREE = FEATURES.register("spiral_tree", SpiralTreeFeature::new);
-    public static final Supplier<CrystalFormationFeature> CRYSTAL_FORMATION = FEATURES.register("crystal_formation", CrystalFormationFeature::new);
+    public static final DeferredRegister<MapCodec<? extends Feature>> FEATURES = DeferredRegister.create(Registries.FEATURE_TYPE, MODID);
+    public static final Supplier<MapCodec<OverworldDungeonFeature>> ENTRANCE = FEATURES.register("overworld_dungeon", () -> OverworldDungeonFeature.CODEC);
+    public static final Supplier<MapCodec<PlantPatchFeature>> PLANT_PATCH = FEATURES.register("plant_patch", () -> PlantPatchFeature.CODEC);
+    public static final Supplier<MapCodec<CityFeature>> CITY = FEATURES.register("city", () -> CityFeature.CODEC);
+    public static final Supplier<MapCodec<SpiralTreeFeature>> SPIRAL_TREE = FEATURES.register("spiral_tree", () -> SpiralTreeFeature.CODEC);
+    public static final Supplier<MapCodec<CrystalFormationFeature>> CRYSTAL_FORMATION = FEATURES.register("crystal_formation", () -> CrystalFormationFeature.CODEC);
 
-    public static final DeferredRegister<PlacementModifierType<?>> PLACEMENTS = DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, MODID);
-    public static final Supplier<PlacementModifierType<FlowerHeightPlacement>> FLOWER_HEIGHT = PLACEMENTS.register("flower_height", () -> () -> FlowerHeightPlacement.CODEC);
-    public static final Supplier<PlacementModifierType<SwampBiomePlacement>> SWAMP_BIOME = PLACEMENTS.register("swamp_biome", () -> () -> SwampBiomePlacement.CODEC);
+    public static final DeferredRegister<MapCodec<? extends PlacementModifier>> PLACEMENTS = DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, MODID);
+    public static final Supplier<MapCodec<FlowerHeightPlacement>> FLOWER_HEIGHT = PLACEMENTS.register("flower_height", () -> FlowerHeightPlacement.CODEC);
+    public static final Supplier<MapCodec<SwampBiomePlacement>> SWAMP_BIOME = PLACEMENTS.register("swamp_biome", () -> SwampBiomePlacement.CODEC);
 
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);

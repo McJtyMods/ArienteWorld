@@ -1,0 +1,100 @@
+{
+  "type": "minecraft:simple_random_selector",
+  "features": [
+    {
+      "feature": {
+        "type": "minecraft:ore",
+        "size": 4,
+        "discard_chance_on_air_exposure": 0,
+        "targets": [
+          {
+            "target": {
+              "predicate_type": "minecraft:block_match",
+              "block": "ariente:marble_gray"
+            },
+            "state": {
+              "id": "ariente:negarite"
+            }
+          }
+        ]
+      },
+      "placement": []
+    },
+    {
+      "feature": {
+        "type": "minecraft:ore",
+        "size": 5,
+        "discard_chance_on_air_exposure": 0,
+        "targets": [
+          {
+            "target": {
+              "predicate_type": "minecraft:block_match",
+              "block": "ariente:marble_gray"
+            },
+            "state": {
+              "id": "ariente:negarite"
+            }
+          }
+        ]
+      },
+      "placement": []
+    },
+    {
+      "feature": {
+        "type": "minecraft:ore",
+        "size": 6,
+        "discard_chance_on_air_exposure": 0,
+        "targets": [
+          {
+            "target": {
+              "predicate_type": "minecraft:block_match",
+              "block": "ariente:marble_gray"
+            },
+            "state": {
+              "id": "ariente:negarite"
+            }
+          }
+        ]
+      },
+      "placement": []
+    },
+    {
+      "feature": {
+        "type": "minecraft:ore",
+        "size": 7,
+        "discard_chance_on_air_exposure": 0,
+        "targets": [
+          {
+            "target": {
+              "predicate_type": "minecraft:block_match",
+              "block": "ariente:marble_gray"
+            },
+            "state": {
+              "id": "ariente:negarite"
+            }
+          }
+        ]
+      },
+      "placement": []
+    },
+    {
+      "feature": {
+        "type": "minecraft:ore",
+        "size": 8,
+        "discard_chance_on_air_exposure": 0,
+        "targets": [
+          {
+            "target": {
+              "predicate_type": "minecraft:block_match",
+              "block": "ariente:marble_gray"
+            },
+            "state": {
+              "id": "ariente:negarite"
+            }
+          }
+        ]
+      },
+      "placement": []
+    }
+  ]
+}

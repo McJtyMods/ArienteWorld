@@ -24,7 +24,7 @@ public class SoldierModel extends HumanoidModel<SoldierRender.State> {
         if (state.aiming) {
             AnimationUtils.animateCrossbowHold(rightArm, leftArm, head, rightHanded);
         } else if (state.aggressive) {
-            AnimationUtils.swingWeaponDown(rightArm, leftArm, state.mainArm, state.attackTime, state.ageInTicks);
+            AnimationUtils.swingWeaponDown(rightArm, leftArm, state.mainArm, state.swingAnimation, state.ageInTicks);
         }
     }
 }

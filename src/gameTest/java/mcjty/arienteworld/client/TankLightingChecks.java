@@ -71,8 +71,8 @@ public class TankLightingChecks {
             target.bindWrite(true);
             PoseStack poses = new PoseStack();
             poses.translate(0, 0, -5);
-            poses.mulPose(Axis.XP.rotationDegrees(15));
-            poses.mulPose(Axis.YP.rotationDegrees(angle));
+            poses.rotate(Axis.XP.rotationDegrees(15));
+            poses.rotate(Axis.YP.rotationDegrees(angle));
             poses.translate(-1, -1, -.5);
             var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));
             double yaw = Math.toRadians(-angle);

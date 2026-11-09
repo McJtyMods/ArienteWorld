@@ -110,8 +110,8 @@ public class HologramRenderingChecks {
                 target.bindWrite(true);
                 PoseStack poses = new PoseStack();
                 poses.translate(0, 0, -2);
-                poses.mulPose(Axis.YP.rotationDegrees(angle[0]));
-                poses.mulPose(Axis.XP.rotationDegrees(angle[1]));
+                poses.rotate(Axis.YP.rotationDegrees(angle[0]));
+                poses.rotate(Axis.XP.rotationDegrees(angle[1]));
                 Matrix4f centered = new Matrix4f(poses.last().pose());
                 poses.translate(0, -.5, 0);
                 var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));
@@ -200,8 +200,8 @@ public class HologramRenderingChecks {
                 target.bindWrite(true);
                 PoseStack poses = new PoseStack();
                 poses.translate(0, 0, -2);
-                poses.mulPose(Axis.YP.rotationDegrees(angle[0]));
-                poses.mulPose(Axis.XP.rotationDegrees(angle[1]));
+                poses.rotate(Axis.YP.rotationDegrees(angle[0]));
+                poses.rotate(Axis.XP.rotationDegrees(angle[1]));
                 Matrix4f centered = new Matrix4f(poses.last().pose());
                 poses.translate(0, -.5, 0);
                 var buffers = RenderBufferSource.immediate(new BufferBuilder(4096));

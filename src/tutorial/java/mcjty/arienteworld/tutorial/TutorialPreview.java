@@ -1,5 +1,6 @@
 package mcjty.arienteworld.tutorial;
 
+import net.neoforged.neoforge.transfer.item.ItemUtil;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +11,7 @@ import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
 import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.EntitySpawnReason;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLVideo;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import mcjty.ariente.Ariente;
@@ -131,7 +132,7 @@ public class TutorialPreview {
             prepare(mc);
         }
         if (scene == 36) {
-            GLFW.glfwFocusWindow(mc.getWindow().handle());
+            SDLVideo.SDL_RaiseWindow(mc.getWindow().handle());
             flightInput(true);
         }
         if (reload != null) {
@@ -211,8 +212,8 @@ public class TutorialPreview {
     }
 
     private static void flightInput(boolean pressed) {
-        KeyMapping.set(InputConstants.Type.KEYSYM.getOrCreate(InputConstants.KEY_W), pressed);
-        KeyMapping.set(InputConstants.Type.KEYSYM.getOrCreate(InputConstants.KEY_SPACE), pressed);
+        KeyMapping.set(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_W), pressed);
+        KeyMapping.set(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_SPACE), pressed);
     }
 
     private static void verifySurfaceUvs(Minecraft mc) {
@@ -307,9 +308,9 @@ public class TutorialPreview {
                 case 13 -> {
                     var storage = Objects.requireNonNull(CapabilityTools.itemHandler(player.level().getCapability(Capabilities.Item.BLOCK, new BlockPos(138, 65, 137), null)));
                     ItemStack card = ItemStack.EMPTY;
-                    for (int slot = 0; slot < storage.getSlots(); slot++) {
-                        if (storage.getStackInSlot(slot).is(Registration.KEY_CARD.get())) {
-                            card = storage.getStackInSlot(slot);
+                    for (int slot = 0; slot < storage.size(); slot++) {
+                        if (ItemUtil.getStack(storage, slot).is(Registration.KEY_CARD.get())) {
+                            card = ItemUtil.getStack(storage, slot);
                             break;
                         }
                     }
@@ -403,7 +404,7 @@ public class TutorialPreview {
                         mob.setNoAi(true);
                         mob.setNoGravity(true);
                         mob.setPersistenceRequired();
-                        mob.setInvulnerable(true);
+                        mob.setPermanentlyInvulnerable(true);
                         mob.snapTo(1038 + index * 4, 150, 1048, 0, 0);
                         level.addFreshEntity(mob);
                     }

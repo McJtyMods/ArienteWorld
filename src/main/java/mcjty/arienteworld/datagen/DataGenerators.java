@@ -14,15 +14,17 @@ import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.dimension.features.CrystalFormationFeature;
 import mcjty.arienteworld.setup.Registration;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.data.loot.LootTableProvider;
+import net.minecraft.data.loot.LootTableSubProvider;
+import net.minecraft.core.RegistrySetBuilder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.flag.FeatureFlags;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DoublePlantBlock;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
@@ -41,15 +43,17 @@ public class DataGenerators {
     public static void gatherData(GatherDataEvent.Client event) {
         PackOutput output = event.getGenerator().getPackOutput();
         event.getGenerator().addProvider(true, new ItemDefinitions(output));
-        event.getGenerator().addProvider(true, new LootTableProvider(output, Set.of(),
-                List.of(new LootTableProvider.SubProviderEntry(BlockLoot::new, LootContextParamSets.BLOCK)), event.getLookupProvider()));
+        var reloadable = new RegistrySetBuilder();
+        reloadable.add(Registries.LOOT_TABLE, new LootTableProvider(Set.of(),
+                List.of(new LootTableProvider.SubProviderEntry(BlockLoot::new, LootContextParamSets.BLOCK))));
+        event.getDefaultPackGenerator().createReloadableRegistryObjects(reloadable);
         event.getGenerator().addProvider(true,
-                new BlockTags(output, event.getLookupProvider()));
+                new BlockTags(output, event.getWorldLookupProvider()));
     }
 
     private static class BlockLoot extends BlockLootSubProvider {
 
-        private BlockLoot(HolderLookup.Provider provider) {
+        private BlockLoot(LootTableSubProvider.Context provider) {
             super(Set.of(), FeatureFlags.REGISTRY.allFlags(), provider);
         }
 
@@ -89,6 +93,12 @@ public class DataGenerators {
 
         @Override
         protected void addTags(HolderLookup.Provider lookup) {
+            for (var entry : Registration.BLOCKS.getEntries()) {
+                Block block = entry.get();
+                if (!(block instanceof LeavesBlock) && block.defaultBlockState().isSolid()) {
+                    addTag(net.minecraft.tags.BlockTags.BLOCKS_MOTION_NO_LEAVES, block);
+                }
+            }
             addTag(net.minecraft.tags.BlockTags.LOGS, Registration.GLOWLOG.get(), Registration.BLUELOG.get());
             addTag(net.minecraft.tags.BlockTags.LEAVES, Registration.GLOWLEAVES.get(), Registration.BLUELEAVES.get(), Registration.DARKLEAVES.get());
             addTag(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE, Registration.NEGARITE_CRYSTAL.get(), Registration.POSIRITE_CRYSTAL.get());

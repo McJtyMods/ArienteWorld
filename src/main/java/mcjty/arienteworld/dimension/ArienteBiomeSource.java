@@ -10,6 +10,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
+import net.minecraft.world.level.biome.BiomeResolver;
 
 public class ArienteBiomeSource extends BiomeSource {
 
@@ -46,7 +47,7 @@ public class ArienteBiomeSource extends BiomeSource {
     }
 
     @Override
-    public Holder<Biome> getNoiseBiome(int x, int y, int z, Climate.Sampler sampler) {
-        return biomes.get(layout.get(x, z).ordinal());
+    public BiomeResolver createResolver(Climate.Sampler sampler) {
+        return (x, y, z) -> biomes.get(layout.get(x, z).ordinal());
     }
 }

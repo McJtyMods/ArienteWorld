@@ -1,0 +1,43 @@
+{
+  "type": "minecraft:simple_random_selector",
+  "features": [
+    {
+      "feature": {
+        "type": "minecraft:ore",
+        "size": 2,
+        "discard_chance_on_air_exposure": 0,
+        "targets": [
+          {
+            "target": {
+              "predicate_type": "minecraft:block_match",
+              "block": "ariente:marble_gray"
+            },
+            "state": {
+              "id": "arienteworld:glowstoneore"
+            }
+          }
+        ]
+      },
+      "placement": []
+    },
+    {
+      "feature": {
+        "type": "minecraft:ore",
+        "size": 3,
+        "discard_chance_on_air_exposure": 0,
+        "targets": [
+          {
+            "target": {
+              "predicate_type": "minecraft:block_match",
+              "block": "ariente:marble_gray"
+            },
+            "state": {
+              "id": "arienteworld:glowstoneore"
+            }
+          }
+        ]
+      },
+      "placement": []
+    }
+  ]
+}

@@ -49,7 +49,7 @@ public class DisplayTransparencyChecks {
         for (int angle : new int[]{-35, 0, 35}) {
             PoseStack transform = new PoseStack();
             transform.translate(0, 0, -5);
-            transform.mulPose(Axis.YP.rotationDegrees(angle));
+            transform.rotate(Axis.YP.rotationDegrees(angle));
             transform.translate(-2, -1.5, -.5);
             try (NativeImage picture = picture(mc, (poses, buffers) -> {
                 poses.last().pose().set(transform.last().pose());
@@ -79,7 +79,7 @@ public class DisplayTransparencyChecks {
         for (int angle : new int[]{30, 50, 70}) {
             PoseStack transform = new PoseStack();
             transform.translate(0, 0, -5);
-            transform.mulPose(Axis.XP.rotationDegrees(angle));
+            transform.rotate(Axis.XP.rotationDegrees(angle));
             transform.translate(-.5, -1 / 16f, -.5);
             try (NativeImage picture = picture(mc, (poses, buffers) -> {
                 poses.last().pose().set(transform.last().pose());

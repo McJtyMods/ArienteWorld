@@ -12,25 +12,30 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.feature.TreeFeature;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+
 
 /** A winding blue trunk supporting three offset, hollow rings of foliage. */
-public class SpiralTreeFeature extends Feature<NoneFeatureConfiguration> {
+public class SpiralTreeFeature implements Feature {
 
-    public SpiralTreeFeature() {
-        super(NoneFeatureConfiguration.CODEC);
+    public static final MapCodec<SpiralTreeFeature> CODEC = MapCodec.unit(SpiralTreeFeature::new);
+
+    @Override
+    public MapCodec<SpiralTreeFeature> codec() {
+        return CODEC;
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
-        var level = context.level();
-        BlockPos origin = context.origin();
+    public boolean place(WorldGenLevel world, ChunkGenerator chunkGenerator, RandomSource randomSource, BlockPos originPos) {
+        var level = world;
+        BlockPos origin = originPos;
         if (!level.getBlockState(origin.below()).is(BlockTags.DIRT)) {
             return false;
         }
-        RandomSource random = context.random();
+        RandomSource random = randomSource;
         int height = 9 + random.nextInt(3);
         double phase = random.nextDouble() * Math.PI * 2;
         int twist = random.nextBoolean() ? 1 : -1;

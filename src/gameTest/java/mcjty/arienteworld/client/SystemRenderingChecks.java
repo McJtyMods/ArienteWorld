@@ -174,8 +174,8 @@ public class SystemRenderingChecks {
         }
         try (NativeImage ship = picture(4, (pose, buffers) -> {
             pose.translate(0, -.5, 0);
-            pose.mulPose(Axis.XP.rotationDegrees(20));
-            pose.mulPose(Axis.YP.rotationDegrees(25));
+            pose.rotate(Axis.XP.rotationDegrees(20));
+            pose.rotate(Axis.YP.rotationDegrees(25));
             FluxShipEntity entity = FluxShipEntity.create(mc.level, 0, 0, 0);
             mc.getEntityRenderDispatcher().getRenderer(entity).render(entity, 0, 0, pose, buffers, LightTexture.FULL_BRIGHT);
         })) {
@@ -200,10 +200,10 @@ public class SystemRenderingChecks {
         }
         for (int angle : new int[]{0, 35, -35}) {
             try (NativeImage tooltip = picture(.65F, (pose, buffers) -> {
-                pose.mulPose(Axis.YP.rotationDegrees(angle));
+                pose.rotate(Axis.YP.rotationDegrees(angle));
                 pose.scale(.01F, .01F, .01F);
-                pose.mulPose(Axis.YP.rotationDegrees(180));
-                pose.mulPose(Axis.ZP.rotationDegrees(180));
+                pose.rotate(Axis.YP.rotationDegrees(180));
+                pose.rotate(Axis.ZP.rotationDegrees(180));
                 pose.translate(0, 0, -10);
                 pose.scale(.4F, .4F, 1);
                 HoloGuiRenderTools.renderToolTip(pose, buffers, new ItemStack(Items.DIAMOND), -90, -60,
@@ -278,8 +278,8 @@ public class SystemRenderingChecks {
             require(mc.getResourceManager().getResource(renderer.getTextureLocation(mob)).isPresent(),
                     "Dimension mob textures must resolve after the move: " + entry.getId());
             try (NativeImage image = picture(3.0F, (pose, buffers) -> {
-                pose.mulPose(Axis.XP.rotationDegrees(20));
-                pose.mulPose(Axis.YP.rotationDegrees(30));
+                pose.rotate(Axis.XP.rotationDegrees(20));
+                pose.rotate(Axis.YP.rotationDegrees(30));
                 renderer.render(mob, 0, 0, pose, buffers, LightTexture.FULL_BRIGHT);
             })) {
                 require(bright(image) > 100, "Dimension mobs must render visible textured pixels: " + entry.getId());
@@ -318,8 +318,8 @@ public class SystemRenderingChecks {
                     "JEI must include the same module description");
             try (NativeImage tooltip = picture(.65F, (pose, buffers) -> {
                 pose.scale(.01F, .01F, .01F);
-                pose.mulPose(Axis.YP.rotationDegrees(180));
-                pose.mulPose(Axis.ZP.rotationDegrees(180));
+                pose.rotate(Axis.YP.rotationDegrees(180));
+                pose.rotate(Axis.ZP.rotationDegrees(180));
                 pose.translate(0, 0, -10);
                 pose.scale(.4F, .4F, 1);
                 HoloGuiRenderTools.renderToolTip(pose, buffers, stack, -90, -60, (s, lines) -> lines.add("Click to install or remove"));
@@ -361,7 +361,7 @@ public class SystemRenderingChecks {
         }
         return picture(lance ? 2.2F : 1.8F, (pose, buffers) -> {
             pose.translate(0, -.9, 0);
-            pose.mulPose(Axis.YP.rotationDegrees(lance ? 60 : 20));
+            pose.rotate(Axis.YP.rotationDegrees(lance ? 60 : 20));
             mc.getEntityRenderDispatcher().getRenderer(soldier).render(soldier, 180, 0, pose, buffers, LightTexture.FULL_BRIGHT);
         });
     }

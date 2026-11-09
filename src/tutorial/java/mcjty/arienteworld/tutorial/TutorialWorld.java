@@ -1,5 +1,6 @@
 package mcjty.arienteworld.tutorial;
 
+import net.neoforged.neoforge.transfer.item.ItemUtil;
 import mcjty.lib.varia.CapabilityTools;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.clock.WorldClocks;
@@ -105,8 +106,9 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import mcjty.lib.varia.InventoryTools;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -171,9 +173,9 @@ public class TutorialWorld {
         if (Boolean.getBoolean("ariente.tutorial.verify")) {
             require(Files.exists(marker), "Verification requires a completed Tutorial map");
             // The saved introduction batch is for players; restart the deterministic verification batch.
-            IItemHandler source = inventory(level, INPUT);
-            for (int slot = 0; slot < source.getSlots(); slot++) {
-                source.extractItem(slot, 64, false);
+            ResourceHandler<ItemResource> source = inventory(level, INPUT);
+            for (int slot = 0; slot < source.size(); slot++) {
+                InventoryTools.extractItem(source, slot, 64, false);
             }
         } else {
             require(!Files.exists(marker), "Refusing to overwrite a completed Tutorial map");
@@ -911,14 +913,14 @@ public class TutorialWorld {
     }
 
     private static void stock(ServerLevel level, BlockPos pos, ItemStack... stacks) {
-        IItemHandler handler = inventory(level, pos);
+        ResourceHandler<ItemResource> handler = inventory(level, pos);
         for (ItemStack stack : stacks) {
-            require(ItemHandlerHelper.insertItem(handler, stack.copy(), false).isEmpty(), "Cannot stock " + stack + " at " + pos);
+            require(InventoryTools.insertItem(handler, stack.copy(), false).isEmpty(), "Cannot stock " + stack + " at " + pos);
         }
         level.getBlockEntity(pos).setChanged();
     }
 
-    private static IItemHandler inventory(ServerLevel level, BlockPos pos) {
+    private static ResourceHandler<ItemResource> inventory(ServerLevel level, BlockPos pos) {
         return Objects.requireNonNull(CapabilityTools.itemHandler(level.getCapability(Capabilities.Item.BLOCK, pos, null)), "Missing inventory at " + pos);
     }
 
@@ -991,11 +993,11 @@ public class TutorialWorld {
     }
 
     private static int count(ServerLevel level, BlockPos pos, Item item) {
-        IItemHandler inventory = inventory(level, pos);
+        ResourceHandler<ItemResource> inventory = inventory(level, pos);
         int count = 0;
-        for (int slot = 0; slot < inventory.getSlots(); slot++) {
-            if (inventory.getStackInSlot(slot).is(item)) {
-                count += inventory.getStackInSlot(slot).getCount();
+        for (int slot = 0; slot < inventory.size(); slot++) {
+            if (ItemUtil.getStack(inventory, slot).is(item)) {
+                count += ItemUtil.getStack(inventory, slot).getCount();
             }
         }
         return count;
@@ -1006,9 +1008,9 @@ public class TutorialWorld {
             // Saved entities load asynchronously after ServerStartedEvent.
             ship(level).setCharge(FluxShipEnergy.CAPACITY / 10);
             // Restart verification begins with a stocked input. Clear it using normal extraction.
-            IItemHandler source = inventory(level, INPUT);
-            for (int slot = 0; slot < source.getSlots(); slot++) {
-                source.extractItem(slot, 64, false);
+            ResourceHandler<ItemResource> source = inventory(level, INPUT);
+            for (int slot = 0; slot < source.size(); slot++) {
+                InventoryTools.extractItem(source, slot, 64, false);
             }
             stock(level, INPUT, new ItemStack(Items.RAW_IRON, 2), new ItemStack(Items.SAND, 2),
                     new ItemStack(Registration.DUST_NEGARITE.get(), 4), new ItemStack(Registration.DUST_POSIRITE.get(), 4));
@@ -1036,9 +1038,9 @@ public class TutorialWorld {
             for (BlockPos pos : new BlockPos[]{WOOD, INGOTS, OTHER}) {
                 require(count(level, pos, Registration.DUST_NEGARITE.get()) == 0 && count(level, pos, Registration.DUST_POSIRITE.get()) == 0,
                         "Fuel leaked into storage");
-                IItemHandler handler = inventory(level, pos);
-                for (int slot = 0; slot < handler.getSlots(); slot++) {
-                    ItemStack stack = handler.getStackInSlot(slot);
+                ResourceHandler<ItemResource> handler = inventory(level, pos);
+                for (int slot = 0; slot < handler.size(); slot++) {
+                    ItemStack stack = ItemUtil.getStack(handler, slot);
                     require(stack.isEmpty() || !ItemFilterCategory.SMELTABLE.matches(level, stack), "Unprocessed item leaked into storage: " + stack);
                 }
             }
@@ -1057,15 +1059,15 @@ public class TutorialWorld {
                     && count(level, INGOTS, Items.GOLD_INGOT) >= goldBeforePurifying + yield,
                     "Purified ores did not yield amplified, automatically smelted ingots");
             require(count(level, INPUT, Items.IRON_ORE) == 0 && count(level, INPUT, Items.GOLD_ORE) == 0
-                    && inventory(level, PURIFIER).getStackInSlot(0).isEmpty()
-                    && inventory(level, PURIFIER_FINISH).getStackInSlot(0).isEmpty(), "Purifier route did not drain");
+                    && ItemUtil.getStack(inventory(level, PURIFIER), 0).isEmpty()
+                    && ItemUtil.getStack(inventory(level, PURIFIER_FINISH), 0).isEmpty(), "Purifier route did not drain");
             require(count(level, OTHER, Registration.CIRCUIT.get()) > circuitsBeforeRecycling
                     && count(level, INGOTS, Registration.INGOT_SILVER.get()) > silverBeforeRecycling,
                     "Recycled loot components did not reach sorted storage");
             for (BlockPos pos : new BlockPos[]{LOOT, LOOT.below(), RECYCLER}) {
-                IItemHandler items = inventory(level, pos);
-                for (int slot = 0; slot < items.getSlots(); slot++) {
-                    require(items.getStackInSlot(slot).isEmpty(), "Recycling route did not drain at " + pos);
+                ResourceHandler<ItemResource> items = inventory(level, pos);
+                for (int slot = 0; slot < items.size(); slot++) {
+                    require(ItemUtil.getStack(items, slot).isEmpty(), "Recycling route did not drain at " + pos);
                 }
             }
             ArienteWorld.setup.getLogger().info("TUTORIAL PROCESSING CHECK: iron/gold ores -> {} raw each -> ingots; sabre/module -> sorted components", yield);
@@ -1163,11 +1165,11 @@ public class TutorialWorld {
         require(count(level, OTHER, Items.GLASS) >= 2 && count(level, OTHER, Items.COOKED_CHICKEN) >= 2
                 && count(level, OTHER, Items.CHARCOAL) >= 2 && count(level, OTHER, Items.DIAMOND) >= 2,
                 "Finished products did not reach various storage");
-        IItemHandler crafter = inventory(level, CRAFTER);
+        ResourceHandler<ItemResource> crafter = inventory(level, CRAFTER);
         int circuits = 0;
-        for (int slot = AutoConstructorTile.SLOT_OUTPUT; slot < crafter.getSlots(); slot++) {
-            if (crafter.getStackInSlot(slot).is(Registration.CIRCUIT.get())) {
-                circuits += crafter.getStackInSlot(slot).getCount();
+        for (int slot = AutoConstructorTile.SLOT_OUTPUT; slot < crafter.size(); slot++) {
+            if (ItemUtil.getStack(crafter, slot).is(Registration.CIRCUIT.get())) {
+                circuits += ItemUtil.getStack(crafter, slot).getCount();
             }
         }
         require(circuits > 0, "Auto Constructor has not produced circuits");

@@ -45,6 +45,6 @@ public class DarkbatRender extends MobRenderer<DarkbatEntity, PhantomRenderState
     @Override
     protected void setupRotations(PhantomRenderState state, PoseStack poses, float yaw, float scale) {
         super.setupRotations(state, poses, yaw, scale);
-        poses.mulPose(Axis.XP.rotationDegrees(state.xRot));
+        poses.rotate(Axis.XP.rotationDegrees(state.xRot));
     }
 }

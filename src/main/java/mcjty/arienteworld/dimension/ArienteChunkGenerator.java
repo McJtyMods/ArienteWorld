@@ -5,6 +5,10 @@ import com.google.common.cache.CacheBuilder;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
+import java.util.Set;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.densityfunction.SamplerContext;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import mcjty.arienteworld.cities.LegacyBlockStates;
@@ -119,8 +123,8 @@ public class ArienteChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState random,
-                                                       StructureManager structures, ChunkAccess chunk) {
+    public CompletableFuture<ChunkAccess> buildTerrain(ChunkAccess chunk, Blender blender, RandomState random,
+                                                       StructureManager structures, BiomeManager biomes, WorldGenRegion carverRegion, Set<Holder<Biome>> possibleBiomes) {
         ChunkPos cp = chunk.getPos();
         TerrainBuffer buffer = getTerrain(cp.x(), cp.z());
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -138,17 +142,6 @@ public class ArienteChunkGenerator extends ChunkGenerator {
             }
         }
         return CompletableFuture.completedFuture(chunk);
-    }
-
-    @Override
-    public void applyCarvers(WorldGenRegion level, long seed, RandomState random, BiomeManager biomes,
-                             StructureManager structures, ChunkAccess chunk) {
-        // The original cave carver did not replace Ariente marble. Authored underground rooms are carved by the city feature.
-    }
-
-    @Override
-    public void buildSurface(WorldGenRegion level, StructureManager structures, RandomState random, ChunkAccess chunk) {
-        // The original surface pass is included in the cached terrain used by height queries and generation.
     }
 
     @Override
@@ -193,7 +186,7 @@ public class ArienteChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    public void addDebugScreenInfo(List<String> info, RandomState random, BlockPos pos) {
+    public void addDebugScreenInfo(List<String> info, RandomState random, BlockPos pos, SamplerContext samplerContext) {
         info.add("Ariente terrain: " + source.getLayout().get(pos.getX() >> 2, pos.getZ() >> 2).getId());
     }
 

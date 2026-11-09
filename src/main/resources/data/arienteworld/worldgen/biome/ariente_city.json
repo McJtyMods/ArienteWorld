@@ -7,23 +7,6 @@
     "grass_color": "#448877",
     "foliage_color": "#224477"
   },
-  "spawners": {
-    "monster": [
-      {
-        "type": "arienteworld:soldier",
-        "weight": 95,
-        "minCount": 4,
-        "maxCount": 4
-      },
-      {
-        "type": "arienteworld:master_soldier",
-        "weight": 5,
-        "minCount": 1,
-        "maxCount": 1
-      }
-    ]
-  },
-  "spawn_costs": {},
   "carvers": [],
   "features": [
     [],
@@ -56,6 +39,26 @@
   "attributes": {
     "minecraft:visual/fog_color": "#51155f",
     "minecraft:visual/sky_color": "#7ba4ff",
-    "minecraft:visual/water_fog_color": "#55ff88"
+    "minecraft:visual/water_fog_color": "#55ff88",
+    "minecraft:gameplay/natural_mob_spawns": {
+      "modifier": "overlay",
+      "argument": {
+        "spawns_by_category": {
+          "monster": [
+            {
+              "type": "arienteworld:soldier",
+              "weight": 95,
+              "count": 4
+            },
+            {
+              "type": "arienteworld:master_soldier",
+              "weight": 5,
+              "count": 1
+            }
+          ]
+        },
+        "spawn_costs": {}
+      }
+    }
   }
 }
