@@ -12,6 +12,7 @@ gradle.afterProject { p ->
                 java.include 'mcjty/arienteworld/PortClientSmoke.java'
                 java.include 'mcjty/arienteworld/PortRenderChecks.java'
                 java.include 'mcjty/arienteworld/PortLiveCameraChecks.java'
+                java.include 'mcjty/arienteworld/PortShipHudChecks.java'
             }
         }
         p.configurations {
@@ -33,13 +34,15 @@ gradle.afterProject { p ->
                 }
             }
         }
-        if (p.hasProperty('tutorial_client_smoke') || p.hasProperty('tutorial_render_checks') || p.hasProperty('tutorial_live_camera_checks')) {
+        if (p.hasProperty('tutorial_client_smoke') || p.hasProperty('tutorial_render_checks') || p.hasProperty('tutorial_live_camera_checks') || p.hasProperty('tutorial_ship_hud_checks')) {
             p.loom.runs.client {
                 client()
                 runDir(p.findProperty('tutorial_client_directory') ?: 'build/tutorial/client')
                 vmArg '-Dariente.portClientSmoke=' + p.hasProperty('tutorial_client_smoke')
                 vmArg '-Dariente.portRenderChecks=' + p.hasProperty('tutorial_render_checks')
                 vmArg '-Dariente.portLiveCameraChecks=' + p.hasProperty('tutorial_live_camera_checks')
+                vmArg '-Dariente.portShipHudChecks=' + p.hasProperty('tutorial_ship_hud_checks')
+                vmArg '-Dariente.shipHudFabulous=' + p.hasProperty('tutorial_ship_hud_fabulous')
                 vmArg '-Dariente.liveCameraFabulous=' + p.hasProperty('tutorial_live_camera_fabulous')
                 programArgs '--quickPlaySingleplayer', 'PortSmoke', '--width', '1280', '--height', '800'
             }

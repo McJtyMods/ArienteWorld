@@ -11,7 +11,8 @@
     "client": [
       "mcjty.arienteworld.PortClientSmoke",
       "mcjty.arienteworld.PortRenderChecks",
-      "mcjty.arienteworld.PortLiveCameraChecks"
+      "mcjty.arienteworld.PortLiveCameraChecks",
+      "mcjty.arienteworld.PortShipHudChecks"
     ]
   },
   "depends": {
