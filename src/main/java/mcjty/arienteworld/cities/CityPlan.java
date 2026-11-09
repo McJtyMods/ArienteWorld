@@ -94,6 +94,16 @@ public class CityPlan implements IAsset {
         return isCity;
     }
 
+    public boolean isSmallDungeon() {
+        return isCity && !underground && !plan.isEmpty() && plan.size() <= 3
+                && plan.stream().allMatch(row -> row.length() <= 3);
+    }
+
+    public int scaleSoldierReinforcements(int count) {
+        // Round down so even odd-sized waves are reduced by at least half.
+        return isSmallDungeon() ? count / 2 : count;
+    }
+
     public List<String> getPlan() {
         return plan;
     }

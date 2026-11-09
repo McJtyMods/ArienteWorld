@@ -34,6 +34,11 @@ all dungeon types, including underground halls and the huge cube, at light level
 of 11 or lower. Natural patrols use the normal hostile mob cap and spawning distances
 and do not require an alert or the whole dungeon to be loaded. This also applies
 to existing generated dungeons.
+Small surface bases and floating islands (up to three by three chunks) use
+single-soldier natural patrols and half the alert reinforcement counts, rounded
+down after any high-alert doubling. Larger dungeons keep their original patrol
+packs and reinforcement strengths. Fixed defenders retain their authored posts;
+already spawned soldiers are not removed by this change.
 
 Each loaded dungeon section initializes its loot, locks and fixed defenders once.
 Organized defenses continue in loaded sections even when the perimeter or the

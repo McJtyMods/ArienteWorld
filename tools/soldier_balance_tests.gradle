@@ -1,0 +1,13 @@
+// From the workspace: ./gradlew :ArienteWorld:runGameTestServer -I ArienteWorld/tools/soldier_balance_tests.gradle
+// Forge also needs -Pariente_runs.
+gradle.afterProject { p ->
+    if (p.name == 'ArienteWorld') {
+        p.sourceSets.gameTest.java.setIncludes(['mcjty/arienteworld/SoldierBalanceTests.java', 'mcjty/arienteworld/SoldierSpawningTests.java'])
+        def classes = p.layout.buildDirectory.dir('verification/soldier-balance-tests/test-classes')
+        p.tasks.named('compileGameTestJava').configure { destinationDirectory.set(classes) }
+        p.sourceSets.gameTest.output.classesDirs.setFrom(classes)
+        p.minecraft.runs.gameTestServer {
+            workingDirectory p.file('build/verification/soldier-balance-tests')
+        }
+    }
+}

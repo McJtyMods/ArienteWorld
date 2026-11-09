@@ -850,6 +850,9 @@ public class CityAI implements ICityAI {
                 newWaveMaximum *= 2;
             }
 
+            desiredMinimumCount = plan.scaleSoldierReinforcements(desiredMinimumCount);
+            newWaveMaximum = plan.scaleSoldierReinforcements(newWaveMaximum);
+
             int cnt = info.getCountSoldier(world);
             while (cnt < desiredMinimumCount) {
                 spawnSoldier(world);

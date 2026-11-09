@@ -62,6 +62,8 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     private static final int ATTACK_INTERVAL = 100;
     private static final int CHARGE_TIME = 30;
     private static final int PURSUIT_TIMEOUT = 20 * 20;
+    private static final int HOME_RADIUS = 80;
+    private static final int PURSUIT_RADIUS = HOME_RADIUS - 4;
     private final ServerBossEvent bossEvent = new ServerBossEvent(getDisplayName(), BossEvent.BossBarColor.BLUE, BossEvent.BossBarOverlay.PROGRESS);
     private BlockPos home;
     private ChunkPos cityCenter;
@@ -82,7 +84,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     public static AttributeSupplier.Builder registerAttributes() {
         return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 800)
                 .add(Attributes.ARMOR, 12).add(Attributes.KNOCKBACK_RESISTANCE, 1)
-                .add(Attributes.FOLLOW_RANGE, 64);
+                .add(Attributes.FOLLOW_RANGE, 96);
     }
 
     public void bindToCore(ChunkPos center, BlockPos core) {
@@ -144,7 +146,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
     @Override
     protected void registerGoals() {
         targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false,
-                target -> home == null || target.distanceToSqr(Vec3.atCenterOf(home)) < 56 * 56));
+                target -> home == null || target.distanceToSqr(Vec3.atCenterOf(home)) < HOME_RADIUS * HOME_RADIUS));
     }
 
     @Override
@@ -208,7 +210,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
             destination = position();
         } else if (visible && target.distanceToSqr(origin) > 28 * 28) {
             Vec3 fromHome = target.position().add(0, 5, 0).subtract(origin);
-            destination = origin.add(fromHome.normalize().scale(Math.min(40, Math.max(0, fromHome.length() - 24))));
+            destination = origin.add(fromHome.normalize().scale(Math.min(HOME_RADIUS - 16, Math.max(0, fromHome.length() - 24))));
         } else if (!visible && lastSeenPosition != null) {
             destination = findPursuitPosition(origin);
         }
@@ -238,7 +240,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
 
     private boolean isValidTarget(@Nullable LivingEntity target, Vec3 origin) {
         return target != null && !target.isRemoved() && target.isAlive() && target.level() == level()
-                && canAttack(target) && target.distanceToSqr(origin) < 56 * 56;
+                && canAttack(target) && target.distanceToSqr(origin) < HOME_RADIUS * HOME_RADIUS;
     }
 
     private Vec3 findPursuitPosition(Vec3 origin) {
@@ -249,7 +251,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
             for (int dx : new int[]{-4, 0, 4}) {
                 for (int dz : new int[]{-4, 0, 4}) {
                     Vec3 point = lastSeenPosition.add(dx, height, dz);
-                    if (point.distanceToSqr(origin) > 52 * 52 || point.distanceToSqr(position()) >= bestDistance
+                    if (point.distanceToSqr(origin) > PURSUIT_RADIUS * PURSUIT_RADIUS || point.distanceToSqr(position()) >= bestDistance
                             || !level().hasChunkAt(BlockPos.containing(point))
                             || !level().noCollision(this, getBoundingBox().move(point.subtract(position())))) {
                         continue;
@@ -265,7 +267,7 @@ public class CoreGuardianEntity extends FlyingMob implements IForcefieldImmunity
             return best;
         }
         Vec3 fromHome = lastSeenPosition.add(0, 1, 0).subtract(origin);
-        return origin.add(fromHome.normalize().scale(Math.min(52, fromHome.length())));
+        return origin.add(fromHome.normalize().scale(Math.min(PURSUIT_RADIUS, fromHome.length())));
     }
 
     private boolean hasSightFrom(Vec3 position, Vec3 target) {

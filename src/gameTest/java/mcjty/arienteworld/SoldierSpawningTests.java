@@ -62,8 +62,10 @@ public class SoldierSpawningTests {
             BlockPos pos = new BlockPos(chunk.getMinBlockX() + 8, bottom + 1, chunk.getMinBlockZ() + 8);
             for (int y = bottom + 1; y < top; y += 5) {
                 var spawns = spawnsAt(level, pos.atY(y), MobCategory.MONSTER, defaults);
-                helper.assertTrue(spawns.unwrap().equals(citySpawns.unwrap()),
-                        "Missing city spawn table in " + plan.getName() + " at height " + y);
+                helper.assertTrue(plan.isSmallDungeon()
+                                ? spawns.unwrap().stream().allMatch(entry -> entry.minCount == 1 && entry.maxCount == 1)
+                                : spawns.unwrap().equals(citySpawns.unwrap()),
+                        "Incorrect dungeon spawn table in " + plan.getName() + " at height " + y);
                 // NaturalSpawner validates each pack member by identity against a second table lookup.
                 helper.assertTrue(spawnsAt(level, pos.atY(y), MobCategory.MONSTER, defaults).unwrap().contains(spawns.unwrap().get(0)),
                         "Pack validation must recognize the selected spawn entry");
