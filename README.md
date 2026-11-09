@@ -228,6 +228,17 @@ Add `-Ptutorial_live_camera_fabulous` to cover the Fabulous graphics preset.
 The check uses the same disposable `PortSmoke` save. Captures are saved under
 `build/tutorial/client/screenshots/live-camera-checks`.
 
+The flux ship HUD check holds a mounted ship at 50% charge and samples its
+battery fill across 120 consecutive captures while changing the pilot's view:
+
+```sh
+./gradlew -I ../ArienteWorld_fabric/tools/tutorial.gradle -Ptutorial_ship_hud_checks :ArienteWorld:runClient
+```
+
+Add `-Ptutorial_ship_hud_fabulous` to test Fabulous transparency. It uses the same
+disposable `PortSmoke` save and records screenshots under
+`build/tutorial/client/screenshots/ship-hud-checks`.
+
 The authoring fixtures are excluded from release jars. Datagen uses `:ArienteWorld:runDatagen`.
 
 ## Fabric development
