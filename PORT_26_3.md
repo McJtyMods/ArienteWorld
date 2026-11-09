@@ -6,10 +6,7 @@ machine inventories, city assets and seeded generation algorithms are preserved.
 
 Local branches:
 
-- HoloGui, Ariente and ArienteWorld: `26.3_neo` in their sibling checkouts.
-- McJtyLib and MultiWorkspace: `port-ariente-26.3`, based on `26.3_neo`.
-
-No commits or remote publication are part of this task.
+- HoloGui, Ariente, ArienteWorld, McJtyLib and MultiWorkspace: `26.3_neo`.
 
 ## Changes
 
@@ -85,7 +82,7 @@ To repeat that smoke, copy Tutorial to
 ./gradlew -I ../ArienteWorld_neo/tools/workspace_port_smoke.gradle :workspace:runClient
 ```
 
-All task changes are staged in the five repositories; no commit was created.
+The original port was staged for review without creating commits.
 
 ## Tutorial reference world
 
