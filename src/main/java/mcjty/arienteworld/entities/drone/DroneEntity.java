@@ -381,7 +381,7 @@ public class DroneEntity extends ArienteFlyingMob implements IForcefieldImmunity
         super.addAdditionalSaveData(output);
         CompoundTag tag = new CompoundTag();
         writeEntityData(tag);
-        output.store(tag);
+        output.store(MapCodec.assumeMapUnsafe(CompoundTag.CODEC), tag);
     }
 
 }

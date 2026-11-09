@@ -1,6 +1,9 @@
 {
   "parent": "arienteworld:block/crystal",
   "textures": {
-    "all": "arienteworld:block/negarite_crystal"
+    "all": {
+      "sprite": "arienteworld:block/negarite_crystal",
+      "force_translucent": true
+    }
   }
 }

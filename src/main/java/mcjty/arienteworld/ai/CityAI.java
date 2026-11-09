@@ -1,5 +1,8 @@
 package mcjty.arienteworld.ai;
 
+import mcjty.lib.varia.PersistentData;
+
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntitySpawnReason;
 
 import net.minecraft.core.UUIDUtil;
@@ -31,7 +34,6 @@ import mcjty.arienteworld.entities.drone.ISentinel;
 import mcjty.arienteworld.entities.drone.SentinelDroneEntity;
 import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.arienteworld.entities.soldier.SoldierEntity;
-import mcjty.arienteworld.setup.Registration;
 import mcjty.hologui.api.IHoloGuiEntity;
 import mcjty.lib.tileentity.GenericTileEntity;
 import mcjty.lib.varia.OrientationTools;
@@ -179,7 +181,7 @@ public class CityAI implements ICityAI {
         if (!level.hasChunkAt(home)) {
             return;
         }
-        CoreGuardianEntity guardian = Registration.ENTITY_CORE_GUARDIAN.get().create(level, EntitySpawnReason.TRIGGERED);
+        CoreGuardianEntity guardian = mcjty.arienteworld.setup.Registration.ENTITY_CORE_GUARDIAN.get().create(level, EntitySpawnReason.TRIGGERED);
         if (guardian == null) {
             return;
         }
@@ -215,7 +217,7 @@ public class CityAI implements ICityAI {
     }
 
     private void initializeCubePatrol(Mob mob, int floor) {
-        if (mob.getPersistentData().getBooleanOr("arienteworldCubePatrol", false)) {
+        if (PersistentData.get(mob).getBooleanOr("arienteworldCubePatrol", false)) {
             return;
         }
         double dx = Math.abs(mob.getX() - center.getMiddleBlockX());
@@ -238,7 +240,7 @@ public class CityAI implements ICityAI {
             }
         }
         if (inPatrolArea) {
-            mob.getPersistentData().putBoolean("arienteworldCubePatrol", true);
+            PersistentData.get(mob).putBoolean("arienteworldCubePatrol", true);
         }
     }
 
@@ -1117,21 +1119,21 @@ public class CityAI implements ICityAI {
                     BlockState state = chunk.getBlockState(p);
                     Block block = state.getBlock();
                     Direction facing;
-                    if (block == Registration.GUARD_DUMMY.get() || block == Registration.SOLDIER_DUMMY.get()
-                            || block == Registration.MASTER_SOLDIER_DUMMY.get()) {
+                    if (block == mcjty.arienteworld.setup.Registration.GUARD_DUMMY.get() || block == mcjty.arienteworld.setup.Registration.SOLDIER_DUMMY.get()
+                            || block == mcjty.arienteworld.setup.Registration.MASTER_SOLDIER_DUMMY.get()) {
                         facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
-                        if (block == Registration.GUARD_DUMMY.get()) {
+                        if (block == mcjty.arienteworld.setup.Registration.GUARD_DUMMY.get()) {
                             guardPositions.put(p, facing);
-                        } else if (block == Registration.MASTER_SOLDIER_DUMMY.get()) {
+                        } else if (block == mcjty.arienteworld.setup.Registration.MASTER_SOLDIER_DUMMY.get()) {
                             masterSoldierPositions.put(p, facing);
                         } else {
                             soldierPositions.put(p, facing);
                         }
                         level.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
-                        if (firstTime && block != Registration.SOLDIER_DUMMY.get()) {
+                        if (firstTime && block != mcjty.arienteworld.setup.Registration.SOLDIER_DUMMY.get()) {
                             ArienteMobs.createSoldier(level, p, facing, center,
-                                    block == Registration.GUARD_DUMMY.get() ? SoldierBehaviourType.SOLDIER_GUARD : SoldierBehaviourType.SOLDIER_FIGHTER,
-                                    block == Registration.MASTER_SOLDIER_DUMMY.get());
+                                    block == mcjty.arienteworld.setup.Registration.GUARD_DUMMY.get() ? SoldierBehaviourType.SOLDIER_GUARD : SoldierBehaviourType.SOLDIER_FIGHTER,
+                                    block == mcjty.arienteworld.setup.Registration.MASTER_SOLDIER_DUMMY.get());
                         }
                     } else {
                         BlockEntity te = CityFeature.hasBlockEntity(state) ? chunk.getBlockEntity(p) : null;
@@ -1328,13 +1330,13 @@ public class CityAI implements ICityAI {
 
     public void enableEditMode(Level world) {
         for (Map.Entry<BlockPos, Direction> entry : guardPositions.entrySet()) {
-            world.setBlockAndUpdate(entry.getKey(), Registration.GUARD_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
+            world.setBlockAndUpdate(entry.getKey(), mcjty.arienteworld.setup.Registration.GUARD_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
         }
         for (Map.Entry<BlockPos, Direction> entry : soldierPositions.entrySet()) {
-            world.setBlockAndUpdate(entry.getKey(), Registration.SOLDIER_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
+            world.setBlockAndUpdate(entry.getKey(), mcjty.arienteworld.setup.Registration.SOLDIER_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
         }
         for (Map.Entry<BlockPos, Direction> entry : masterSoldierPositions.entrySet()) {
-            world.setBlockAndUpdate(entry.getKey(), Registration.MASTER_SOLDIER_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
+            world.setBlockAndUpdate(entry.getKey(), mcjty.arienteworld.setup.Registration.MASTER_SOLDIER_DUMMY.get().defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, entry.getValue()));
         }
     }
 

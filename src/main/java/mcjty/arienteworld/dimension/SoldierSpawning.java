@@ -18,11 +18,7 @@ import net.minecraft.util.random.Weighted;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.level.LevelEvent;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class SoldierSpawning {
 
     private static final Map<MobSpawnSettings, List<Weighted<MobSpawnSettings.SpawnerData>>> SMALL_DUNGEON_SPAWNS = new WeakHashMap<>();
@@ -30,8 +26,7 @@ public class SoldierSpawning {
     private static final ResourceKey<Biome> CITY_BIOME = ResourceKey.create(Registries.BIOME,
             Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_city"));
 
-    @SubscribeEvent
-    public static void potentialSpawns(LevelEvent.PotentialSpawns event) {
+    public static void potentialSpawns(SpawnSelection event) {
         if (event.getMobCategory() != MobCategory.MONSTER || !(event.getLevel() instanceof ServerLevel level)
                 || !level.dimension().equals(DimensionRegister.DIMENSION)
                 || !(level.getChunkSource().getGenerator() instanceof ArienteChunkGenerator)) {

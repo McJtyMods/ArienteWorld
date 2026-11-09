@@ -4,7 +4,6 @@ import mcjty.ariente.items.KeyCardItem;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ai.CityAI;
 import mcjty.arienteworld.config.LootConfiguration;
-import mcjty.arienteworld.setup.Registration;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
@@ -91,7 +90,7 @@ public class SoldierLootTests {
         private int armorDrops;
 
         private RecordingSoldier(ServerLevel level) {
-            super(Registration.ENTITY_SOLDIER.get(), level);
+            super(mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER.get(), level);
         }
 
         private float weaponChance() {

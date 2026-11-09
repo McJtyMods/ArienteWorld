@@ -1,5 +1,6 @@
 package mcjty.arienteworld.dimension;
 
+import net.minecraft.core.registries.Registries;
 import mcjty.arienteworld.cities.*;
 import java.util.*;
 import com.google.common.cache.Cache;

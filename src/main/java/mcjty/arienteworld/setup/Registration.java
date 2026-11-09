@@ -1,5 +1,9 @@
 package mcjty.arienteworld.setup;
 
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.minecraft.world.entity.SpawnPlacements;
+
+import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import mcjty.arienteworld.dimension.features.PlantPatchFeature;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -50,10 +54,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 import net.minecraft.world.level.material.MapColor;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
-import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
-import net.neoforged.neoforge.registries.DeferredRegister;
+import mcjty.lib.setup.DeferredRegister;
 
 import static mcjty.arienteworld.ArienteWorld.MODID;
 
@@ -64,7 +65,7 @@ public class Registration {
     public static final Supplier<MapCodec<? extends ChunkGenerator>> GENERATOR = GENERATORS.register("ariente", () -> ArienteChunkGenerator.CODEC);
     public static final Supplier<MapCodec<? extends BiomeSource>> BIOME_SOURCE = BIOME_SOURCES.register("ariente", () -> ArienteBiomeSource.CODEC);
 
-    public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(BuiltInRegistries.ENTITY_TYPE, MODID);
+    public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(Registries.ENTITY_TYPE, MODID);
 
     public static final Supplier<EntityType<DarkbatEntity>> ENTITY_DARKBAT = ENTITIES.register("darkbat", () -> EntityType.Builder.of(DarkbatEntity::new, MobCategory.MONSTER)
             .sized(0.9F * DarkbatEntity.SCALE, 0.5F * DarkbatEntity.SCALE)
@@ -73,27 +74,23 @@ public class Registration {
 
     public static final Supplier<EntityType<MasterSoldierEntity>> ENTITY_MASTER_SOLDIER = ENTITIES.register("master_soldier", () -> EntityType.Builder.of(MasterSoldierEntity::new, MobCategory.MONSTER)
             .sized(0.7F, 2.7F)
-            .setShouldReceiveVelocityUpdates(false)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "master_soldier"))));
     public static final Supplier<EntityType<SoldierEntity>> ENTITY_SOLDIER = ENTITIES.register("soldier", () -> EntityType.Builder.of(SoldierEntity::new, MobCategory.MONSTER)
             .sized(0.6F, 1.95F)
             .clientTrackingRange(16)
-            .setShouldReceiveVelocityUpdates(false)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "soldier"))));
     public static final Supplier<EntityType<SentinelDroneEntity>> ENTITY_SENTINEL_DRONE = ENTITIES.register("ariente_sentinel_drone", () -> EntityType.Builder.of(SentinelDroneEntity::new, MobCategory.MISC)
             .sized(1.3F, 1.3F)
-            .setShouldReceiveVelocityUpdates(false)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "ariente_sentinel_drone"))));
     public static final Supplier<EntityType<DroneEntity>> ENTITY_DRONE = ENTITIES.register("ariente_drone", () -> EntityType.Builder.of(DroneEntity::new, MobCategory.MISC)
             .sized(2.0F, 2.0F)
-            .setShouldReceiveVelocityUpdates(false)
             .build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "ariente_drone"))));
 
     public static final Supplier<EntityType<CoreGuardianEntity>> ENTITY_CORE_GUARDIAN = ENTITIES.register("core_guardian",
             () -> EntityType.Builder.of(CoreGuardianEntity::new, MobCategory.MISC).sized(4, 4)
                     .fireImmune().clientTrackingRange(8).updateInterval(1).build(ResourceKey.create(Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(MODID, "core_guardian"))));
 
-    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(BuiltInRegistries.FEATURE, MODID);
+    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, MODID);
     public static final Supplier<OverworldDungeonFeature> ENTRANCE = FEATURES.register("overworld_dungeon", OverworldDungeonFeature::new);
     public static final Supplier<PlantPatchFeature> PLANT_PATCH = FEATURES.register("plant_patch", PlantPatchFeature::new);
     public static final Supplier<CityFeature> CITY = FEATURES.register("city", CityFeature::new);
@@ -111,51 +108,51 @@ public class Registration {
             () -> new TicketType(60, TicketType.FLAG_LOADING | TicketType.FLAG_SIMULATION));
     public static final Supplier<TicketType> SCOUT_LAUNCH = TICKETS.register("scout_launch",
             () -> new TicketType(220, TicketType.FLAG_LOADING | TicketType.FLAG_SIMULATION));
-    public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(BuiltInRegistries.SOUND_EVENT, MODID);
+    public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, MODID);
 
     public static Item.Properties createStandardProperties() {
         return new Item.Properties();
     }
 
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
-    public static final Supplier<CreativeModeTab> TAB = TABS.register("arienteworld", () -> CreativeModeTab.builder()
+    public static final Supplier<CreativeModeTab> TAB = TABS.register("arienteworld", () -> FabricCreativeModeTab.builder()
             .title(Component.translatable("itemGroup.arienteworld"))
             .icon(() -> new ItemStack(Registration.GLOWLOG.get()))
             .displayItems((parameters, output) -> ITEMS.getEntries().forEach(item -> output.accept(item.get())))
             .build());
 
-    private static void registerSpawnPlacements(RegisterSpawnPlacementsEvent event) {
-        event.register(ENTITY_DARKBAT.get(), SpawnPlacementTypes.NO_RESTRICTIONS, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                DarkbatEntity::checkDarkbatSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE);
-        event.register(ENTITY_SOLDIER.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                SoldierEntity::checkSoldierSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE);
-        event.register(ENTITY_MASTER_SOLDIER.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                SoldierEntity::checkSoldierSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE);
+    private static void registerSpawnPlacements() {
+        SpawnPlacements.register(ENTITY_DARKBAT.get(), SpawnPlacementTypes.NO_RESTRICTIONS, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                DarkbatEntity::checkDarkbatSpawnRules);
+        SpawnPlacements.register(ENTITY_SOLDIER.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                SoldierEntity::checkSoldierSpawnRules);
+        SpawnPlacements.register(ENTITY_MASTER_SOLDIER.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                SoldierEntity::checkSoldierSpawnRules);
     }
 
-    private static void registerAttributes(EntityAttributeCreationEvent event) {
-        event.put(ENTITY_CORE_GUARDIAN.get(), CoreGuardianEntity.registerAttributes().build());
-        event.put(ENTITY_DARKBAT.get(), DarkbatEntity.registerAttributes().build());
-        event.put(ENTITY_SOLDIER.get(), SoldierEntity.registerAttributes().build());
-        event.put(ENTITY_MASTER_SOLDIER.get(), MasterSoldierEntity.registerAttributes().build());
-        event.put(ENTITY_DRONE.get(), DroneEntity.registerAttributes().build());
-        event.put(ENTITY_SENTINEL_DRONE.get(), SentinelDroneEntity.registerAttributes().build());
+    private static void registerAttributes() {
+        FabricDefaultAttributeRegistry.register(ENTITY_CORE_GUARDIAN.get(), CoreGuardianEntity.registerAttributes().build());
+        FabricDefaultAttributeRegistry.register(ENTITY_DARKBAT.get(), DarkbatEntity.registerAttributes().build());
+        FabricDefaultAttributeRegistry.register(ENTITY_SOLDIER.get(), SoldierEntity.registerAttributes().build());
+        FabricDefaultAttributeRegistry.register(ENTITY_MASTER_SOLDIER.get(), MasterSoldierEntity.registerAttributes().build());
+        FabricDefaultAttributeRegistry.register(ENTITY_DRONE.get(), DroneEntity.registerAttributes().build());
+        FabricDefaultAttributeRegistry.register(ENTITY_SENTINEL_DRONE.get(), SentinelDroneEntity.registerAttributes().build());
     }
 
-    public static void register(IEventBus bus) {
-        ENTITIES.register(bus);
-        bus.addListener(Registration::registerAttributes);
-        bus.addListener(Registration::registerSpawnPlacements);
+    public static void register() {
+        ENTITIES.register();
+        registerAttributes();
+        registerSpawnPlacements();
         ModSounds.register();
-        GENERATORS.register(bus);
-        BIOME_SOURCES.register(bus);
-        FEATURES.register(bus);
-        PLACEMENTS.register(bus);
-        TABS.register(bus);
-        BLOCKS.register(bus);
-        ITEMS.register(bus);
-        SOUNDS.register(bus);
-        TICKETS.register(bus);
+        GENERATORS.register();
+        BIOME_SOURCES.register();
+        FEATURES.register();
+        PLACEMENTS.register();
+        TABS.register();
+        BLOCKS.register();
+        ITEMS.register();
+        SOUNDS.register();
+        TICKETS.register();
     }
 
     public static final Supplier<BaseBlock> GUARD_DUMMY = BLOCKS.registerBlock("guard_dummy", properties -> new DummyBlock(new BlockBuilder().properties(properties)));

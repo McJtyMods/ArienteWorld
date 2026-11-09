@@ -1,5 +1,7 @@
 package mcjty.arienteworld.apiimpl;
 
+import mcjty.lib.varia.LevelTools;
+
 import javax.annotation.Nullable;
 import mcjty.ariente.api.IArienteWorld;
 import mcjty.ariente.api.ICityAI;
@@ -14,7 +16,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 public class ArienteWorldImplementation implements IArienteWorld {
 
@@ -39,7 +40,7 @@ public class ArienteWorldImplementation implements IArienteWorld {
 
     @Override
     public BlockPos getNearestTeleportationSpot(BlockPos pos) {
-        ServerLevel level = ServerLifecycleHooks.getCurrentServer().getLevel(getDimension());
+        ServerLevel level = LevelTools.getOverworld().getServer().getLevel(getDimension());
         if (level == null) {
             throw new IllegalStateException("Ariente dimension is not loaded");
         }
@@ -49,7 +50,7 @@ public class ArienteWorldImplementation implements IArienteWorld {
     @Nullable
     @Override
     public ChunkPos getNearestCityCenter(ChunkPos center) {
-        var server = ServerLifecycleHooks.getCurrentServer();
+        var server = LevelTools.getOverworld().getServer();
         ServerLevel level = server == null ? null : server.getLevel(getDimension());
         ChunkPos candidate = CityTools.getNearestDungeonCenter(center.x(), center.z());
         return level != null && CityTools.isCityCenter(level.getSeed(), candidate.x(), candidate.z()) ? candidate : null;

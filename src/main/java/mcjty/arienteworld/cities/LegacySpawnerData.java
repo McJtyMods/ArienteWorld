@@ -1,27 +1,24 @@
 package mcjty.arienteworld.cities;
 
+import net.minecraft.world.level.chunk.storage.SerializableChunkData;
+
 import mcjty.arienteworld.ArienteWorld;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.level.ChunkDataEvent;
 
 /** Repair saved spawners from before the soldiers moved to ArienteWorld. */
-@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class LegacySpawnerData {
 
-    @SubscribeEvent
-    public static void loadChunk(ChunkDataEvent.Load event) {
+    public static void loadChunk(SerializableChunkData data) {
         // Chunk NBT is private to this asynchronous load. Avoid accessing the level.
-        for (CompoundTag blockEntity : event.getData().blockEntities()) {
+        for (CompoundTag blockEntity : data.blockEntities()) {
             if ("minecraft:mob_spawner".equals(blockEntity.getStringOr("id", ""))) {
                 boolean changed = migrateSpawnData(blockEntity.getCompoundOrEmpty("SpawnData"));
                 for (Tag potential : blockEntity.getListOrEmpty("SpawnPotentials")) {
                     changed |= migrateSpawnData(((CompoundTag) potential).getCompoundOrEmpty("data"));
                 }
                 if (changed) {
-                    event.getChunk().markUnsaved();
+                    // The migrated NBT will be saved with the loaded chunk.
                 }
             }
         }

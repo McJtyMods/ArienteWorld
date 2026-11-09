@@ -1,5 +1,6 @@
 package mcjty.arienteworld.dimension;
 
+import net.minecraft.core.registries.Registries;
 import mcjty.ariente.api.IWarper;
 import mcjty.arienteworld.cities.AssetRegistries;
 import mcjty.arienteworld.cities.LegacyBlockStates;

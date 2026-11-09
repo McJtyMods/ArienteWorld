@@ -322,7 +322,7 @@ public class SentinelDroneEntity extends ArienteFlyingMob implements IForcefield
         super.addAdditionalSaveData(output);
         CompoundTag tag = new CompoundTag();
         writeEntityData(tag);
-        output.store(tag);
+        output.store(MapCodec.assumeMapUnsafe(CompoundTag.CODEC), tag);
     }
 
 }

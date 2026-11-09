@@ -1,5 +1,8 @@
 package mcjty.arienteworld.client;
 
+import net.minecraft.client.Camera;
+import net.minecraft.client.renderer.fog.FogData;
+
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import net.minecraft.client.Minecraft;
@@ -11,28 +14,22 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ViewportEvent;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class SwampFogRenderer {
 
     private static final ResourceKey<Biome> SWAMP = ResourceKey.create(Registries.BIOME,
             Identifier.fromNamespaceAndPath(ArienteWorld.MODID, "ariente_swamp"));
     private static final Vec3 SWAMP_WEIGHT = new Vec3(1, 0, 0);
 
-    @SubscribeEvent
-    public static void renderFog(ViewportEvent.RenderFog event) {
+    public static void renderFog(Camera camera, FogType type, FogData fog) {
         var level = Minecraft.getInstance().level;
         if (level == null || !level.dimension().equals(DimensionRegister.DIMENSION)
-                || event.getType() != FogType.NONE) {
+                || type != FogType.NONE) {
             return;
         }
         // Use the same spatial blend as vanilla's biome fog colors, with no abrupt border change.
         double[] weights = new double[2];
-        GaussianSampler.sample(event.getCamera().position().scale(.25), (x, y, z) ->
+        GaussianSampler.sample(camera.position().scale(.25), (x, y, z) ->
                 level.getBiomeManager().getNoiseBiomeAtQuart(x, y, z).is(SWAMP), (weight, swamp) -> {
                     weights[0] += weight;
                     if (swamp) weights[1] += weight;
@@ -42,7 +39,7 @@ public class SwampFogRenderer {
             return;
         }
         // Keep water, lava, blindness and other already closer fog intact.
-        event.setNearPlaneDistance(Mth.lerp(strength, event.getNearPlaneDistance(), Math.min(event.getNearPlaneDistance(), 12)));
-        event.setFarPlaneDistance(Mth.lerp(strength, event.getFarPlaneDistance(), Math.min(event.getFarPlaneDistance(), 96)));
+        fog.environmentalStart = Mth.lerp(strength, fog.environmentalStart, Math.min(fog.environmentalStart, 12));
+        fog.environmentalEnd = Mth.lerp(strength, fog.environmentalEnd, Math.min(fog.environmentalEnd, 96));
     }
 }

@@ -12,33 +12,27 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ChunkPos;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import mcjty.ariente.items.armor.DamageContext;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class DefenderCombat {
 
-    @SubscribeEvent
-    public static void onSoldierSabreAttack(LivingIncomingDamageEvent event) {
+    public static void onSoldierSabreAttack(DamageContext event) {
         if (event.getSource().is(DamageTypes.MOB_ATTACK)
                 && event.getSource().getDirectEntity() instanceof SoldierEntity soldier
                 && soldier.getMainHandItem().getItem() instanceof EnergySabreItem) {
             // Player difficulty scaling has run; armor, enchantments and suit defenses still apply afterwards.
-            event.setAmount(Math.max(event.getAmount(), soldier.getMinimumSabreDamage()));
+            event.setNewDamage(Math.max(event.getNewDamage(), soldier.getMinimumSabreDamage()));
         }
     }
 
-    @SubscribeEvent
-    public static void onSoldierLanceAttack(LivingIncomingDamageEvent event) {
+    public static void onSoldierLanceAttack(DamageContext event) {
         if (event.getSource().getDirectEntity() instanceof LaserEntity laser && laser.isLanceShot()
                 && event.getSource().getEntity() instanceof SoldierEntity soldier) {
-            event.setAmount(Math.max(event.getAmount(), soldier.getMinimumSabreDamage() * EnergyLanceItem.DAMAGE_MULTIPLIER));
+            event.setNewDamage(Math.max(event.getNewDamage(), soldier.getMinimumSabreDamage() * EnergyLanceItem.DAMAGE_MULTIPLIER));
         }
     }
 
-    @SubscribeEvent
-    public static void hurt(LivingIncomingDamageEvent event) {
+    public static void hurt(DamageContext event) {
         if (!(event.getSource().getEntity() instanceof LivingEntity defender)
                 || !(defender.level() instanceof ServerLevel level)
                 || !level.dimension().equals(DimensionRegister.DIMENSION)
@@ -61,7 +55,7 @@ public class DefenderCombat {
             if (lance) {
                 damage *= EnergyLanceItem.DAMAGE_MULTIPLIER;
             }
-            event.setAmount(Math.max(event.getAmount(), damage));
+            event.setNewDamage(Math.max(event.getNewDamage(), damage));
         }
     }
 }
