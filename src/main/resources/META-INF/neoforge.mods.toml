@@ -26,19 +26,19 @@ players to explore
 [[dependencies.arienteworld]]
     modId="mcjtylib"
     type="required"
-    versionRange="[1.21-9.0.21,)"
+    versionRange="[1.21-9.0.22,)"
     ordering="AFTER"
     side="BOTH"
 [[dependencies.arienteworld]]
     modId="ariente"
     type="required"
-    versionRange="[1.21-0.0.31-alpha,)"
+    versionRange="[1.21-2.0.0,)"
     ordering="AFTER"
     side="BOTH"
 [[dependencies.arienteworld]]
     modId="hologui"
     type="required"
-    versionRange="[1.21-0.0.10-beta,)"
+    versionRange="[1.21-2.0.0,)"
     ordering="AFTER"
     side="BOTH"
 

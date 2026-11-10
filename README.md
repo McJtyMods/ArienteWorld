@@ -347,9 +347,8 @@ The [NeoForge port checkpoint](PORT_1_21.md) documents current commands and vali
 Select Java 21 and **Use Gradle Wrapper** (Gradle 8.14.2), with tasks
 `clean build publish`. Publish HoloGui and Ariente before building ArienteWorld.
 
-The checked-in `hologui_version` pins the published HoloGui build
-`1.21-0.0.10-beta-6`. After Ariente's Jenkins build succeeds, set `ariente_version`
-in `gradle.properties` to its complete published version, including the build
-number, or pass `-Pariente_version=<published Ariente version>` in this job.
-Jenkins appends its build number to each NeoForge artifact's version; the
-unnumbered base Ariente version does not identify that publication.
+The checked-in `hologui_version` and `ariente_version` select `1.21-2.0.0+`,
+accepting Jenkins revisions of that release. Both upstream releases must be
+published to Maven first. To pin specific revisions, set these properties to
+their complete published versions, including build numbers, or pass
+`-Phologui_version=<version>` and `-Pariente_version=<version>` in this job.
