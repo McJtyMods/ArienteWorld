@@ -32,13 +32,13 @@ players to explore
 [[dependencies.arienteworld]]
     modId="ariente"
     type="required"
-    versionRange="[26.2-0.0.31-alpha,)"
+    versionRange="[26.2-4.0.0,)"
     ordering="AFTER"
     side="BOTH"
 [[dependencies.arienteworld]]
     modId="hologui"
     type="required"
-    versionRange="[26.2-0.0.10-beta,)"
+    versionRange="[26.2-4.0.0,)"
     ordering="AFTER"
     side="BOTH"
 
