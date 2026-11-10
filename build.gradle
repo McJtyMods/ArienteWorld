@@ -56,7 +56,7 @@ dependencies {
     ariente()
 }
 
-modpublisher(['the-one-probe'], ['mcjtylib', 'hologui', 'ariente'], ['the-one-probe'], ['mcjtylib', 'hologui', 'ariente'], [])
+modpublisher(['the-one-probe'], ['fabric-api', 'forge-config-api-port', 'mcjtylib', 'hologui', 'ariente'], ['the-one-probe'], ['fabric-api', 'forge-config-api-port', 'mcjtylib', 'hologui', 'ariente'], [])
 
 publishing {
     publications {
