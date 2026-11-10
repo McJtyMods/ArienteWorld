@@ -32,8 +32,8 @@
     "forgeconfigapiport": ">=26.3.1",
     "team_reborn_energy": ">=5.0.0",
     "mcjtylib": ">=26.3-11.0.4-fabric",
-    "hologui": ">=26.3-0.0.10-beta-fabric",
-    "ariente": ">=26.3-0.0.31-alpha-fabric"
+    "hologui": ">=26.3-5.0.0-fabric",
+    "ariente": ">=26.3-5.0.0-fabric"
   },
   "suggests": {
     "theoneprobe": "*",
