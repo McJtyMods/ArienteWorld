@@ -1,8 +1,10 @@
 package mcjty.arienteworld.entities.soldier;
 
-import mcjty.ariente.api.*;
+import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import mcjty.ariente.api.*;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
 import mcjty.ariente.items.EnergyLanceItem;
 import mcjty.ariente.items.ItemData;
@@ -54,8 +56,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootTable;
-
-import static mcjty.arienteworld.setup.Registration.ENTITY_SOLDIER;
 
 public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldImmunity, ISoldier, RangedAttackMob, IFluxShipPilot {
 
@@ -370,7 +370,7 @@ public class SoldierEntity extends Monster implements IArmRaisable, IForcefieldI
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
-        SoundType soundtype = state.getBlock().getSoundType(state, level(), pos, this);
+        SoundType soundtype = state.getSoundType();
 
         if (this.level().getBlockState(pos.above()).getBlock() == Blocks.SNOW) {
             soundtype = Blocks.SNOW.defaultBlockState().getSoundType();

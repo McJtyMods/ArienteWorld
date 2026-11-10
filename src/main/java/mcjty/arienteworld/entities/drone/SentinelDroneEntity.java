@@ -1,8 +1,9 @@
 package mcjty.arienteworld.entities.drone;
 
-import mcjty.ariente.api.*;
-import net.minecraft.world.entity.*;
+import static mcjty.arienteworld.setup.Registration.ENTITY_SENTINEL_DRONE;
+
 import javax.annotation.Nullable;
+import mcjty.ariente.api.*;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ModSounds;
 import mcjty.arienteworld.ai.CityAI;
@@ -16,6 +17,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
@@ -28,8 +30,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.Vec3;
-
-import static mcjty.arienteworld.setup.Registration.ENTITY_SENTINEL_DRONE;
 
 public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunity, ISentinel {
 
@@ -314,4 +314,5 @@ public class SentinelDroneEntity extends FlyingMob implements IForcefieldImmunit
             }
         }
     }
+
 }

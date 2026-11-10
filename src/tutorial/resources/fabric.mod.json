@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "ariente_tutorial",
+  "version": "1",
+  "name": "Ariente Tutorial Authoring",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["mcjty.arienteworld.tutorial.TutorialEntrypoint"],
+    "client": ["mcjty.arienteworld.tutorial.TutorialClientEntrypoint"]
+  },
+  "depends": {
+    "arienteworld": "*"
+  }
+}

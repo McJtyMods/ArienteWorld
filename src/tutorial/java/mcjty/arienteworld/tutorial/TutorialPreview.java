@@ -3,6 +3,8 @@ package mcjty.arienteworld.tutorial;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.NativeImage;
 import mcjty.ariente.Ariente;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import mcjty.lib.varia.CapabilityTools;
 import mcjty.ariente.api.ArmorUpgradeType;
 import mcjty.ariente.blocks.defense.ForceFieldRenderer;
 import mcjty.ariente.blocks.defense.ForceFieldTile;
@@ -44,11 +46,6 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -58,7 +55,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /** Screenshots a separate copy of the map; the installable save stays at its welcome point. */
-@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class TutorialPreview {
 
     private static final String[] SCENES = {"Tutorial-city", "Tutorial-plaza", "Tutorial-bend",
@@ -80,8 +76,7 @@ public class TutorialPreview {
     private static boolean started;
     private static volatile boolean ready;
 
-    @SubscribeEvent
-    public static void tick(ClientTickEvent.Post event) throws IOException {
+    public static void tick() throws IOException {
         if (!Boolean.getBoolean("ariente.tutorial.preview")) {
             return;
         }
@@ -287,7 +282,7 @@ public class TutorialPreview {
                 case 11 -> player.teleportTo(player.serverLevel(), 117.5, 66, 144.5, 180, 12);
                 case 12 -> player.teleportTo(player.serverLevel(), 148.5, 65, 129.5, 180, 0);
                 case 13 -> {
-                    var storage = Objects.requireNonNull(player.serverLevel().getCapability(Capabilities.ItemHandler.BLOCK, new BlockPos(138, 65, 137), null));
+                    var storage = Objects.requireNonNull(CapabilityTools.itemHandler(ItemStorage.SIDED.find(player.serverLevel(), new BlockPos(138, 65, 137), null)));
                     ItemStack card = ItemStack.EMPTY;
                     for (int slot = 0; slot < storage.getSlots(); slot++) {
                         if (storage.getStackInSlot(slot).is(Registration.KEY_CARD.get())) {
@@ -401,6 +396,7 @@ public class TutorialPreview {
                         throw new IllegalStateException("Tutorial flight preview pilot could not mount");
                     }
                 }
+
                 default -> throw new IllegalStateException("Unknown Tutorial preview scene");
             }
             ready = true;

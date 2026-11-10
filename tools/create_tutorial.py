@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and verify the playable Tutorial save using real NeoForge server ticks.
+"""Create and verify the playable Tutorial save using real Fabric server ticks.
 
 Requires Java 21 in JAVA_HOME. The generated world and server logs stay under
 build/tutorial. Supply --saves to install the verified save in a Minecraft client.

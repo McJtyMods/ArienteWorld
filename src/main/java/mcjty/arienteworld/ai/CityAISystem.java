@@ -28,7 +28,7 @@ public class CityAISystem extends AbstractWorldData<CityAISystem> implements ICi
     }
 
     public static CityAISystem getCityAISystem(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(() -> new CityAISystem(level), (tag, provider) -> load(level, tag)), NAME);
+        return level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(() -> new CityAISystem(level), (tag, provider) -> load(level, tag), null), NAME);
     }
 
     private static CityAISystem load(ServerLevel level, CompoundTag tag) {

@@ -1,7 +1,9 @@
 package mcjty.arienteworld.entities.drone;
 
-import mcjty.ariente.api.*;
+import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
+
 import javax.annotation.Nullable;
+import mcjty.ariente.api.*;
 import mcjty.ariente.entities.LaserEntity;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ModSounds;
@@ -37,8 +39,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.Vec3;
-
-import static mcjty.arienteworld.setup.Registration.ENTITY_DRONE;
 
 public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDrone {
 
@@ -376,4 +376,5 @@ public class DroneEntity extends FlyingMob implements IForcefieldImmunity, IDron
             }
         }
     }
+
 }

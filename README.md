@@ -1,6 +1,10 @@
+## Fabric 1.21.1 development
+
+This branch is `1.21_fabric` and requires Java 21. In MultiWorkspace, build this mod with `./gradlew :ArienteWorld:build` from the workspace root. Individual checkouts use the same `gradletools.gradle` driver, preferring local peer sources before the Jenkins/Maven fallback. Before the remote branch is available, select the workspace script with `-Pgradletools_path=../gradletools.gradle` and use `--gradle-user-home ../.gradle-user-home`.
+
 # ArienteWorld
 
-Minecraft **1.21.1 / NeoForge** companion to Ariente, adding an alien dimension,
+Minecraft **1.21.1 / Fabric** companion to Ariente, adding an alien dimension,
 cities and progression to obtain its technology. Requires matching Ariente,
 HoloGui and McJtyLib; The One Probe is optional.
 
@@ -175,7 +179,7 @@ Use `/summon arienteworld:darkbat` to inspect one in a development world.
 
 ## Tutorial save
 
-`tools/create_tutorial.py` authors a fresh NeoForge 1.21.1 world named **Tutorial**.
+`tools/create_tutorial.py` authors a fresh Fabric 1.21.1 world named **Tutorial**.
 It uses a void Overworld, a 144×144 city platform aligned around city-center
 chunk (8, 8), and a flat 48×48 teaching plaza in chunks (7–9, 7–9). The outer 72 chunks
 use ArienteWorld's city generator, with parks, buildings and levitator corridors. Numbered Ariente text
@@ -189,14 +193,14 @@ With Java 21 selected through `JAVA_HOME`, run from this checkout:
 
 ```sh
 python3 tools/create_tutorial.py
-python3 tools/create_tutorial.py --verify --saves ../workspace/run/saves
+python3 tools/create_tutorial.py --verify --saves ../workspace/runs/client/saves
 ```
 
 The first command builds under `build/tutorial/server`. The second restarts that
 world, checks persistence and installs it in the development client's saves list.
 Use `--directory` for another authoring directory or `--saves` for another client.
 Existing worlds are protected unless `--replace` is supplied. For example,
-`python3 tools/create_tutorial.py --verify --replace --saves ../workspace/run/saves`
+`python3 tools/create_tutorial.py --verify --replace --saves ../workspace/runs/client/saves`
 replaces the installed Tutorial after verification succeeds, without a backup.
 All registered block-entity types are represented, including multipart nodes.
 The automation exhibit uses a closed Field Marker border with no interior markers.
@@ -278,7 +282,7 @@ The preview uses its own copy and writes city, plaza, bend, beam, elevator and
 cockpit, display-booth, automation and category-filter images under `build/tutorial/screenshots`. Add `-Ptutorial_fabulous` to
 check vanilla Fabulous graphics; those screenshots go under
 `build/tutorial/screenshots-fabulous`. Renderer-mod compatibility needs separate
-testing with NeoForge versions of those mods.
+testing with Fabric versions of those mods.
 Use `-Ptutorial_client_directory=<directory>` for a separate client profile.
 Use `-Ptutorial_scene=6` to start at the display booth, or `-Ptutorial_scene=8`
 to start at the category-filter panel. Start at `-Ptutorial_scene=9` to check
@@ -292,7 +296,7 @@ ship charging pad.
 Start at `-Ptutorial_scene=24` for the southern booth instructions, wireless
 station and the visible guide lectern beside the welcome screen.
 
-The 37-scene NeoForge preview also checks disabled and newly placed empty
+The 37-scene Fabric preview also checks disabled and newly placed empty
 forcefields, rebuilding panels and hit effects, personal shields in both camera
 perspectives, orthographic/perspective/live camera displays, resource reloads,
 the Ariente sky, all six defender types and a flying, firing Flux Ship. It verifies
@@ -332,25 +336,24 @@ profile contains `forcefield-sound.csv`; success logs `FORCEFIELD SOUND CHECK: p
 It changes the disposable save and its sound settings, so use a fresh copy.
 
 The older `tools/autofield_rendering.gradle` and broader Forge client/GameTest
-fixtures are historical 1.20.1 checks; they are not part of the NeoForge suite.
+fixtures are historical 1.20.1 checks; they are not part of the Fabric suite.
 Use the tutorial preview above for current client validation.
 
-Development target: Minecraft 1.21.1, NeoForge 21.1.215, Java 21, branch `1.21_neo`.
+Development target: Minecraft 1.21.1, Fabric, Java 21, branch `1.21_fabric`.
+
+The tutorial generator, persistence checks, 37-scene preview, display-position checks, and forcefield sound checks use native Fabric callbacks through `tools/tutorial.gradle`. The broader GameTest/client fixtures retain their NeoForge authoring configuration as reference; those scripts are not enabled on this Fabric branch. Normal builds and McJtyLib transfer checks run separately.
 Build with `./gradlew build` standalone, or `./gradlew :ArienteWorld:build` from MultiWorkspace.
 The workspace uses the included McJtyLib and The One Probe sources. Ariente and ArienteWorld also use included HoloGui/Ariente sources. Published Maven artifacts are standalone fallbacks.
-Unpublished port dependencies can be provided with `-Pariente_dependency_repository=<repository URL>`; `-Pgradletools_path=<file>` selects an explicit shared Gradle script.
+`-Pgradletools_path=<file>` selects the shared driver; the MultiWorkspace README documents dependency version overrides.
 
-The [NeoForge port checkpoint](PORT_1_21.md) documents current commands and validation. Earlier Forge fixture commands in this file are historical.
+The [NeoForge port checkpoint](PORT_1_21.md) and broad Forge fixture commands are retained as historical references. Use the Fabric tutorial tools above for this branch.
 
 ## Jenkins builds
 
-Select Java 21 and **Use Gradle Wrapper** (Gradle 8.14.2), with tasks
-`clean build publish`.
-
-Compilation uses the published Jenkins artifacts HoloGui `1.21-0.0.10-beta-6`
-and Ariente `1.21-0.0.31-alpha-2`. These are compilation inputs; the runtime
-minimums in `neoforge.mods.toml` remain `1.21-2.0.0` for both mods. A new Jenkins
-publication is not required when the existing artifacts provide the needed API.
-Dependency artifact versions are centralized in the matching MultiWorkspace
-`gradletools.gradle`; do not override them in the mod's `gradle.properties`.
-Release through ReleaseMe in order: HoloGui, Ariente, ArienteWorld.
+Use Java 21, the Gradle wrapper and `clean build publish`. Set `local_maven` or
+`-Pmavendir=...` to the Jenkins Maven repository. Publish the Fabric McJtyLib,
+HoloGui and Ariente dependencies first. The shared `1.21_fabric/gradletools.gradle`
+keeps compilation artifact versions in one place and prefers local checkouts;
+`fabric.mod.json` declares runtime minimums. Jenkins appends `-BUILD_NUMBER` to
+ArienteWorld's version. See the MultiWorkspace README for version overrides and
+isolated Gradle home setup.

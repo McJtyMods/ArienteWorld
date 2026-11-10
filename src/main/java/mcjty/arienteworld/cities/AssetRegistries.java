@@ -1,13 +1,13 @@
 package mcjty.arienteworld.cities;
 
-import java.io.*;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.config.Config;
-import net.neoforged.fml.loading.FMLPaths;
+import net.fabricmc.loader.api.FabricLoader;
 
 public class AssetRegistries {
 
@@ -35,7 +35,7 @@ public class AssetRegistries {
         reset();
         for (String asset : Config.ASSETS) {
             if (asset.startsWith("$")) {
-                load(FMLPaths.CONFIGDIR.get().resolve(asset.substring(1)).toFile());
+                load(FabricLoader.getInstance().getConfigDir().resolve(asset.substring(1)).toFile());
             } else {
                 InputStream stream = ArienteWorld.class.getResourceAsStream(asset);
                 if (stream == null) {

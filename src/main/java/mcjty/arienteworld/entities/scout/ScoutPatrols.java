@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import mcjty.ariente.entities.fluxship.FluxShipEntity;
-import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.ai.CityAISystem;
 import mcjty.arienteworld.cities.City;
 import mcjty.arienteworld.config.AIConfiguration;
@@ -17,6 +16,7 @@ import mcjty.arienteworld.dimension.ArienteChunkGenerator;
 import mcjty.arienteworld.dimension.DimensionRegister;
 import mcjty.arienteworld.entities.soldier.SoldierBehaviourType;
 import mcjty.arienteworld.entities.soldier.SoldierEntity;
+import mcjty.lib.varia.PersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -27,14 +27,11 @@ import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 /** An independent base launch scheduler; neither biome spawn tables nor hostile mob caps are involved. */
-@EventBusSubscriber(modid = ArienteWorld.MODID)
 public class ScoutPatrols extends SavedData {
 
     public static final double NEAR_RADIUS = 256;
@@ -54,7 +51,8 @@ public class ScoutPatrols extends SavedData {
     }
 
     public static ScoutPatrols get(ServerLevel level) {
-        ScoutPatrols data = level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(ScoutPatrols::new, (tag, provider) -> load(tag)), "ArienteScoutPatrols");
+        ScoutPatrols data = level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(ScoutPatrols::new,
+                (tag, provider) -> ScoutPatrols.load(tag), null), "ArienteScoutPatrols");
         data.upgradeCadence(level);
         return data;
     }
@@ -72,9 +70,8 @@ public class ScoutPatrols extends SavedData {
         }
     }
 
-    @SubscribeEvent
-    public static void levelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)
+    public static void levelTick(Level world) {
+        if (!(world instanceof ServerLevel level)
                 || !level.dimension().equals(DimensionRegister.DIMENSION)
                 || !(level.getChunkSource().getGenerator() instanceof ArienteChunkGenerator)
                 || level.getGameTime() % 10 != 0) {
@@ -142,18 +139,18 @@ public class ScoutPatrols extends SavedData {
     static List<FluxShipEntity> loadedScouts(ServerLevel level) {
         List<FluxShipEntity> fleet = new ArrayList<>();
         for (Entity entity : level.getAllEntities()) {
-            if (entity instanceof FluxShipEntity ship && ship.getPersistentData().getBoolean(SCOUT_SHIP)) {
+            if (entity instanceof FluxShipEntity ship && PersistentData.get(ship).getBoolean(SCOUT_SHIP)) {
                 if (ship.getControllingPassenger() instanceof Player) {
                     // A captured ship is now an ordinary player vehicle.
                     releaseShip(level, ship);
-                    ship.getPersistentData().remove(SCOUT_SHIP);
+                    PersistentData.get(ship).remove(SCOUT_SHIP);
                 } else if (ship.getControllingPassenger() instanceof SoldierEntity soldier && soldier.getScoutPilot() != null
                         && soldier.isAlive()) {
                     fleet.add(ship);
                 } else if (ship.tickCount > 40) {
                     // Leave defeated scouts to descend and be recovered. Their flight ticket expires naturally.
                     releaseShip(level, ship);
-                    ship.getPersistentData().remove(SCOUT_SHIP);
+                    PersistentData.get(ship).remove(SCOUT_SHIP);
                 }
             }
         }
@@ -250,7 +247,7 @@ public class ScoutPatrols extends SavedData {
         ScoutRoutes.FlightPlan route = ScoutRoutes.create(level, city.getCenter(), position, level.random);
         Vec3 direction = route.waypoints().get(0).subtract(position);
         ship.setYRot((float) (Math.atan2(-direction.x, direction.z) * 180 / Math.PI));
-        ship.getPersistentData().putBoolean(SCOUT_SHIP, true);
+        PersistentData.get(ship).putBoolean(SCOUT_SHIP, true);
         SoldierEntity soldier = SoldierEntity.create(level, city.getCenter(), SoldierBehaviourType.SOLDIER_FIGHTER);
         soldier.startScout(new ScoutPilot(city.getCenter(), route));
         soldier.setPos(position);

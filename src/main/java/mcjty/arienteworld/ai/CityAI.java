@@ -1,10 +1,18 @@
 package mcjty.arienteworld.ai;
 
-import mcjty.ariente.api.*;
+import static mcjty.ariente.setup.Registration.AICORE;
+import static mcjty.ariente.setup.Registration.FLUX_BEAM;
+import static mcjty.ariente.setup.Registration.KEY_CARD;
+import static mcjty.ariente.setup.Registration.POWERSUIT_CHEST;
+import static mcjty.ariente.setup.Registration.POWERSUIT_FEET;
+import static mcjty.ariente.setup.Registration.POWERSUIT_HEAD;
+import static mcjty.ariente.setup.Registration.POWERSUIT_LEGS;
+
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import mcjty.ariente.Ariente;
+import mcjty.ariente.api.*;
 import mcjty.ariente.blocks.storagecube.StorageCubeTile;
 import mcjty.ariente.items.ItemData;
 import mcjty.ariente.varia.WeightedRandom;
@@ -32,6 +40,7 @@ import mcjty.arienteworld.setup.Registration;
 import mcjty.hologui.api.IHoloGuiEntity;
 import mcjty.lib.tileentity.GenericTileEntity;
 import mcjty.lib.varia.OrientationTools;
+import mcjty.lib.varia.PersistentData;
 import mcjty.lib.varia.RedstoneMode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -58,14 +67,6 @@ import net.minecraft.world.level.block.state.properties.RailShape;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-
-import static mcjty.ariente.setup.Registration.AICORE;
-import static mcjty.ariente.setup.Registration.FLUX_BEAM;
-import static mcjty.ariente.setup.Registration.KEY_CARD;
-import static mcjty.ariente.setup.Registration.POWERSUIT_CHEST;
-import static mcjty.ariente.setup.Registration.POWERSUIT_FEET;
-import static mcjty.ariente.setup.Registration.POWERSUIT_HEAD;
-import static mcjty.ariente.setup.Registration.POWERSUIT_LEGS;
 
 public class CityAI implements ICityAI {
 
@@ -211,7 +212,7 @@ public class CityAI implements ICityAI {
     }
 
     private void initializeCubePatrol(Mob mob, int floor) {
-        if (mob.getPersistentData().getBoolean("arienteworldCubePatrol")) {
+        if (PersistentData.get(mob).getBoolean("arienteworldCubePatrol")) {
             return;
         }
         double dx = Math.abs(mob.getX() - center.getMiddleBlockX());
@@ -234,7 +235,7 @@ public class CityAI implements ICityAI {
             }
         }
         if (inPatrolArea) {
-            mob.getPersistentData().putBoolean("arienteworldCubePatrol", true);
+            PersistentData.get(mob).putBoolean("arienteworldCubePatrol", true);
         }
     }
 

@@ -13,10 +13,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -26,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Checks actual sound starts, range crossings, fade-out and quick re-entry in a disposable Tutorial. */
-@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class TutorialForcefieldSoundCheck {
 
     private static final BlockPos SHIELD = new BlockPos(151, 65, 119);
@@ -44,8 +39,7 @@ public class TutorialForcefieldSoundCheck {
     private static ForcefieldSound reentrySound;
     private static int startsBeforeReentry;
 
-    @SubscribeEvent
-    public static void tick(ClientTickEvent.Post event) throws IOException {
+    public static void tick() throws IOException {
         if (!Boolean.getBoolean("ariente.tutorial.forcefieldSoundCheck")) {
             return;
         }

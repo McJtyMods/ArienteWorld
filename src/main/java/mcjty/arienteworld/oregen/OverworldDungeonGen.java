@@ -1,5 +1,7 @@
 package mcjty.arienteworld.oregen;
 
+import static mcjty.ariente.setup.Registration.WARPER;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -11,17 +13,17 @@ import mcjty.arienteworld.config.WorldgenConfiguration;
 import mcjty.arienteworld.dimension.CityFeature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.neoforged.neoforge.common.Tags;
-
-import static mcjty.ariente.setup.Registration.WARPER;
 
 public class OverworldDungeonGen {
 
@@ -335,7 +337,7 @@ public class OverworldDungeonGen {
 
     private static boolean isNatural(BlockState state) {
         return !state.hasBlockEntity() && (state.isAir() || state.is(BlockTags.BASE_STONE_OVERWORLD)
-                || state.is(BlockTags.DIRT) || state.is(Blocks.GRAVEL) || state.is(Tags.Blocks.ORES)
+                || state.is(BlockTags.DIRT) || state.is(Blocks.GRAVEL) || state.is(TagKey.create(Registries.BLOCK, ResourceLocation.parse("c:ores")))
                 || state.is(Blocks.CLAY) || state.is(Blocks.MOSS_BLOCK) || state.is(Blocks.CALCITE)
                 || state.is(Blocks.DRIPSTONE_BLOCK) || state.is(Blocks.POINTED_DRIPSTONE));
     }

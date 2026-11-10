@@ -12,16 +12,13 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.world.level.GameType;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.event.Event;
+import net.minecraft.resources.ResourceLocation;
 
 /** Compares the deferred display pass with Minecraft's actual block entity camera transform. */
-@EventBusSubscriber(modid = ArienteWorld.MODID, value = Dist.CLIENT)
 public class TutorialDisplayPositionCheck {
 
     private record View(String name, double x, double y, double z, float yaw, float pitch, CameraType camera) {
@@ -51,8 +48,7 @@ public class TutorialDisplayPositionCheck {
         return Boolean.getBoolean("ariente.tutorial.positionCheck") && ready && !LiveCameraRenderer.isRendering();
     }
 
-    @SubscribeEvent
-    public static void tick(ClientTickEvent.Post event) {
+    public static void tick() {
         if (!Boolean.getBoolean("ariente.tutorial.positionCheck")) {
             return;
         }
@@ -117,30 +113,38 @@ public class TutorialDisplayPositionCheck {
         });
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void beforeRender(RenderLevelStageEvent event) {
+    public static void register() {
+        ResourceLocation beforeDisplay = ResourceLocation.fromNamespaceAndPath("ariente_tutorial", "before_displays");
+        WorldRenderEvents.END.addPhaseOrdering(beforeDisplay, Event.DEFAULT_PHASE);
+        WorldRenderEvents.END.register(beforeDisplay, event -> {
+            if (active()) {
+                previousModelView = new Matrix4f(RenderSystem.getModelViewMatrix());
+            }
+        });
+        WorldRenderEvents.AFTER_ENTITIES.register(TutorialDisplayPositionCheck::beforeRender);
+        ResourceLocation afterDisplay = ResourceLocation.fromNamespaceAndPath("ariente_tutorial", "after_displays");
+        WorldRenderEvents.END.addPhaseOrdering(Event.DEFAULT_PHASE, afterDisplay);
+        WorldRenderEvents.END.register(afterDisplay, TutorialDisplayPositionCheck::afterRender);
+    }
+
+    private static void beforeRender(WorldRenderContext event) {
         if (!active()) {
             return;
         }
-        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
-            Matrix4f blockEntityCamera = new Matrix4f(RenderSystem.getModelViewMatrix());
-            queued = true;
-            drawn = false;
-            WorldHolograms.add(event.getCamera().getPosition(), buffers -> {
-                if (!blockEntityCamera.equals(RenderSystem.getModelViewMatrix(), .00001f)) {
-                    throw new IllegalStateException("Deferred displays lost the world camera transform at view " + VIEWS[view].name());
-                }
-                drawn = true;
-                frames++;
-            });
-        } else if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
-            previousModelView = new Matrix4f(RenderSystem.getModelViewMatrix());
-        }
+        queued = true;
+        drawn = false;
+        WorldHolograms.add(event.camera().getPosition(), buffers -> {
+            Matrix4f expected = new Matrix4f(previousModelView).mul(event.positionMatrix());
+            if (!expected.equals(RenderSystem.getModelViewMatrix(), .00001f)) {
+                throw new IllegalStateException("Deferred displays lost the world camera transform at view " + VIEWS[view].name());
+            }
+            drawn = true;
+            frames++;
+        });
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void afterRender(RenderLevelStageEvent event) {
-        if (active() && event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL && queued) {
+    private static void afterRender(WorldRenderContext event) {
+        if (active() && queued) {
             if (!drawn || !previousModelView.equals(RenderSystem.getModelViewMatrix(), .00001f)) {
                 throw new IllegalStateException("Deferred display pass failed to draw or restore the camera transform");
             }

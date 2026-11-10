@@ -10,6 +10,7 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Axis;
 import mcjty.arienteworld.ArienteWorld;
+import net.fabricmc.fabric.api.client.rendering.v1.DimensionRenderingRegistry;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
@@ -18,13 +19,8 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterDimensionSpecialEffectsEvent;
 import org.joml.Matrix4f;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ArienteDimensionEffects extends DimensionSpecialEffects {
 
     private static final ResourceLocation STARS = texture("stars");
@@ -44,9 +40,8 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
         super(Float.NaN, true, SkyType.NORMAL, false, false);
     }
 
-    @SubscribeEvent
-    public static void register(RegisterDimensionSpecialEffectsEvent event) {
-        event.register(ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "ariente"), new ArienteDimensionEffects());
+    public static void register() {
+        DimensionRenderingRegistry.registerDimensionEffects(ResourceLocation.fromNamespaceAndPath(ArienteWorld.MODID, "ariente"), new ArienteDimensionEffects());
     }
 
     private static ResourceLocation texture(String name) {
@@ -63,14 +58,12 @@ public class ArienteDimensionEffects extends DimensionSpecialEffects {
         return false;
     }
 
-    @Override
     public boolean renderClouds(ClientLevel level, int ticks, float partialTick, PoseStack poses,
                                 double camX, double camY, double camZ, Matrix4f modelView, Matrix4f projection) {
         // The original dimension suppresses vanilla clouds in favor of its skybox.
         return true;
     }
 
-    @Override
     public boolean renderSky(ClientLevel level, int ticks, float partialTick, Matrix4f modelView, Camera camera,
                              Matrix4f projection, boolean foggy, Runnable setupFog) {
         PoseStack poses = new PoseStack();

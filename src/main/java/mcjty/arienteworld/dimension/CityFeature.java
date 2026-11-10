@@ -1,5 +1,7 @@
 package mcjty.arienteworld.dimension;
 
+import static mcjty.ariente.setup.Registration.DOOR_MARKER;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +42,6 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-
-import static mcjty.ariente.setup.Registration.DOOR_MARKER;
 
 /** Places only the current chunk, so adjacent city sections never depend on decoration order. */
 public class CityFeature extends Feature<NoneFeatureConfiguration> {

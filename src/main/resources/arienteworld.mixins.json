@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "mcjty.arienteworld.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LivingEntityMixin",
+    "LevelMixin",
+    "ServerExplosionMixin",
+    "ChunkGeneratorMixin",
+    "SerializableChunkDataMixin"
+  ],
+  "client": [
+    "client.FogRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

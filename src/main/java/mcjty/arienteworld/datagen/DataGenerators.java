@@ -1,52 +1,65 @@
 package mcjty.arienteworld.datagen;
 
+import static mcjty.ariente.setup.Registration.DUST_NEGARITE;
+import static mcjty.ariente.setup.Registration.DUST_POSIRITE;
+
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import mcjty.ariente.api.MarbleColor;
 import mcjty.ariente.blocks.decorative.DecorativeBlockModule;
-import mcjty.arienteworld.ArienteWorld;
 import mcjty.arienteworld.dimension.features.CrystalFormationFeature;
 import mcjty.arienteworld.setup.Registration;
+import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
+import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.loot.BlockLootSubProvider;
 import net.minecraft.data.loot.LootTableProvider;
+import net.minecraft.data.tags.IntrinsicHolderTagsProvider;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.data.BlockTagsProvider;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
-import net.neoforged.neoforge.data.event.GatherDataEvent;
 
-import static mcjty.ariente.setup.Registration.DUST_NEGARITE;
-import static mcjty.ariente.setup.Registration.DUST_POSIRITE;
+public class DataGenerators implements DataGeneratorEntrypoint {
 
-@EventBusSubscriber(modid = ArienteWorld.MODID, bus = EventBusSubscriber.Bus.MOD)
-public class DataGenerators {
-
-    @SubscribeEvent
-    public static void gatherData(GatherDataEvent event) {
-        PackOutput output = event.getGenerator().getPackOutput();
-        event.getGenerator().addProvider(event.includeServer(), new LootTableProvider(output, Set.of(),
-                List.of(new LootTableProvider.SubProviderEntry(BlockLoot::new, LootContextParamSets.BLOCK)), event.getLookupProvider()));
-        event.getGenerator().addProvider(event.includeServer(),
-                new BlockTags(output, event.getLookupProvider(), event.getExistingFileHelper()));
+    @Override
+    public void onInitializeDataGenerator(FabricDataGenerator generator) {
+        var pack = generator.createPack();
+        pack.addProvider((output, lookup) -> new LootTableProvider(output, Set.of(),
+                List.of(new LootTableProvider.SubProviderEntry(BlockLoot::new, LootContextParamSets.BLOCK)), lookup));
+        pack.addProvider(BlockTags::new);
     }
 
     private static class BlockLoot extends BlockLootSubProvider {
+
+        private BiConsumer<ResourceKey<LootTable>, LootTable.Builder> output;
+
+        @Override
+        public void generate(BiConsumer<ResourceKey<LootTable>, LootTable.Builder> output) {
+            this.output = output;
+            generate();
+        }
+
+        @Override
+        public void add(Block block, LootTable.Builder table) {
+            output.accept(block.getLootTable(), table);
+        }
 
         private BlockLoot(HolderLookup.Provider provider) {
             super(Set.of(), FeatureFlags.REGISTRY.allFlags(), provider);
         }
 
         @Override
-        protected void generate() {
+        public void generate() {
             // Keep the existing authored drops, including leaves and editor markers.
             getKnownBlocks().forEach(block -> {
                 if (block == Registration.NEGARITE_CRYSTAL.get() || block == Registration.POSIRITE_CRYSTAL.get()) {
@@ -60,16 +73,15 @@ public class DataGenerators {
             });
         }
 
-        @Override
         protected Iterable<Block> getKnownBlocks() {
             return Registration.BLOCKS.getEntries().stream().map(entry -> (Block) entry.get()).toList();
         }
     }
 
-    private static class BlockTags extends BlockTagsProvider {
+    private static class BlockTags extends IntrinsicHolderTagsProvider<Block> {
 
-        private BlockTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookup, ExistingFileHelper helper) {
-            super(output, lookup, ArienteWorld.MODID, helper);
+        private BlockTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookup) {
+            super(output, Registries.BLOCK, lookup, value -> BuiltInRegistries.BLOCK.getResourceKey(value).orElseThrow());
         }
 
         @Override

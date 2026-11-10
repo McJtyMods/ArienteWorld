@@ -1,41 +1,45 @@
 package mcjty.arienteworld.setup;
 
-import mcjty.arienteworld.ArienteWorld;
+import mcjty.arienteworld.cities.AssetRegistries;
+import mcjty.arienteworld.client.FabricSky;
 import mcjty.arienteworld.entities.boss.CoreGuardianRenderer;
 import mcjty.arienteworld.entities.darkbat.DarkbatRender;
 import mcjty.arienteworld.entities.drone.DroneRender;
 import mcjty.arienteworld.entities.drone.SentinelDroneRender;
 import mcjty.arienteworld.entities.soldier.SoldierRender;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.renderer.RenderType;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
-@EventBusSubscriber(modid = ArienteWorld.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-public class ClientSetup {
+public class ClientSetup implements ClientModInitializer {
 
-    @SubscribeEvent
-    public static void entityRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(Registration.ENTITY_CORE_GUARDIAN.get(), CoreGuardianRenderer::new);
-        event.registerEntityRenderer(Registration.ENTITY_DARKBAT.get(), DarkbatRender::new);
-        event.registerEntityRenderer(Registration.ENTITY_DRONE.get(), DroneRender.FACTORY);
-        event.registerEntityRenderer(Registration.ENTITY_SENTINEL_DRONE.get(), SentinelDroneRender.FACTORY);
-        event.registerEntityRenderer(Registration.ENTITY_SOLDIER.get(), SoldierRender.FACTORY);
-        event.registerEntityRenderer(Registration.ENTITY_MASTER_SOLDIER.get(), SoldierRender.MASTER_FACTORY);
+    public static void entityRenderers() {
+        EntityRendererRegistry.register(Registration.ENTITY_CORE_GUARDIAN.get(), CoreGuardianRenderer::new);
+        EntityRendererRegistry.register(Registration.ENTITY_DARKBAT.get(), DarkbatRender::new);
+        EntityRendererRegistry.register(Registration.ENTITY_DRONE.get(), DroneRender.FACTORY);
+        EntityRendererRegistry.register(Registration.ENTITY_SENTINEL_DRONE.get(), SentinelDroneRender.FACTORY);
+        EntityRendererRegistry.register(Registration.ENTITY_SOLDIER.get(), SoldierRender.FACTORY);
+        EntityRendererRegistry.register(Registration.ENTITY_MASTER_SOLDIER.get(), SoldierRender.MASTER_FACTORY);
     }
 
-    public static void init(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> {
-            ItemBlockRenderTypes.setRenderLayer(Registration.GLOWLEAVES.get(), RenderType.cutoutMipped());
-            ItemBlockRenderTypes.setRenderLayer(Registration.BLUELEAVES.get(), RenderType.cutoutMipped());
-            ItemBlockRenderTypes.setRenderLayer(Registration.DARKLEAVES.get(), RenderType.cutoutMipped());
-            ItemBlockRenderTypes.setRenderLayer(Registration.BLACKBUSH.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(Registration.DARKGRASS.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(Registration.TALLDARKGRASS.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(Registration.SMALLFLOWER.get(), RenderType.cutout());
-        });
+    public static void init() {
     }
+
+    @Override
+    public void onInitializeClient() {
+        AssetRegistries.initialize();
+        entityRenderers();
+        ColorProviderRegistry.BLOCK.register((state, level, pos, index) -> 0xd9ffffff,
+                Registration.NEGARITE_CRYSTAL.get(), Registration.POSIRITE_CRYSTAL.get());
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.translucent(),
+                Registration.NEGARITE_CRYSTAL.get(), Registration.POSIRITE_CRYSTAL.get());
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.cutout(),
+                Registration.GLOWLEAVES.get(), Registration.BLUELEAVES.get(), Registration.DARKLEAVES.get(),
+                Registration.BLACKBUSH.get(), Registration.DARKGRASS.get(), Registration.TALLDARKGRASS.get(), Registration.SMALLFLOWER.get());
+        FabricSky.register();
+
+    }
+
 }

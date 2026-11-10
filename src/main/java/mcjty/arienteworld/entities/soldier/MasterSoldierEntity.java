@@ -1,5 +1,7 @@
 package mcjty.arienteworld.entities.soldier;
 
+import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
+
 import mcjty.ariente.api.IInhibitable;
 import mcjty.ariente.entities.LaserEntity;
 import net.minecraft.nbt.CompoundTag;
@@ -14,8 +16,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-
-import static mcjty.arienteworld.setup.Registration.ENTITY_MASTER_SOLDIER;
 
 public class MasterSoldierEntity extends SoldierEntity implements IInhibitable {
 
@@ -96,4 +96,5 @@ public class MasterSoldierEntity extends SoldierEntity implements IInhibitable {
     protected boolean isMaster() {
         return true;
     }
+
 }
