@@ -345,10 +345,12 @@ The [NeoForge port checkpoint](PORT_1_21.md) documents current commands and vali
 ## Jenkins builds
 
 Select Java 21 and **Use Gradle Wrapper** (Gradle 8.14.2), with tasks
-`clean build publish`. Publish HoloGui and Ariente before building ArienteWorld.
+`clean build publish`.
 
-The checked-in `hologui_version` and `ariente_version` select `1.21-2.0.0+`,
-accepting Jenkins revisions of that release. Both upstream releases must be
-published to Maven first. To pin specific revisions, set these properties to
-their complete published versions, including build numbers, or pass
-`-Phologui_version=<version>` and `-Pariente_version=<version>` in this job.
+Compilation uses the published Jenkins artifacts HoloGui `1.21-0.0.10-beta-6`
+and Ariente `1.21-0.0.31-alpha-2`. These are compilation inputs; the runtime
+minimums in `neoforge.mods.toml` remain `1.21-2.0.0` for both mods. A new Jenkins
+publication is not required when the existing artifacts provide the needed API.
+Dependency artifact versions are centralized in the matching MultiWorkspace
+`gradletools.gradle`; do not override them in the mod's `gradle.properties`.
+Release through ReleaseMe in order: HoloGui, Ariente, ArienteWorld.
