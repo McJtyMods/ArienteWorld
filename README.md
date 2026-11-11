@@ -354,6 +354,20 @@ and screenshots are written to `render-regression/` inside the profile; successf
 runs log `RENDER REGRESSION: all camera and tank checks passed` and exit. These
 fixtures are excluded from released mods. Remove disposable profiles when done.
 
+For a focused power armor check, copy the stopped Tutorial save to
+`build/tutorial/armor-client/saves/Tutorial`, then run from `Multi_neo`:
+
+```sh
+TMPDIR=/var/tmp ./gradlew -I ../ArienteWorld_neo/tools/tutorial.gradle -Ptutorial_armor_check -Ptutorial_client_directory=build/tutorial/armor-client :ArienteWorld:runClient
+```
+
+The check renders the unequipped player, every power armor slot separately, the
+complete suit and armor removal. It checks that each piece appears and rejects
+missing-texture pixels. Screenshots are saved under
+`build/tutorial/armor-client/screenshots/power-armor-checks`; success logs
+`NEOFORGE POWER ARMOR CHECKS PASSED`. Use a disposable save; the fixture changes
+its terrain and player inventory and is excluded from release jars.
+
 The older `tools/autofield_rendering.gradle` and broader Forge client/GameTest
 fixtures are historical 1.20.1 checks; they are not part of the NeoForge suite.
 Use the tutorial preview above for current client validation.
