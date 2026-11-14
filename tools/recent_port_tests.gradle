@@ -1,0 +1,32 @@
+// Run from the Fabric workspace: :ArienteWorld:runRecentTests -I <ArienteWorld>/tools/recent_port_tests.gradle
+// Compiles only the recent regressions into an isolated test mod, using local dependency sources.
+gradle.afterProject { p ->
+    if (p.name == 'ArienteWorld') {
+        p.sourceSets.create('recentTest') {
+            java.srcDirs = [p.file('src/gameTest/java'), p.project(':Ariente').file('src/gameTest/java')]
+            java.include 'mcjty/ariente/DoorMarkerTests.java', 'mcjty/ariente/WarperTests.java', 'mcjty/ariente/WarperWorldTests.java', 'mcjty/ariente/DeviceResetTests.java', 'mcjty/arienteworld/CubeLandingTests.java'
+            resources.srcDir 'src/gameTest/resources'
+            resources.include 'recent-tests.fabric.mod.json', 'data/ariente/structure/*.nbt', 'data/arienteworld/structure/empty.nbt', 'data/minecraft/worldgen/world_preset/*.json'
+            compileClasspath += p.sourceSets.main.output + p.sourceSets.main.compileClasspath
+            runtimeClasspath += p.sourceSets.main.output + p.sourceSets.main.runtimeClasspath
+        }
+        p.configurations.recentTestImplementation.extendsFrom(p.configurations.implementation)
+        p.configurations.recentTestRuntimeOnly.extendsFrom(p.configurations.runtimeOnly)
+        p.tasks.named('processRecentTestResources') { rename 'recent-tests.fabric.mod.json', 'fabric.mod.json' }
+        p.loom.mods.register('ariente_recent_tests') { sourceSet p.sourceSets.recentTest }
+        p.loom.runs.register('recentTests') {
+            server()
+            source p.sourceSets.recentTest
+            runDir 'build/verification/recent-tests/server'
+            vmArg '-Dfabric-api.gametest'
+            vmArg '-Dfabric-api.gametest.report-file=' + p.file('build/verification/recent-tests/results.xml').absolutePath
+            programArg '--nogui'
+        }
+        p.tasks.named('runRecentTests', JavaExec) {
+            dependsOn p.tasks.named('recentTestClasses')
+            def sources = ['McJtyLib', 'TheOneProbe', 'ModHoloGui', 'Ariente'].collect { p.project(':' + it) }
+            dependsOn sources.collect { it.tasks.named('classes') }
+            classpath += p.sourceSets.main.output + p.sourceSets.recentTest.output + p.files(sources.collect { it.sourceSets.main.output })
+        }
+    }
+}
