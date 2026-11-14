@@ -92,6 +92,7 @@ public class CityFeature implements Feature {
             if (!ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x(), chunk.z())) {
                 blendNearbyCity(level, chunk, chunkGenerator);
             }
+            CubeLandings.generate(writer, chunk, city, chunkGenerator);
             LevitatorNetworkGenerator.generate(chunk.x(), chunk.z(), writer, chunkGenerator);
             return true;
         }
