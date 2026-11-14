@@ -78,6 +78,11 @@ The huge cube has seeded three-deck room layouts, server and control bays,
 unobstructed automatic elevators with floor selectors, and protected storage caches with advanced components,
 modules and rare blueprints. Seeded wall details include fence frames, flat lights,
 blue/red glowing strips and glass-edged inserts, interspersed with plain bays.
+Its 28 side entrances have six-wide, four-high openings framed by red lights.
+Eight-wide landing lips extend two blocks beyond the facade, with bevelled outer
+edges, short side fences and paired blue guidance strips leading inside. These
+entrances accommodate Flux Ships. The new geometry appears in newly generated
+chunks; existing cube entrances are not rebuilt.
 The basement and roof contain decorative machinery halls built specifically for
 the cube, using the city's dark marble, blue glass and inset lighting. Chambers,
 cooling banks, recessed consoles and stepped machinery rest on chamfered plinths

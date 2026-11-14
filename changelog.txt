@@ -1,2 +1,5 @@
+26.2-4.0.1-fabric:
+- Enlarge huge cube entrances and add Flux Ship landing platforms and blue guidance strips in newly generated chunks.
+
 26.2-4.0.0-fabric:
 - Ported to Minecraft 26.2 on Fabric.

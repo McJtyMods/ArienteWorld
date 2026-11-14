@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "ariente_recent_tests",
+  "version": "1",
+  "name": "Ariente recent port regressions",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "mcjty.ariente.DoorMarkerTests",
+      "mcjty.ariente.WarperTests",
+      "mcjty.ariente.WarperWorldTests",
+      "mcjty.ariente.DeviceResetTests",
+      "mcjty.arienteworld.CubeLandingTests"
+    ]
+  },
+  "depends": {
+    "fabricloader": "*",
+    "fabric-api": "*",
+    "ariente": "*",
+    "arienteworld": "*"
+  }
+}
