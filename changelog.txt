@@ -1,2 +1,5 @@
+1.20-1.0.1:
+- Enlarged the huge cube dungeon's side entrances and added landing platforms with blue guidance strips so Flux Ships can land and enter.
+
 1.20-1.0.0:
 - Ported ArienteWorld to 1.20

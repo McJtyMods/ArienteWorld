@@ -88,6 +88,7 @@ public class CityFeature extends Feature<NoneFeatureConfiguration> {
             if (!ArienteLandscapeCity.isLandscapeCityChunk(level.getSeed(), chunk.x, chunk.z)) {
                 blendNearbyCity(level, chunk, context.chunkGenerator());
             }
+            CubeLandings.generate(writer, chunk, city, context.chunkGenerator());
             LevitatorNetworkGenerator.generate(chunk.x, chunk.z, writer, context.chunkGenerator());
             return true;
         }
